@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class OOC Forum - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 0; background-color: #f0f2f5; color: #333; }
+        header { background: #556b2f; color: #fff; padding: 1rem 0; text-align: center; }
+        header h1#page-main-header { margin: 0; font-size: 1.8em; }
+        nav { text-align: center; padding: 10px; background-color: #e9ecef; border-bottom: 1px solid #dee2e6;}
+        nav a { margin: 0 15px; text-decoration: none; color: #495057; font-weight: 500; }
+        nav a:hover { color: #556b2f; }
+        main { max-width: 900px; margin: 25px auto; padding: 25px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+        .forum-header { border-bottom: 2px solid #556b2f; padding-bottom: 15px; margin-bottom: 25px; }
+        .forum-header h1#forum-main-title { color: #556b2f; font-size: 2em; margin-bottom: 5px; }
+        .forum-header .class-name { font-size: 1.1em; color: #6B8E23; margin-bottom:15px; font-style: italic;}
+        .classroom-nav-links { margin-top:10px; padding-bottom: 5px; }
+        .classroom-nav-links a { font-size: 0.95em; color: #556b2f; text-decoration: none; display:inline-block; margin-right:20px; padding: 5px 0;}
+        .classroom-nav-links a:hover { text-decoration: underline; color: #6B8E23;}
+        
+        #status-message, .forum-action-status {
+            padding: 10px; margin: 10px 0; border-radius: 5px;
+            text-align: center; font-weight: bold; display: none;
+        }
+        .status-error { background-color:#f8d7da; color:#721c24; border: 1px solid #f5c6cb; }
+        .status-loading { background-color:#e2e3e5; color:#383d41; border: 1px solid #d6d8db; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+
+        .thread-list { list-style: none; padding: 0; }
+        .thread-item { background-color: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px 20px; margin-bottom: 12px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; transition: background-color 0.2s ease, border-left-color 0.2s ease; border-left: 4px solid transparent;}
+        .thread-item:hover { border-left: 4px solid #8fbc8f; background-color: #f5fef5;}
+        .thread-info { flex-grow: 1; }
+        .thread-info h3 { margin: 0 0 8px 0; font-size: 1.2em; }
+        .thread-info h3 a { text-decoration: none; color: #4a7c4a; font-weight: 600; cursor:pointer; }
+        .thread-info h3 a:hover { color: #556b2f; text-decoration: underline;}
+        .thread-meta { font-size: 0.8em; color: #777; }
+        .thread-actions { margin-left: 15px; } /* For delete thread button */
+        .thread-stats { text-align: right; font-size: 0.85em; color: #555; min-width: 160px;}
+        .thread-stats span { display: block; margin-bottom: 2px;}
+
+        .single-thread-header { margin-bottom: 20px; padding-bottom:10px; border-bottom:1px solid #eee; }
+        .single-thread-header h2#thread-title-display { font-size: 1.5em; color: #495057; margin-bottom:5px;}
+        .single-thread-header p#thread-author-display.author-info {font-size: 0.85em; color: #6c757d; }
+        
+        .post-item {
+            background-color: #ffffff; border: 1px solid #e0e0e0; padding: 15px; margin-bottom: 15px;
+            border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); position: relative; /* For delete button */
+            border-left: 4px solid #a9c9a9; /* Light green accent for posts */
+        }
+        .post-item .post-meta { font-size: 0.8em; color: #777; margin-bottom: 8px; }
+        .post-item .post-meta strong { color: #556b2f; }
+        .post-item .post-content { white-space: pre-wrap; color: #333; line-height: 1.65; }
+        .delete-forum-post-btn {
+            background-color: #dc3545; color: white; border: none;
+            padding: 4px 8px; font-size: 0.75em; border-radius: 4px;
+            cursor: pointer; position: absolute; top: 10px; right: 10px;
+        }
+        .delete-forum-post-btn:hover { background-color: #c82333; }
+
+
+        .form-section { margin-top: 25px; padding: 20px; border: 1px solid #d4e9d4; border-radius: 8px; background-color: #f0f8f0; }
+        .form-section h3 { margin-top:0; color: #556b2f; font-size: 1.3em; }
+        input[type="text"], textarea { width: calc(100% - 24px); padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size:1em; }
+        textarea { min-height: 100px; }
+        button { background-color: #8fbc8f; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight:500; transition: background-color 0.2s ease; }
+        button:hover { background-color: #7aa87a; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .back-button { background-color: #6c757d; margin-bottom: 15px;}
+        .back-button:hover { background-color: #5a6268;}
+        .button-danger-small { background-color: #dc3545; font-size: 0.8em; padding: 5px 10px;}
+        .button-danger-small:hover { background-color: #c82333;}
+
+        footer { text-align: center; padding: 25px 0; margin-top: 35px; font-size: 0.9em; color: #6c757d; border-top: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="page-main-header">Class OOC Forum</h1>
+    </header>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="roleplay_class_listings.html">All Classes</a>
+        <a href="forums.html">General Site Forums</a>
+    </nav>
+
+    <main id="class-forum-main-content">
+        <div class="forum-header">
+            <h1 id="forum-main-title">Loading Forum...</h1>
+            <p class="class-name" id="forum-for-class-name">For: Loading Class Name...</p>
+            <div class="classroom-nav-links" id="classroom-nav-links-container" style="display:none;">
+                <a id="link-to-class-info" href="#">&laquo; Class Syllabus & Info</a>
+                <a id="link-to-main-classroom" href="#">&laquo; Main Classroom (Lessons)</a>
+                <a id="link-to-assignments" href="#">&laquo; Assignments</a>
+            </div>
+        </div>
+
+        <div id="status-message" class="status-loading">Loading forum content...</div>
+        <div class="forum-action-status" id="forum-page-action-status"></div>
+
+        <div id="thread-list-view">
+            <button id="create-new-thread-btn" class="button" style="margin-bottom: 20px; display:none;">Start New Thread</button>
+            <ul id="thread-list-container" class="thread-list">
+                </ul>
+        </div>
+
+        <div id="new-thread-form-view" class="form-section" style="display:none;">
+            <button class="back-button" onclick="goBackToThreadListView()"> &laquo; Back to Thread List</button>
+            <h3>Start a New Discussion Thread</h3>
+            <input type="text" id="new-thread-title" placeholder="Thread Title (e.g., OOC Character Questions, Week 1 Discussion)">
+            <textarea id="new-thread-first-post" placeholder="Enter the content for the first post of your new thread..."></textarea>
+            <button id="submitNewThreadBtn" onclick="submitNewThread()">Create Thread & First Post</button>
+            <div class="forum-action-status" id="new-thread-status"></div>
+        </div>
+
+        <div id="single-thread-view-container" style="display:none;">
+            <button class="back-button" onclick="goBackToThreadListView()"> &laquo; Back to Thread List</button>
+            <div class="single-thread-header">
+                <h2 id="thread-title-display"></h2>
+                <p class="author-info" id="thread-author-display"></p>
+            </div>
+            <div id="thread-posts-container">
+                </div>
+            <div id="new-reply-form-container" class="form-section" style="display:none;">
+                <h3>Post a Reply</h3>
+                <textarea id="new-reply-content" placeholder="Type your reply..."></textarea>
+                <button id="submitNewReplyBtn" onclick="submitNewReply()">Post Reply</button>
+                <div class="forum-action-status" id="new-reply-status"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+      authDomain: "attic-4ae31.firebaseapp.com",
+      databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+      projectId: "attic-4ae31",
+      storageBucket: "attic-4ae31.appspot.com", // Corrected from .firebasestorage.app
+      messagingSenderId: "259372678655",
+      appId: "1:259372678655:web:df9c03e07e022392837bca",
+      measurementId: "G-2WWH3YVXT5"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    // DOM Elements
+    const pageMainHeaderEl = document.getElementById('page-main-header');
+    const forumMainTitleEl = document.getElementById('forum-main-title');
+    const forumForClassNameEl = document.getElementById('forum-for-class-name');
+    const statusMessageDivEl = document.getElementById('status-message');
+    const forumPageActionStatusEl = document.getElementById('forum-page-action-status');
+    const classroomNavLinksContainerEl = document.getElementById('classroom-nav-links-container');
+    const linkToClassInfoEl = document.getElementById('link-to-class-info');
+    const linkToMainClassroomEl = document.getElementById('link-to-main-classroom');
+    const linkToAssignmentsEl = document.getElementById('link-to-assignments');
+
+    const threadListViewEl = document.getElementById('thread-list-view');
+    const threadListContainerEl = document.getElementById('thread-list-container');
+    const createNewThreadBtnEl = document.getElementById('create-new-thread-btn');
+
+    const newThreadFormViewEl = document.getElementById('new-thread-form-view');
+    const newThreadTitleInputEl = document.getElementById('new-thread-title');
+    const newThreadFirstPostTextareaEl = document.getElementById('new-thread-first-post');
+    const submitNewThreadBtnEl = document.getElementById('submitNewThreadBtn');
+    const newThreadStatusEl = document.getElementById('new-thread-status');
+
+    const singleThreadViewContainerEl = document.getElementById('single-thread-view-container');
+    const threadTitleDisplayEl = document.getElementById('thread-title-display');
+    const threadAuthorDisplayEl = document.getElementById('thread-author-display');
+    const threadPostsContainerEl = document.getElementById('thread-posts-container');
+    const newReplyFormContainerEl = document.getElementById('new-reply-form-container');
+    const newReplyContentTextareaEl = document.getElementById('new-reply-content');
+    const submitNewReplyBtnEl = document.getElementById('submitNewReplyBtn');
+    const newReplyStatusEl = document.getElementById('new-reply-status');
+
+    // Global State
+    let currentClassId = null;
+    let currentForumIdForClass = null; // This will be the ID from forumData/forums (e.g., forum_ws_...)
+    let currentViewThreadId = null;
+    let currentUser = null;
+    let classDataGlobal = null; // From /workshops/{classId}
+    let userProfileGlobal = null; // From /users/{uid}/profile
+    let isProfessorOrAdminGlobal = false;
+
+    let forumThreadsListenerInfo = { ref: null, callback: null };
+    let forumPostsListenerInfo = { ref: null, callback: null };
+
+    // Utility Functions
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function displayActionStatus(message, type = 'loading', element = forumPageActionStatusEl) {
+        if (!element) { console.warn("displayActionStatus: Target element is null."); return; }
+        element.innerHTML = message;
+        element.className = `forum-action-status status-${type}`; // Ensure base class is present
+        element.style.display = 'block';
+        if (type === 'success' || (type === 'info' && !message.includes("Access Denied"))) {
+            setTimeout(() => {
+                if (element.style.display !== 'none' && element.textContent === message) {
+                    element.style.display = 'none';
+                }
+            }, 4000);
+        }
+    }
+
+    async function loadUserProfile(userId) {
+        if (!userId) return null;
+        try {
+            const snapshot = await db.ref(`users/${userId}/profile`).once('value');
+            return snapshot.exists() ? snapshot.val() : {};
+        } catch (error) {
+            console.error("[ClassForum] Error fetching user profile:", error);
+            return null;
+        }
+    }
+
+    // Page Initialization and View Management
+    async function initializePage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentClassId = urlParams.get('classId');
+        currentViewThreadId = urlParams.get('threadId'); // Can be null initially
+
+        if (!currentClassId) {
+            displayActionStatus('Error: No Class ID in URL.', 'error', statusMessageDivEl);
+            if(forumMainTitleEl) forumMainTitleEl.textContent = "Error - No Class Context";
+            return;
+        }
+
+        displayActionStatus('Loading...', 'loading', statusMessageDivEl);
+
+        if (!currentUser) {
+            displayActionStatus('Please log in to view class forums. <a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '">Log in</a>', 'error', statusMessageDivEl);
+            return;
+        }
+
+        userProfileGlobal = await loadUserProfile(currentUser.uid);
+        if (!userProfileGlobal) {
+            displayActionStatus('Error loading your profile. Please try again.', 'error', statusMessageDivEl);
+            return;
+        }
+
+        try {
+            const classSnapshot = await db.ref(`workshops/${currentClassId}`).once('value');
+            if (!classSnapshot.exists()) {
+                displayActionStatus(`Error: Class (ID: ${escapeHtml(currentClassId)}) not found.`, 'error', statusMessageDivEl);
+                if(forumMainTitleEl) forumMainTitleEl.textContent = "Class Not Found";
+                return;
+            }
+            classDataGlobal = classSnapshot.val();
+            classDataGlobal.id = currentClassId;
+            currentForumIdForClass = classDataGlobal.forumId; // The ID of the forum in /forumData/forums
+
+            if (!currentForumIdForClass) {
+                displayActionStatus(`Error: This class (ID: ${escapeHtml(currentClassId)}) does not have an OOC forum configured.`, "error", statusMessageDivEl);
+                if(forumMainTitleEl) forumMainTitleEl.textContent = "Forum Not Configured";
+                return;
+            }
+            
+            const forumSnapshot = await db.ref(`forumData/forums/${currentForumIdForClass}`).once('value');
+            if (!forumSnapshot.exists()){
+                displayActionStatus(`Error: Forum data for ID ${currentForumIdForClass} not found.`, "error", statusMessageDivEl);
+                if(forumMainTitleEl) forumMainTitleEl.textContent = "Forum Data Missing";
+                return;
+            }
+            const specificForumTitle = forumSnapshot.val().title || `OOC Forum: ${classDataGlobal.title || 'Class'}`;
+            if(forumMainTitleEl) forumMainTitleEl.textContent = escapeHtml(specificForumTitle);
+            if(pageMainHeaderEl) pageMainHeaderEl.textContent = escapeHtml(specificForumTitle);
+            document.title = `${escapeHtml(specificForumTitle)} - The Attic`;
+
+            setupNavigationAndPermissions();
+            
+            if (currentViewThreadId) {
+                showSingleThreadView(currentForumIdForClass, currentViewThreadId);
+            } else {
+                showThreadListView(currentForumIdForClass);
+            }
+
+        } catch (error) {
+            displayActionStatus(`Error loading initial data: ${escapeHtml(error.message)}`, 'error', statusMessageDivEl);
+            console.error("[ClassForum] Initial data load error:", error);
+        }
+    }
+
+    function setupNavigationAndPermissions() {
+        if (!classDataGlobal || !currentUser || !userProfileGlobal) return;
+
+        const isProfessor = classDataGlobal.professorUid === currentUser.uid;
+        const isAdmin = userProfileGlobal.role === 'admin';
+        const isEnrolled = classDataGlobal.enrolledStudents && classDataGlobal.enrolledStudents[currentUser.uid];
+        isProfessorOrAdminGlobal = isProfessor || isAdmin;
+
+
+        if (!isEnrolled && !isProfessor && !isAdmin) {
+            displayActionStatus('Access Denied. You are not enrolled in this class or lack permissions for its OOC forum.', 'info', statusMessageDivEl);
+            if (threadListViewEl) threadListViewEl.style.display = 'none';
+            if (createNewThreadBtnEl) createNewThreadBtnEl.style.display = 'none';
+            if (classroomNavLinksContainerEl) classroomNavLinksContainerEl.style.display = 'none';
+            return;
+        }
+
+        statusMessageDivEl.style.display = 'none'; // Hide main loading/error message
+        if(forumForClassNameEl) forumForClassNameEl.textContent = `OOC Discussion Forum for: ${escapeHtml(classDataGlobal.title || 'Unnamed Class')}`;
+        
+        if(linkToClassInfoEl) linkToClassInfoEl.href = `roleplay_class_info.html?id=${currentClassId}`;
+        if(linkToMainClassroomEl) linkToMainClassroomEl.href = `rp_classroom_main.html?classId=${currentClassId}`;
+        if(linkToAssignmentsEl) linkToAssignmentsEl.href = `rp_class_assignments.html?classId=${currentClassId}`;
+        if(classroomNavLinksContainerEl) classroomNavLinksContainerEl.style.display = 'block';
+
+        // Show "Create New Thread" button if user has general access (enrolled, prof, or admin)
+        if (createNewThreadBtnEl) createNewThreadBtnEl.style.display = 'block';
+    }
+
+    function detachListener(listenerInfo, listenerName) {
+        if (listenerInfo && listenerInfo.ref && typeof listenerInfo.ref.off === 'function' && typeof listenerInfo.callback === 'function') {
+            let pathString = 'N/A';
+            try {
+                pathString = listenerInfo.ref.path ? listenerInfo.ref.path.toString() : listenerInfo.ref.toString();
+                console.log(`[ClassForum] Detaching ${listenerName} for path: ${pathString}`);
+                listenerInfo.ref.off('value', listenerInfo.callback);
+            } catch (e) { console.error(`[ClassForum] Error during ${listenerName} detachment:`, e); }
+            listenerInfo.ref = null; listenerInfo.callback = null;
+        } else {
+            // console.log(`[ClassForum] No active listener or incomplete info for ${listenerName}.`);
+        }
+    }
+
+    function showThreadListView(forumId) {
+        detachListener(forumPostsListenerInfo, "PostsListener");
+        if(threadListViewEl) threadListViewEl.style.display = 'block';
+        if(newThreadFormViewEl) newThreadFormViewEl.style.display = 'none';
+        if(singleThreadViewContainerEl) singleThreadViewContainerEl.style.display = 'none';
+        
+        if (createNewThreadBtnEl && currentUser) { // Only show if user is logged in (access already checked by setupNavigationAndPermissions)
+             createNewThreadBtnEl.style.display = 'block';
+        } else if (createNewThreadBtnEl) {
+            createNewThreadBtnEl.style.display = 'none';
+        }
+        
+        // Update URL to remove threadId if present
+        if (currentViewThreadId) {
+            history.pushState(null, '', `rp_class_forum.html?classId=${currentClassId}`); // Removed forumId from here
+            currentViewThreadId = null;
+        }
+        renderThreads(forumId);
+    }
+    
+    window.goBackToThreadListView = function() { // Make it global for onclick
+        if (currentForumIdForClass) {
+            showThreadListView(currentForumIdForClass);
+        } else {
+            // Fallback if forum ID somehow got lost
+            window.location.href = `roleplay_class_info.html?id=${currentClassId}`;
+        }
+    }
+
+    function renderThreads(forumId) {
+        if (!threadListContainerEl) { console.error("threadListContainerEl missing!"); return; }
+        if (!forumId) { threadListContainerEl.innerHTML = '<li><p style="color:red;">Error: Forum ID invalid.</p></li>'; return; }
+        
+        threadListContainerEl.innerHTML = '<li><p>Loading threads...</p></li>';
+        
+        const threadsPath = `forumData/threads/${forumId}`;
+        const threadsRef = db.ref(threadsPath);
+        detachListener(forumThreadsListenerInfo, "ThreadsListener"); // Detach old listener
+
+        const callback = threadsSnapshot => {
+            if (!document.body.contains(threadListContainerEl)) { // Check if element is still in DOM
+                threadsRef.off('value', callback);
+                console.log("[ClassForum] Threads container detached, removing listener for", threadsPath);
+                return;
+            }
+            threadListContainerEl.innerHTML = ''; // Clear previous threads
+            if (!threadsSnapshot.exists()) {
+                threadListContainerEl.innerHTML = '<li><p style="text-align:center; padding:20px; color:#6c757d;"><em>No OOC threads yet. Be the first to start a discussion!</em></p></li>';
+                return;
+            }
+            const threadsData = threadsSnapshot.val();
+            // Sort threads by last activity (newest first)
+            const sortedThreadKeys = Object.keys(threadsData).sort((a,b) =>
+                (threadsData[b].lastPostInfo?.timestamp || threadsData[b].createdAt || 0) - (threadsData[a].lastPostInfo?.timestamp || threadsData[a].createdAt || 0)
+            );
+
+            sortedThreadKeys.forEach(threadKey => {
+                const thread = threadsData[threadKey];
+                const threadItem = document.createElement('li');
+                threadItem.className = 'thread-item';
+
+                let lastPostDisplay = "No posts yet";
+                if (thread.lastPostInfo && thread.lastPostInfo.timestamp) {
+                    lastPostDisplay = `Last: ${escapeHtml(thread.lastPostInfo.authorName || 'Unknown')} @ ${new Date(thread.lastPostInfo.timestamp).toLocaleDateString()}`;
+                } else if (thread.createdAt) {
+                    lastPostDisplay = `Started by ${escapeHtml(thread.authorName || 'Unknown')}`;
+                }
+
+                let deleteButtonHtml = '';
+                if (isProfessorOrAdminGlobal) {
+                     // Using backticks for cleaner string interpolation and to handle quotes in title easily
+                    deleteButtonHtml = `<button class="button-danger-small" onclick="confirmDeleteThreadInClassForum('${forumId}', '${threadKey}', \`${escapeHtml(thread.title.replace(/'/g, "\\'"))}\`)">Del Thread</button>`;
+                }
+
+                threadItem.innerHTML = `
+                    <div class="thread-info">
+                        <h3><a href="#" onclick="viewThread('${forumId}', '${threadKey}'); return false;">${escapeHtml(thread.title)}</a></h3>
+                        <p class="thread-meta">By ${escapeHtml(thread.authorName || 'Unknown')} on ${new Date(thread.createdAt || Date.now()).toLocaleDateString()}</p>
+                    </div>
+                    <div class="thread-stats">
+                        <span>Replies: ${thread.postCount ? Math.max(0, thread.postCount - 1) : 0}</span>
+                        <span>${lastPostDisplay}</span>
+                    </div>
+                    <div class="thread-actions">${deleteButtonHtml}</div>`;
+                threadListContainerEl.appendChild(threadItem);
+            });
+        };
+        forumThreadsListenerInfo = { ref: threadsRef, callback: callback };
+        threadsRef.on('value', callback, error => { // Listen for real-time updates
+            console.error("[ClassForum] Error fetching threads:", error);
+            if (document.body.contains(threadListContainerEl)) {
+                threadListContainerEl.innerHTML = '<li><p style="color:red;">Error loading threads. Please refresh.</p></li>';
+            }
+        });
+    }
+    
+    window.viewThread = function(forumId, threadId) { // Make global for onclick
+        detachListener(forumThreadsListenerInfo, "ThreadsListener"); // Stop listening to the list of threads
+        currentViewThreadId = threadId;
+        // Update URL to include forumId AND threadId
+        history.pushState(null, '', `rp_class_forum.html?classId=${currentClassId}&forumId=${forumId}&threadId=${threadId}`);
+        showSingleThreadView(forumId, threadId);
+    }
+
+    function showSingleThreadView(forumId, threadId) {
+        if(threadListViewEl) threadListViewEl.style.display = 'none';
+        if(newThreadFormViewEl) newThreadFormViewEl.style.display = 'none';
+        if(singleThreadViewContainerEl) singleThreadViewContainerEl.style.display = 'block';
+        
+        if (newReplyFormContainerEl && currentUser) { // Only show reply form if logged in
+            newReplyFormContainerEl.style.display = 'block';
+        } else if (newReplyFormContainerEl) {
+            newReplyFormContainerEl.style.display = 'none';
+        }
+
+        // Fetch thread details (title, author)
+        db.ref(`forumData/threads/${forumId}/${threadId}`).once('value', threadSnapshot => {
+            if (threadSnapshot.exists()) {
+                const threadData = threadSnapshot.val();
+                if(threadTitleDisplayEl) threadTitleDisplayEl.textContent = escapeHtml(threadData.title || 'Thread Not Found');
+                if(threadAuthorDisplayEl) threadAuthorDisplayEl.textContent = `Started by: ${escapeHtml(threadData.authorName || 'Unknown')} on ${new Date(threadData.createdAt || Date.now()).toLocaleDateString()}`;
+            } else {
+                if(threadTitleDisplayEl) threadTitleDisplayEl.textContent = 'Thread Not Found';
+                if(threadAuthorDisplayEl) threadAuthorDisplayEl.textContent = '';
+                if(threadPostsContainerEl) threadPostsContainerEl.innerHTML = '<p>Error: Could not load thread details.</p>';
+            }
+        });
+
+        renderPostsForThread(forumId, threadId);
+    }
+
+    function renderPostsForThread(forumId, threadId) {
+        if (!threadPostsContainerEl) { console.error("threadPostsContainerEl missing!"); return; }
+        
+        const postsPath = `forumData/posts/${threadId}`;
+        const postsRef = db.ref(postsPath);
+        detachListener(forumPostsListenerInfo, "PostsListener"); // Detach old listener for posts
+
+        threadPostsContainerEl.innerHTML = '<p>Loading posts...</p>';
+
+        const callback = snapshot => {
+            if (!document.body.contains(threadPostsContainerEl)) { // Check if element is still in DOM
+                postsRef.off('value', callback);
+                console.log("[ClassForum] Posts container detached, removing listener for", postsPath);
+                return;
+            }
+            threadPostsContainerEl.innerHTML = ''; // Clear previous posts
+            if (!snapshot.exists()) {
+                threadPostsContainerEl.innerHTML = '<p><em>No posts in this thread yet. Be the first to reply!</em></p>';
+                return;
+            }
+
+            snapshot.forEach(childSnapshot => {
+                const postKey = childSnapshot.key;
+                const post = childSnapshot.val();
+                const postDiv = document.createElement('div');
+                postDiv.className = 'post-item';
+                postDiv.id = `forum-post-${postKey}`;
+
+                let postAuthorDisplayName = post.authorName || 'Unknown User';
+                let deleteButtonHtml = '';
+                // Allow post deletion if user is admin, professor of the class, or author of the post
+                if (isProfessorOrAdminGlobal || (post.authorUid === currentUser?.uid) ) {
+                     deleteButtonHtml = `<button class="delete-forum-post-btn" onclick="confirmDeleteForumPost('${threadId}', '${postKey}', '${post.authorUid}')">Delete</button>`;
+                }
+
+                postDiv.innerHTML = `
+                    ${deleteButtonHtml}
+                    <p class="post-meta">By <strong>${escapeHtml(postAuthorDisplayName)}</strong> on ${new Date(post.createdAt || Date.now()).toLocaleString()}</p>
+                    <div class="post-content">${escapeHtml(post.content)}</div>
+                    <div class="forum-action-status" id="status-forum-post-${postKey}" style="font-size:0.8em; margin-top:5px;"></div>
+                `;
+                threadPostsContainerEl.appendChild(postDiv);
+            });
+        };
+        forumPostsListenerInfo = { ref: postsRef, callback: callback };
+        postsRef.orderByChild('createdAt').on('value', callback, error => { // Listen for real-time updates
+            console.error("[ClassForum] Error fetching posts:", error);
+            if (document.body.contains(threadPostsContainerEl)) {
+                threadPostsContainerEl.innerHTML = '<p style="color:red;"><em>Error loading posts. Please refresh.</em></p>';
+            }
+        });
+    }
+    
+    // Thread and Post Creation/Deletion Functions
+    if(createNewThreadBtnEl) {
+        createNewThreadBtnEl.addEventListener('click', () => {
+            if(threadListViewEl) threadListViewEl.style.display = 'none';
+            if(singleThreadViewContainerEl) singleThreadViewContainerEl.style.display = 'none';
+            if(newThreadFormViewEl) newThreadFormViewEl.style.display = 'block';
+            if(newThreadTitleInputEl) newThreadTitleInputEl.value = '';
+            if(newThreadFirstPostTextareaEl) newThreadFirstPostTextareaEl.value = '';
+            if(newThreadStatusEl) { newThreadStatusEl.style.display = 'none'; newThreadStatusEl.textContent = '';}
+        });
+    }
+
+    window.submitNewThread = function() {
+        if(submitNewThreadBtnEl) submitNewThreadBtnEl.disabled = true;
+        const title = newThreadTitleInputEl.value.trim();
+        const firstPostContent = newThreadFirstPostTextareaEl.value.trim();
+
+        if (!title || !firstPostContent) {
+            displayActionStatus("Title and first post content are required.", "error", newThreadStatusEl);
+            if(submitNewThreadBtnEl) submitNewThreadBtnEl.disabled = false;
+            return;
+        }
+        if (!currentUser || !userProfileGlobal || !currentForumIdForClass) {
+            displayActionStatus("Critical data missing (user, profile, or forum ID). Cannot create thread.", "error", newThreadStatusEl);
+            if(submitNewThreadBtnEl) submitNewThreadBtnEl.disabled = false;
+            return;
+        }
+        
+        const authorDisplayName = userProfileGlobal.displayName || userProfileGlobal.atticNickname || currentUser.email.split('@')[0] || "Anonymous";
+        const firstPostTimestamp = firebase.database.ServerValue.TIMESTAMP;
+
+        const newThreadRef = db.ref(`forumData/threads/${currentForumIdForClass}`).push();
+        const newThreadKey = newThreadRef.key;
+        
+        const newPostRefForFirstPost = db.ref(`forumData/posts/${newThreadKey}`).push();
+        const firstPostKey = newPostRefForFirstPost.key;
+
+        const newThreadData = {
+            title: title,
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            createdAt: firstPostTimestamp,
+            forumId: currentForumIdForClass, // Link back to the specific RP class forum
+            postCount: 1,
+            lastPostInfo: {
+                postId: firstPostKey,
+                authorUid: currentUser.uid,
+                authorName: authorDisplayName,
+                timestamp: firstPostTimestamp
+            }
+        };
+        const firstPostData = {
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            content: firstPostContent,
+            createdAt: firstPostTimestamp,
+            threadId: newThreadKey,
+            forumId: currentForumIdForClass // Also store forumId on post for easier rule checks
+        };
+
+        const updates = {};
+        updates[`/forumData/threads/${currentForumIdForClass}/${newThreadKey}`] = newThreadData;
+        updates[`/forumData/posts/${newThreadKey}/${firstPostKey}`] = firstPostData;
+        updates[`/forumData/forums/${currentForumIdForClass}/threadCount`] = firebase.database.ServerValue.increment(1);
+        updates[`/forumData/forums/${currentForumIdForClass}/postCount`] = firebase.database.ServerValue.increment(1);
+        updates[`/forumData/forums/${currentForumIdForClass}/lastPostInfo`] = {
+            threadId: newThreadKey,
+            threadTitle: title,
+            postId: firstPostKey,
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            timestamp: firstPostTimestamp
+        };
+        
+        displayActionStatus("Creating thread...", "loading", newThreadStatusEl);
+        db.ref().update(updates)
+            .then(() => {
+                if(newThreadTitleInputEl) newThreadTitleInputEl.value = '';
+                if(newThreadFirstPostTextareaEl) newThreadFirstPostTextareaEl.value = '';
+                displayActionStatus("Thread created successfully!", "success", newThreadStatusEl);
+                // Switch view to the new thread
+                viewThread(currentForumIdForClass, newThreadKey);
+            })
+            .catch(error => {
+                displayActionStatus(`Error creating thread: ${error.message}`, "error", newThreadStatusEl);
+            }).finally(() => {
+                if(submitNewThreadBtnEl) submitNewThreadBtnEl.disabled = false;
+            });
+    }
+    
+    window.submitNewReply = function() {
+        if(submitNewReplyBtnEl) submitNewReplyBtnEl.disabled = true;
+        const content = newReplyContentTextareaEl.value.trim();
+
+        if (!content) {
+            displayActionStatus("Reply content cannot be empty.", "error", newReplyStatusEl);
+            if(submitNewReplyBtnEl) submitNewReplyBtnEl.disabled = false;
+            return;
+        }
+        if (!currentUser || !userProfileGlobal || !currentViewThreadId || !currentForumIdForClass) {
+            displayActionStatus("Critical data missing (user, profile, thread ID, or forum ID). Cannot post reply.", "error", newReplyStatusEl);
+            if(submitNewReplyBtnEl) submitNewReplyBtnEl.disabled = false;
+            return;
+        }
+        
+        const authorDisplayName = userProfileGlobal.displayName || userProfileGlobal.atticNickname || currentUser.email.split('@')[0] || "Anonymous";
+        const newPostTimestamp = firebase.database.ServerValue.TIMESTAMP;
+
+        const newPostRef = db.ref(`forumData/posts/${currentViewThreadId}`).push();
+        const newPostKey = newPostRef.key;
+
+        const newPostData = {
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            content: content,
+            createdAt: newPostTimestamp,
+            threadId: currentViewThreadId,
+            forumId: currentForumIdForClass // Store forumId on post
+        };
+
+        const updates = {};
+        updates[`/forumData/posts/${currentViewThreadId}/${newPostKey}`] = newPostData;
+        
+        const threadMetaRefPath = `forumData/threads/${currentForumIdForClass}/${currentViewThreadId}`;
+        updates[`${threadMetaRefPath}/lastPostInfo`] = {
+            postId: newPostKey,
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            timestamp: newPostTimestamp
+        };
+        updates[`${threadMetaRefPath}/postCount`] = firebase.database.ServerValue.increment(1);
+
+        displayActionStatus("Posting reply...", "loading", newReplyStatusEl);
+
+        // Also update the main forum's lastPostInfo and postCount
+        db.ref(threadMetaRefPath + "/title").once('value').then(titleSnapshot => {
+            const currentThreadTitleForForumUpdate = titleSnapshot.exists() ? titleSnapshot.val() : 'A Thread';
+            updates[`/forumData/forums/${currentForumIdForClass}/postCount`] = firebase.database.ServerValue.increment(1);
+            updates[`/forumData/forums/${currentForumIdForClass}/lastPostInfo`] = {
+                threadId: currentViewThreadId,
+                threadTitle: currentThreadTitleForForumUpdate,
+                postId: newPostKey,
+                authorUid: currentUser.uid,
+                authorName: authorDisplayName,
+                timestamp: newPostTimestamp
+            };
+            return db.ref().update(updates);
+        })
+        .then(() => {
+            if(newReplyContentTextareaEl) newReplyContentTextareaEl.value = '';
+            displayActionStatus("Reply posted successfully!", "success", newReplyStatusEl);
+            // The real-time listener on posts will update the display.
+        })
+        .catch(error => {
+             displayActionStatus(`Error posting reply: ${error.message}`, "error", newReplyStatusEl);
+        }).finally(() => {
+            if(submitNewReplyBtnEl) submitNewReplyBtnEl.disabled = false;
+        });
+    }
+
+    window.confirmDeleteForumPost = function(threadId, postId, postAuthorUid) {
+        const canDelete = isProfessorOrAdminGlobal || (postAuthorUid === currentUser?.uid);
+        if (!canDelete) {
+            alert("You do not have permission to delete this post.");
+            return;
+        }
+        if (confirm("Are you sure you want to delete this post? This cannot be undone.")) {
+            deleteForumPost(threadId, postId);
+        }
+    }
+
+    window.deleteForumPost = function(threadId, postId) {
+        const statusElement = document.getElementById(`status-forum-post-${postId}`) || forumPageActionStatusEl;
+        displayActionStatus("Deleting post...", "loading", statusElement);
+
+        const postRef = db.ref(`forumData/posts/${threadId}/${postId}`);
+        postRef.remove()
+            .then(() => {
+                const updates = {};
+                updates[`/forumData/threads/${currentForumIdForClass}/${threadId}/postCount`] = firebase.database.ServerValue.increment(-1);
+                updates[`/forumData/forums/${currentForumIdForClass}/postCount`] = firebase.database.ServerValue.increment(-1);
+                // Note: Updating lastPostInfo accurately for thread/forum on post deletion is complex and often skipped for performance.
+                // The next new post or thread will update it.
+                return db.ref().update(updates);
+            })
+            .then(() => {
+                displayActionStatus("Post deleted successfully.", "success", statusElement);
+                // The real-time listener for posts should update the UI by removing the post.
+                // Or, explicitly remove the div:
+                const postDiv = document.getElementById(`forum-post-${postId}`);
+                if (postDiv) postDiv.remove();
+            })
+            .catch(error => {
+                console.error("[ClassForum] Error deleting forum post:", error);
+                displayActionStatus(`Error deleting post: ${error.message}.`, "error", statusElement);
+            });
+    }
+    
+    // Auth State Change Listener
+    auth.onAuthStateChanged(user => {
+        currentUser = user;
+        initializePage(); // This will now handle fetching profile, class, forum, and then loading content.
+    });
+
+// Add this function to rp_class_forum.html
+    function confirmDeleteThreadInClassForum(forumId, threadId, threadTitle) {
+        if (!isProfessorOrAdminGlobal) {
+            alert("You do not have permission to delete threads in this class forum.");
+            return;
+        }
+        if (!confirm(`Are you sure you want to permanently delete the thread "${threadTitle}" (ID: ${threadId}) and all its posts from this class forum?\n\nThis action CANNOT be undone.`)) {
+            return;
+        }
+        deleteForumThreadCoreLogic(forumId, threadId, threadTitle, 'forum-page-action-status'); // Use main status div
+    }
+
+    // Core logic (can be shared or adapted if you want to refactor forum_view.html later)
+    async function deleteForumThreadCoreLogic(forumId, threadId, threadTitleForDisplay, statusElementId) {
+        const statusEl = document.getElementById(statusElementId);
+        displayActionStatus(`Deleting thread "${threadTitleForDisplay}"...`, 'loading', statusEl);
+
+        if (!firebase || !firebase.database || !forumId || !threadId) {
+            displayActionStatus("Error: Missing necessary information or database connection to delete the thread.", 'error', statusEl);
+            console.error("deleteForumThreadCoreLogic: Missing IDs or DB. ForumID:", forumId, "ThreadID:", threadId);
+            return;
+        }
+
+        const db = firebase.database();
+        let postsInThreadCount = 0;
+
+        try {
+            // 1. Get the number of posts in the thread
+            const threadPostCountSnapshot = await db.ref(`forumData/threads/${forumId}/${threadId}/postCount`).once('value');
+            postsInThreadCount = threadPostCountSnapshot.val() || 0;
+
+            // 2. Prepare atomic updates for deleting thread metadata and all its posts
+            const updates = {};
+            updates[`/forumData/threads/${forumId}/${threadId}`] = null;
+            updates[`/forumData/posts/${threadId}`] = null; // This deletes all posts under that threadId
+
+            await db.ref().update(updates);
+            console.log(`Thread ${threadId} and its posts data removed from Firebase.`);
+
+            // 3. Update the forum's threadCount and postCount using a transaction
+            const forumMetaRef = db.ref(`forumData/forums/${forumId}`);
+            const transactionResult = await forumMetaRef.transaction(currentForumData => {
+                if (currentForumData) {
+                    currentForumData.threadCount = Math.max(0, (currentForumData.threadCount || 0) - 1);
+                    currentForumData.postCount = Math.max(0, (currentForumData.postCount || 0) - postsInThreadCount);
+                    // For simplicity, lastPostInfo update is skipped here. It will update with the next new post/thread.
+                }
+                return currentForumData;
+            });
+
+            if (!transactionResult.committed) {
+                console.warn("Transaction to update forum counts for thread deletion was not committed for forum:", forumId, "Thread:", threadId);
+            }
+
+            displayActionStatus(`Thread "${threadTitleForDisplay}" and its posts have been deleted.`, 'success', statusEl);
+            // The real-time listener in renderThreads should automatically refresh the list.
+        } catch (error) {
+            console.error("Error deleting thread:", error);
+            displayActionStatus(`Failed to delete thread "${threadTitleForDisplay}": ${error.message}`, 'error', statusEl);
+        }
+    }
+    </script>
+</body>
+</html>

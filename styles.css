@@ -1,0 +1,245 @@
+body {
+    font-family: 'Open Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f8f8;
+    color: #444;
+    line-height: 1.7;
+   }
+   
+   header {
+    background-color: #556b2f;
+    color: #f5f5dc;
+    padding: 30px 20px;
+    text-align: center;
+   }
+   
+   header h1 {
+    font-family: 'Merriweather', serif;
+    margin-bottom: 10px;
+    font-size: 2.5em;
+    font-weight: 700;
+   }
+   
+   header p {
+    font-size: 1.1em;
+    font-style: italic;
+    color: #dcdcdc;
+   }
+   
+   section {
+    padding: 30px;
+    margin: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+   }
+   
+   #call-to-action {
+    text-align: center;
+   }
+   
+   button {
+    background-color: #8fbc8f;
+    color: #fff;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    margin: 10px;
+    transition: background-color 0.3s ease;
+   }
+   
+   button:hover {
+    background-color: #6e8b6e;
+   }
+   
+   footer {
+    background-color: #556b2f;
+    color: #f5f5dc;
+    text-align: center;
+    padding: 15px;
+    font-size: 0.9em;
+    bottom: 0;
+    width: 100%;
+   }
+   
+   /* Specific styling for the welcome container (top section) */
+   .welcome-container {
+    background-color: #f0f8f0;
+    /* Light green background for the top section */
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+   }
+   
+   .welcome-container h2 {
+    color: #556b2f;
+    /* Darker green for heading in the top section */
+    margin-top: 0;
+   }
+   
+   .welcome-container p,
+   .welcome-container li,
+   .welcome-container h3 {
+    color: #333;
+    /* Dark gray for text in the top section */
+   }
+   
+   .welcome-container h3 {
+    border-bottom: 2px solid #8fbc8f;
+    /* Muted green underline for subheadings */
+    padding-bottom: 5px;
+   }
+   
+   .welcome-container ul {
+    list-style-type: none;
+    padding-left: 0;
+   }
+   
+   .welcome-container li {
+    margin-bottom: 5px;
+   }
+   
+   .welcome-container .account-actions {
+    margin-top: 20px;
+    /* Add space before the login form */
+   }
+   
+   .welcome-container .account-actions form {
+    margin-top: 10px;
+   }
+   
+   .welcome-container .account-actions .register-link {
+    margin-top: 15px;
+    font-size: 0.9em;
+   }
+   
+   .welcome-container .form-group {
+    margin-bottom: 15px;
+   }
+   
+   .welcome-container .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+   }
+   
+   .welcome-container .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+   }
+   
+   /* Added styling for the "Back to Home" links */
+   .home-link {
+    margin-top: 20px;
+    text-align: center;
+   }
+   
+   .home-link a {
+    color: #8fbc8f;
+    text-decoration: none;
+   }
+   
+   .home-link a:hover {
+    text-decoration: underline;
+   }
+   /* Added styling for the "Back to Home" links */
+ .home-link {
+    margin-top: 20px;
+    text-align: center;
+   }
+  
+   .home-link a {
+    color: #8fbc8f;
+    text-decoration: none;
+   }
+  
+   .home-link a:hover {
+    text-decoration: underline;
+   }
+   <style>
+   /* Basic styling for forum list */
+   .category-container {
+       background-color: #e9f5e9; /* Light green background for category */
+       border: 1px solid #d4e9d4;
+       margin-bottom: 20px;
+       border-radius: 8px;
+       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+   }
+   .category-header {
+       background-color: #8fbc8f; /* Darker green from your styles.css */
+       color: white;
+       padding: 10px 15px;
+       border-top-left-radius: 8px;
+       border-top-right-radius: 8px;
+       font-size: 1.2em;
+       font-weight: bold;
+   }
+   .forum-item {
+       background-color: #fff;
+       border-bottom: 1px solid #eee;
+       padding: 15px;
+       display: flex; /* Use flexbox for layout */
+       justify-content: space-between; /* Space out elements */
+       align-items: center; /* Vertically align items */
+   }
+   .forum-item:last-child {
+       border-bottom: none;
+       border-bottom-left-radius: 8px;
+       border-bottom-right-radius: 8px;
+   }
+   .forum-info h4 {
+       margin: 0 0 5px 0;
+   }
+   .forum-info h4 a {
+       text-decoration: none;
+       color: #556b2f; /* Dark olive green */
+       font-weight: 600;
+   }
+    .forum-info h4 a:hover {
+       text-decoration: underline;
+   }
+   .forum-info p {
+       margin: 0;
+       font-size: 0.9em;
+       color: #666;
+   }
+   .forum-stats {
+       text-align: right;
+       font-size: 0.9em;
+       color: #777;
+       min-width: 100px; /* Ensure stats area has some width */
+   }
+    .forum-stats span {
+       display: block; /* Put each stat on its own line */
+       margin-bottom: 3px;
+    }
+
+    /* Add to your styles.css file */
+.forum-item.locked-forum {
+    opacity: 0.6; /* Make it dimmer */
+    background-color: #f8f8f8; /* Slightly different background */
+    border-left: 3px solid #ccc; /* Add a visual cue */
+}
+
+.forum-item.locked-forum:hover {
+     /* Optional: Prevent hover effects if desired */
+    background-color: #f8f8f8;
+    box-shadow: none;
+}
+
+.forum-item.locked-forum .forum-info h4 a {
+    color: #666; /* Dim the title color */
+    cursor: default; /* Indicate it's not clickable (even though JS prevents it) */
+}
+
+.forum-item.locked-forum .forum-info h4 a:hover {
+     text-decoration: none; /* Remove hover underline */
+}
+
+</style>

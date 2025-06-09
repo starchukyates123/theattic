@@ -1,0 +1,242 @@
+<<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to The Attic - Alternative Academy</title>
+  <link rel="stylesheet" href="styles.css">
+ 
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+  authDomain: "attic-4ae31.firebaseapp.com",
+  projectId: "attic-4ae31",
+  storageBucket: "attic-4ae31.firebasestorage.app",
+  messagingSenderId: "259372678655",
+  appId: "1:259372678655:web:df9c03e07e022392837bca",
+  measurementId: "G-2WWH3YVXT5"
+};
+    // Initialize Firebase
+     try {
+         if (typeof firebase !== 'undefined') {
+             if (!firebase.apps.length) {
+                 firebase.initializeApp(firebaseConfig);
+                 console.log("Firebase initialized on index.html!");
+             } else {
+                 firebase.app(); // Use existing app
+                 console.log("Firebase already initialized on index.html.");
+             }
+         } else {
+             console.error("Firebase object is undefined! Check SDK script tags.");
+         }
+     } catch (initError) {
+         console.error("Error during Firebase initialization:", initError);
+     }
+   </script>
+ </head>
+
+<body>
+ <header>
+  <h1>Welcome to The Attic - Alternative Academy</h1>
+  <p class="tagline">An alternative school for modern times, designed for ages 13+</p>
+ </header>
+
+ <main>
+  <div class="welcome-container">
+   <div class="mission-overview">
+    <h3>Our Mission</h3>
+    <p>
+     The Attic - Alternative Academy is a unique online learning community and forum for teens and adults.
+     We provide an alternative educational experience focused on community, engagement, and flexibility.
+    </p>
+   </div>
+
+   <hr>
+
+   <div class="magnet-programs">
+    <h3>Explore Our Magnet Programs</h3>
+    <p>
+     To enhance your experience, we offer specialized "Magnet Programs":
+    </p>
+    <ul>
+     <li><strong>Eco-Explorers:</strong> For those passionate about the environment.</li>
+     <li><strong>Thinkers:</strong> Focused on problem-solving and logical thinking.</li>
+     <li><strong>Movers:</strong> Emphasizing physical activity and hands-on creation.</li>
+     <li><strong>Creative Expressionists:</strong> Celebrating artistic and creative talents.</li>
+     <li><strong>Kind World Builders:</strong> Dedicated to helping others and building community.</li>
+    </ul>
+    <p>
+     Each program has its own forum and learning space for in-character and out-of-character interactions.
+    </p>
+   </div>
+
+   <hr>
+
+   <div class="courses-overview">
+    <h3>Our Learning Approach</h3>
+    <p>
+     We offer a range of Year 1 classes with a flexible structure to suit diverse learning needs:
+    </p>
+    <ul>
+     <li><strong>Core Track:</strong> Essential, supportive lessons for all learners.</li>
+     <li><strong>Deep Dive Options:</strong> Optional challenges for advanced learners.</li>
+     <li><strong>Mastery Mini-Quests:</strong> Project-based activities to earn Mastery Badges.</li>
+     <li><strong>Lounge Forums:</strong> Community spaces for each class to share and connect.</li>
+    </ul>
+   </div>
+
+   <hr>
+
+   <div class="account-actions">
+    <h3>Get Started</h3>
+    <p>
+     To get started, register for an account. After logging in, you'll complete a short application to join a Magnet Program.
+    </p>
+    <form id="loginForm">
+     <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+     </div>
+     <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+     </div>
+     <button type="submit">Log In</button>
+    </form>
+    <div class="register-link">
+     Don't have an account? <a href="register.html">Register here</a>
+    </div>
+   </div>
+  </div>
+ </main>
+ <div class="home-link">
+   <a href="index.html">Back to Home</a>
+  </div>
+ <footer>
+  <p>&copy; 2025 The Attic - Alternative Academy</p>
+ </footer>
+
+ <script>
+  // Get references to the form elements
+  const loginForm = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+
+  // Add an event listener to the form submission
+  // Replace the entire loginForm.addEventListener('submit', ...) function 
+  // in BOTH login.html AND index.html with this corrected version:
+
+ // ----- START: COPY THIS ENTIRE BLOCK -----
+loginForm.addEventListener('submit', (event) => {
+    event.preventDefault(); 
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    if (!firebase || !firebase.auth || !firebase.database) {
+        alert("Firebase is not ready. Please refresh the page.");
+        console.error("Firebase auth or database object is not available.");
+        return;
+    }
+
+    // --- Start Firebase Login ---
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then((userCredential) => { // Open .then for signIn
+        // Login successful (Auth part)
+        const user = userCredential.user;
+        const userUid = user.uid;
+        const isIndexPage = (typeof document !== 'undefined' && document.title.includes("Welcome")); // Check if we are on index.html
+        const logPrefix = isIndexPage ? "(via index.html):" : "(via login.html):"; 
+        console.log("Authentication successful for:", userUid, logPrefix); 
+
+        // Now check the database for onboarding status and role
+        return firebase.database().ref('users/' + userUid + '/profile').once('value')
+          // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+          // THIS is the single, correct block for checking profile and redirecting 
+          .then((snapshot) => { // Open .then for once('value')
+              // Database read successful
+              const userData = snapshot.val();
+              console.log("User profile data from DB:", userData, logPrefix); 
+
+              // --- ONBOARDING CHECK LOGIC ---
+              // Check if profile exists
+              if (!userData) {
+                  console.log("Redirecting to attic_gateway.html (profile missing)", logPrefix);
+                  alert("Welcome! Please complete your entry into The Attic.");
+                  window.location.href = 'attic_gateway.html';
+                  return; 
+              }
+              
+              // 1. Check Gateway Completion
+              if (userData.gatewayComplete !== true) {
+                  console.log("Redirecting to attic_gateway.html (gateway incomplete)", logPrefix);
+                  alert("Please complete your entry into The Attic.");
+                  window.location.href = 'attic_gateway.html';
+                  return; 
+              }
+
+              // 2. Check Orientation Completion (only if gateway IS complete)
+              if (userData.orientationComplete !== true) {
+                  console.log("Redirecting to first_day_orientation.html (orientation incomplete)", logPrefix);
+                  alert("Welcome back! Please complete your Orientation Day.");
+                  window.location.href = 'first_day_orientation.html';
+                  return; 
+              }
+
+              // --- ONBOARDING COMPLETE - Proceed with normal checks ---
+              
+              // 3. Check for Admin Role
+              if (userData.role === 'admin') {
+                  console.log("Redirecting to dashboard.html (admin)", logPrefix);
+                  alert("Admin login successful! Redirecting to dashboard.");
+                  window.location.href = 'dashboard.html'; // Or admin.html if preferred
+                  return; 
+              }
+
+              // 4. Default Logged-in User (Onboarding Complete, Not Admin)
+              console.log("Redirecting to dashboard.html (onboarding complete)", logPrefix);
+              // Use preferred nickname if available from gateway
+              alert("Login successful! Welcome back to The Attic, " + (userData.atticNickname || userData.displayName || user.email) + ".");
+              window.location.href = 'dashboard.html';
+              return; 
+          }) // Close .then for once('value')
+          .catch((dbError) => { // Open .catch for once('value')
+              // Database read FAILED
+              console.error('Error reading user profile data from database:', dbError, logPrefix);
+              alert('Login successful, but could not verify your onboarding status due to a database error. Proceeding to dashboard.');
+              console.log("Redirecting to dashboard.html (DB read error)", logPrefix);
+              window.location.href = 'dashboard.html'; 
+              return; 
+          }); // Close .catch for once('value')
+          // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          // End of the single, correct block for checking profile and redirecting
+
+    }) // Close .then for signIn
+    .catch((authError) => { // Open .catch() for authentication errors
+        // Authentication FAILED
+        const errorCode = authError.code;
+        const errorMessage = authError.message;
+        let friendlyMessage = "Login failed: " + errorMessage;
+        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
+            friendlyMessage = "Login failed: Incorrect email or password.";
+        } else if (errorCode === 'auth/invalid-email') {
+            friendlyMessage = "Login failed: Please enter a valid email address.";
+        } else if (errorCode === 'auth/user-disabled') {
+             friendlyMessage = "Login failed: This account has been disabled.";
+        }
+        alert(friendlyMessage);
+        console.error("Authentication error:", authError);
+    }); // Close .catch() for authentication errors
+
+  }); // Close event listener callback
+// ----- END: COPY THIS ENTIRE BLOCK -----
+      // ...
+ </script>
+</body>
+
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Thread - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .form-container { padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px; }
+        .form-container label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-container input[type="text"],
+        .form-container textarea {
+            width: 95%; /* Allow padding */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-container textarea { min-height: 150px; resize: vertical; }
+        #status-message {
+             margin-top: 15px;
+             padding: 10px;
+             border-radius: 5px;
+             display: none; /* Hidden by default */
+             font-weight: bold;
+        }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Create New Thread</h1>
+        <p id="forum-context" style="color: #dcdcdc; font-style: italic;">Loading forum context...</p>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <form id="createThreadForm">
+                <div class="form-group">
+                    <label for="threadTitle">Thread Title:</label>
+                    <input type="text" id="threadTitle" name="threadTitle" required maxlength="150">
+                </div>
+                <div class="form-group">
+                    <label for="threadContent">Your Post:</label>
+                    <textarea id="threadContent" name="threadContent" required minlength="10"></textarea>
+                </div>
+                <button type="submit" id="submitThreadButton" class="button">Submit Thread</button>
+                <div id="status-message"></div>
+            </form>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <button id="backToForumButton" class="button" style="display: none;">Back to Forum</button>
+            <button onclick="window.location.href='forums.html'" class="button">Back to Forum List</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        // --- Initialize Firebase ---
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on create_thread.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase Auth or Database SDK not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                 const body = document.querySelector('body');
+                 if(body) body.innerHTML = `<p style='color:red; padding:20px;'>Error initializing site services. Please try again later.</p>`;
+            });
+        }
+
+        // --- Get Element References ---
+        const createThreadForm = document.getElementById('createThreadForm');
+        const threadTitleInput = document.getElementById('threadTitle');
+        const threadContentInput = document.getElementById('threadContent');
+        const submitThreadButton = document.getElementById('submitThreadButton');
+        const statusMessageDiv = document.getElementById('status-message');
+        const forumContextHeader = document.getElementById('forum-context');
+        const backToForumButton = document.getElementById('backToForumButton');
+
+        // --- Global Variables ---
+        let currentUser = null;
+        let currentForumId = null;
+        let currentForumTitle = "the forum"; // Default for messages
+
+        // --- Helper Function: Show Status Message ---
+        function showStatus(message, type = 'error') {
+            if (!statusMessageDiv) {
+                console.warn("statusMessageDiv not found to show message:", message);
+                return;
+            }
+            statusMessageDiv.textContent = message;
+            statusMessageDiv.className = `status-message status-${type}`; //
+            statusMessageDiv.style.display = 'block';
+
+            if (type === 'success' || type === 'processing' || type === 'info') {
+                setTimeout(() => {
+                    if (statusMessageDiv.textContent === message) {
+                         statusMessageDiv.style.display = 'none';
+                    }
+                }, 4000);
+            }
+        }
+
+        // --- Get Forum ID from URL ---
+        function getForumIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('forumId');
+        }
+
+        // --- Fetch Forum Title for Context ---
+        function fetchForumContext() {
+            if (!currentForumId || !firebase?.database) {
+                console.warn("fetchForumContext: Missing currentForumId or Firebase DB.");
+                if(forumContextHeader) forumContextHeader.textContent = 'Error loading forum context.';
+                return;
+            }
+            const forumRef = firebase.database().ref(`forumData/forums/${currentForumId}/title`);
+            forumRef.once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        currentForumTitle = snapshot.val();
+                        if(forumContextHeader) forumContextHeader.textContent = `Creating thread in: ${currentForumTitle}`; //
+                    } else {
+                         if(forumContextHeader) forumContextHeader.textContent = `Creating thread in unknown forum (${currentForumId})`; //
+                    }
+                    if (backToForumButton) {
+                         backToForumButton.style.display = 'inline-block'; //
+                         backToForumButton.onclick = () => { window.location.href = `forum_view.html?id=${currentForumId}`; }; //
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching forum title:", error);
+                    if(forumContextHeader) forumContextHeader.textContent = `Error loading forum context.`;
+                });
+        }
+
+        // --- Check Authentication and Forum ID ---
+        function initializePage() {
+            if (!submitThreadButton) { 
+                console.error("Critical: submitThreadButton not found on page load during initializePage!");
+                if (createThreadForm) createThreadForm.style.display = 'none'; 
+                showStatus("Page error: Submit button missing. Cannot proceed.", "error");
+                return;
+            }
+            submitThreadButton.disabled = true; 
+
+            currentForumId = getForumIdFromUrl();
+            if (!currentForumId) {
+                showStatus('Error: Forum ID is missing from the URL. Cannot create thread.', 'error'); //
+                if(forumContextHeader) forumContextHeader.textContent = 'Error: Invalid Forum'; //
+                return; 
+            }
+
+            if (!firebase?.auth || !firebase?.database) {
+                showStatus('Error: Could not connect to essential site services.', 'error');
+                return; 
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    console.log("User authenticated in initializePage:", currentUser.uid);
+                    if (submitThreadButton) submitThreadButton.disabled = false; //
+                    fetchForumContext();
+                } else {
+                    currentUser = null;
+                    showStatus('You must be logged in to create a thread. Redirecting...', 'error'); //
+                    if (submitThreadButton) submitThreadButton.disabled = true; //
+                    const redirectUrl = `login.html?redirect=create_thread.html?forumId=${encodeURIComponent(currentForumId)}`; //
+                    setTimeout(() => { window.location.href = redirectUrl; }, 2500); //
+                }
+            });
+        }
+
+        // --- Handle Form Submission ---
+        if (createThreadForm) {
+            createThreadForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                console.log("Submit triggered. CurrentUser object at submit start:", currentUser ? "Exists" : "NULL");
+
+                if (!currentUser) {
+                    showStatus('Error: You must be logged in to create a thread. Please refresh if you believe you are logged in.', 'error'); //
+                    console.error("Submit attempt while currentUser is null.");
+                    return;
+                }
+                if (!currentForumId) {
+                    showStatus('Error: Forum ID missing. Cannot create thread.', 'error'); //
+                    console.error("Submit attempt while currentForumId is null.");
+                    return;
+                }
+
+                const threadTitle = threadTitleInput.value.trim();
+                const threadContent = threadContentInput.value.trim();
+
+                if (!threadTitle || !threadContent) {
+                    showStatus('Please enter both a title and content for your post.', 'error'); //
+                    return;
+                }
+                if (threadContent.length < 10) { //
+                    showStatus('Post content must be at least 10 characters long.', 'error'); //
+                    return;
+                }
+
+                if(submitThreadButton) submitThreadButton.disabled = true; //
+                showStatus('Submitting thread...', 'processing'); //
+
+                const db = firebase.database();
+                const timestamp = firebase.database.ServerValue.TIMESTAMP;
+                
+                const authorDisplayName = currentUser.displayName;
+                const authorEmail = currentUser.email;
+                const authorName = authorDisplayName || authorEmail || 'Anonymous'; //
+                
+                console.log(`Author details: Name='${authorName}', DisplayName='${authorDisplayName}', Email='${authorEmail}'`);
+
+                const newThreadRef = db.ref(`forumData/threads/${currentForumId}`).push(); //
+                const newThreadId = newThreadRef.key; //
+                const newPostRef = db.ref(`forumData/posts/${newThreadId}`).push(); //
+                const newPostId = newPostRef.key; //
+
+                const threadData = {
+                    title: threadTitle,
+                    authorUid: currentUser.uid,
+                    authorName: authorName,
+                    createdAt: timestamp,
+                    postCount: 1,
+                    forumId: currentForumId, // <<< CORRECTED: Added forumId
+                    lastPostInfo: {
+                        postId: newPostId,
+                        authorUid: currentUser.uid,
+                        authorName: authorName,
+                        timestamp: timestamp
+                    }
+                };
+
+                const postData = {
+                    authorUid: currentUser.uid,
+                    authorName: authorName,
+                    content: threadContent,
+                    createdAt: timestamp,
+                    forumId: currentForumId, // <<< CORRECTED: Added forumId
+                    threadId: newThreadId    // <<< CORRECTED: Added threadId
+                };
+
+                const forumLastPostUpdate = {
+                    threadId: newThreadId,
+                    threadTitle: threadTitle,
+                    postId: newPostId,
+                    authorUid: currentUser.uid,
+                    authorName: authorName,
+                    timestamp: timestamp
+                };
+
+                const updates = {};
+                updates[`/forumData/threads/${currentForumId}/${newThreadId}`] = threadData; //
+                updates[`/forumData/posts/${newThreadId}/${newPostId}`] = postData; //
+                updates[`/forumData/forums/${currentForumId}/threadCount`] = firebase.database.ServerValue.increment(1); //
+                updates[`/forumData/forums/${currentForumId}/postCount`] = firebase.database.ServerValue.increment(1); //
+                updates[`/forumData/forums/${currentForumId}/lastPostInfo`] = forumLastPostUpdate; //
+
+                db.ref().update(updates)
+                    .then(() => {
+                        console.log("Thread created successfully!", newThreadId);
+                        showStatus('Thread created!', 'success'); //
+                        window.location.href = `thread_view.html?id=${newThreadId}&forumId=${currentForumId}`; //
+                    })
+                    .catch((error) => {
+                        console.error("Error creating thread:", error);
+                        showStatus(`Error creating thread: ${error.message}`, 'error'); //
+                        if(submitThreadButton) submitThreadButton.disabled = false; //
+                    });
+            });
+        } else {
+            console.error("CRITICAL: createThreadForm element not found in the DOM when trying to add event listener!");
+            document.addEventListener('DOMContentLoaded', () => { 
+                showStatus("Critical page error: The main form is missing. Please contact support.", "error");
+                const mainContent = document.querySelector('main');
+                if(mainContent) mainContent.innerHTML = '<p style="color:red; padding:20px; text-align:center;">This page cannot function because a critical element (the submission form) is missing. Please contact the site administrator.</p>';
+            });
+        }
+
+        // --- Initial Page Load Logic ---
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+
+</body>
+</html>

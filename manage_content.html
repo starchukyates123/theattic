@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Course Content - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+      // --- Firebase Configuration ---
+      const firebaseConfig = {
+          apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+          authDomain: "attic-4ae31.firebaseapp.com",
+          projectId: "attic-4ae31",
+          storageBucket: "attic-4ae31.firebasestorage.app",
+          messagingSenderId: "259372678655",
+          appId: "1:259372678655:web:df9c03e07e022392837bca",
+          databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+      };
+
+      // Initialize Firebase
+      try {
+          if (typeof firebase !== 'undefined') {
+              if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+              if (!firebase.database) console.error("DB SDK missing!");
+              if (!firebase.auth) console.error("Auth SDK missing!");
+          } else { console.error("Firebase core missing!"); }
+      } catch (initError) { console.error("Firebase init error:", initError); }
+    </script>
+    <style>
+        /* Basic styles for the editor (from your existing file) */
+        #content-editor-container { padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px; }
+        .week-editor { border: 1px solid #eee; padding: 15px; margin-bottom: 20px; border-radius: 5px; background-color: #f9f9f9; }
+        .week-editor h4 { margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .week-editor label { display: block; margin-top: 10px; font-weight: bold; }
+        .week-editor input[type="text"], .week-editor textarea, .week-editor select {
+            width: 95%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;
+            box-sizing: border-box; /* Ensure padding doesn't add to width */
+        }
+        .week-editor textarea { min-height: 80px; resize: vertical; }
+        .save-status-week { margin-left: 10px; font-weight: bold; font-size: 0.9em; }
+        .week-editor button.save-specific-week-btn { margin-top: 15px; padding: 8px 15px; font-size: 1em; }
+
+        /* Tab Navigation Styles */
+        #week-tabs-nav .week-tab-button {
+            padding: 8px 15px; cursor: pointer; border: 1px solid #ccc; border-bottom: none;
+            background-color: #f0f0f0; margin-right: 5px; border-radius: 5px 5px 0 0; outline: none;
+        }
+        #week-tabs-nav .week-tab-button.active {
+            background-color: #fff; border-bottom: 1px solid #fff; font-weight: bold; color: #556b2f;
+        }
+        .week-editor { display: none; }
+        .week-editor.active { display: block; }
+
+        /* "Save All" Button Status */
+        #saveAllStatus { margin-top: -10px; margin-bottom: 20px; font-weight: bold; padding: 5px; text-align: center; }
+
+        /* Quiz Editor Styles */
+        .quiz-editor-section { margin-top: 20px; padding-top: 15px; border-top: 2px solid #8fbc8f; }
+        .quiz-editor-section h4 { color: #556b2f; }
+        .quiz-question-item { border:1px dashed #ccc; padding:15px; margin-bottom:15px; background-color: #fff; border-radius: 4px; }
+        .quiz-question-item textarea { width: calc(100% - 16px); min-height: 50px; } /* Adjusted width */
+        .quiz-options-container .quiz-option-item { display:flex; align-items:center; margin-bottom:8px; }
+        .quiz-options-container .quiz-option-text { flex-grow:1; margin-right:8px; padding: 6px; }
+        .quiz-options-container .quiz-option-correct-label { margin-right:8px; font-weight:normal; display:flex; align-items:center;}
+        .quiz-options-container .quiz-option-correct { margin-right: 4px; }
+        .button-small { font-size:0.85em !important; padding: 4px 8px !important; margin-left: 5px; }
+        .form-group { margin-bottom:10px;} /* Consistent spacing */
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Manage Weekly Content</h1>
+        <h2 id="course-title-display" style="color: #dcdcdc; font-style: italic;">Loading course...</h2>
+    </header>
+
+    <main>
+        <div id="admin-check-message" style="display: block; padding: 20px; margin: 20px; background-color: #ffebee; border: 1px solid #ef5350; border-radius: 8px; color: #c62828;">
+             <p>Verifying admin access...</p>
+        </div>
+
+        <div id="content-editor-container" style="display: none;">
+            <div id="week-tabs-nav" style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+                </div>
+
+            <button type="button" id="saveAllWeeksButton" class="button" style="margin-bottom: 20px; background-color: #28a745;">Save All Weeks for This Course</button>
+            <div id="saveAllStatus"></div>
+
+            <div id="weekly-forms-container">
+                <p>Loading weekly content editor...</p>
+                </div>
+        </div>
+
+         <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+             <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+             <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+         </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        // --- Global DOM Element References ---
+        const courseTitleDisplay = document.getElementById('course-title-display');
+        const weeklyFormsContainer = document.getElementById('weekly-forms-container');
+        const editorContainer = document.getElementById('content-editor-container');
+        const adminCheckMessage = document.getElementById('admin-check-message');
+        const tabsNavContainer = document.getElementById('week-tabs-nav');
+        const saveAllWeeksButton = document.getElementById('saveAllWeeksButton');
+        const saveAllStatusDiv = document.getElementById('saveAllStatus');
+        // For the new button
+        const addDefaultThreadsButton = document.getElementById('addDefaultThreadsButton');
+        const defaultThreadsStatusDiv = document.getElementById('defaultThreadsStatus');
+
+
+        // --- Global State Variables ---
+        let currentCourseId = null;
+        let currentUserProfile = null;
+        let questionCounter = 0;
+
+        // --- Constants ---
+        const MAX_WEEKS_STANDARD = 12;
+        const EXAM_WEEK_NUM = 13;
+
+        // --- Helper Functions ---
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- Admin Authentication & Page Initialization ---
+        function checkContentAdminStatus(user) {
+           if (user) {
+                const profileRef = firebase.database().ref('users/' + user.uid + '/profile');
+                profileRef.once('value').then(snapshot => {
+                    currentUserProfile = snapshot.val(); // Keep this for admin name
+                    if (snapshot.exists() && currentUserProfile && currentUserProfile.role === 'admin') {
+                        adminCheckMessage.style.display = 'none';
+                        editorContainer.style.display = 'block';
+                        console.log("Admin access verified. Loading course content.");
+                        loadCourseAndContent();
+                    } else {
+                        adminCheckMessage.innerHTML = '<p><strong>Access Denied:</strong> You do not have permission.</p>';
+                        editorContainer.style.display = 'none';
+                    }
+                }).catch(error => {
+                    console.error("Error fetching admin profile:", error);
+                    adminCheckMessage.innerHTML = '<p><strong>Error:</strong> Could not verify privileges.</p>';
+                    editorContainer.style.display = 'none';
+                });
+            } else {
+                adminCheckMessage.innerHTML = '<p>Admin access required. Redirecting to login...</p>';
+                editorContainer.style.display = 'none';
+                setTimeout(() => { window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search); }, 2000);
+            }
+        }
+
+        // --- Course Data Loading & Form Generation ---
+        function loadCourseAndContent() {
+            currentCourseId = getQueryParam('id');
+            if (!currentCourseId) {
+                courseTitleDisplay.textContent = "Error: No Course ID Provided";
+                weeklyFormsContainer.innerHTML = '<p style="color: red;">Cannot load content without course ID.</p>';
+                if(saveAllWeeksButton) saveAllWeeksButton.disabled = true;
+                if(addDefaultThreadsButton) addDefaultThreadsButton.disabled = true;
+                return;
+            }
+            console.log("Loading content for course ID:", currentCourseId);
+            if(saveAllWeeksButton) saveAllWeeksButton.disabled = false;
+            if(addDefaultThreadsButton) addDefaultThreadsButton.disabled = false;
+
+
+            const courseRef = firebase.database().ref('courses/' + currentCourseId);
+            courseRef.once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const courseData = snapshot.val();
+                    courseTitleDisplay.textContent = courseData.title || `Course: ${currentCourseId}`;
+                    document.title = `Manage Content: ${courseData.title || currentCourseId}`;
+                    console.log("Course data loaded:", courseData);
+                    generateWeeklyFormsAndQuizBuilders(courseData.weeks || {});
+                    initializeTabs();
+                } else {
+                    courseTitleDisplay.textContent = `Error: Course ${currentCourseId} Not Found`;
+                    weeklyFormsContainer.innerHTML = `<p style="color: red;">Could not find data for course ID: ${currentCourseId}.</p>`;
+                    console.error("Course not found in database:", currentCourseId);
+                }
+            }).catch(error => {
+                console.error("Error fetching course data:", error);
+                courseTitleDisplay.textContent = "Error Loading Course Title";
+                weeklyFormsContainer.innerHTML = `<p style="color: red;">Error fetching course data: ${error.message}</p>`;
+            });
+        }
+
+        // ... (generateWeeklyFormsAndQuizBuilders, createWeekFormHTMLWithQuiz, initializeTabs, createTabButton, showWeekTab - keep these as they are) ...
+        // ... (toggleQuizEditor, addQuizQuestionHandler, addQuizOptionHandler, populateQuizEditor, collectQuizDataForWeek - keep these as they are) ...
+        function generateWeeklyFormsAndQuizBuilders(existingWeeksData) {
+            let formsHTML = '';
+            for (let i = 1; i <= MAX_WEEKS_STANDARD; i++) {
+                formsHTML += createWeekFormHTMLWithQuiz(i.toString(), existingWeeksData);
+            }
+            formsHTML += createWeekFormHTMLWithQuiz(EXAM_WEEK_NUM.toString(), existingWeeksData, true);
+            weeklyFormsContainer.innerHTML = formsHTML;
+
+            for (let i = 1; i <= MAX_WEEKS_STANDARD; i++) {
+                const weekNumStr = i.toString();
+                if (existingWeeksData[weekNumStr] && existingWeeksData[weekNumStr].quiz) {
+                    populateQuizEditor(weekNumStr, existingWeeksData[weekNumStr].quiz);
+                }
+            }
+            if (existingWeeksData[EXAM_WEEK_NUM.toString()] && existingWeeksData[EXAM_WEEK_NUM.toString()].quiz) {
+                populateQuizEditor(EXAM_WEEK_NUM.toString(), existingWeeksData[EXAM_WEEK_NUM.toString()].quiz);
+            }
+        }
+
+        function createWeekFormHTMLWithQuiz(weekNumStr, existingWeeksData, isExamWeek = false) {
+            const weekData = existingWeeksData[weekNumStr] || {};
+            const weekTitle = isExamWeek ? `Exam Week ${weekNumStr}` : `Week ${weekNumStr}`;
+            const storyline = weekData.storyline || '';
+            const topic = weekData.topic || '';
+            const summary = weekData.summary || '';
+            const assignment = weekData.assignment || '';
+            const quizStatus = weekData.quiz ? weekData.quiz.status : 'none';
+            const quizTitle = weekData.quiz ? weekData.quiz.title : '';
+
+            return `
+                <div class="week-editor" id="week-editor-${weekNumStr}">
+                    <h4>${weekTitle}</h4>
+                    <div class="form-group">
+                        <label for="week-${weekNumStr}-storyline">Weekly Storyline Prompt/Scenario:</label>
+                        <textarea id="week-${weekNumStr}-storyline" rows="3">${storyline}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="week-${weekNumStr}-topic">Topic:</label>
+                        <input type="text" id="week-${weekNumStr}-topic" value="${topic}">
+                    </div>
+                    <div class="form-group">
+                        <label for="week-${weekNumStr}-summary">Summary:</label>
+                        <textarea id="week-${weekNumStr}-summary" rows="5">${summary}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="week-${weekNumStr}-assignment">Assignment:</label>
+                        <textarea id="week-${weekNumStr}-assignment" rows="5">${assignment}</textarea>
+                    </div>
+
+                    <div class="quiz-editor-section">
+                        <h5>Weekly Quiz Setup</h5>
+                        <div class="form-group">
+                            <label for="week-${weekNumStr}-quiz-status">Quiz Status:</label>
+                            <select id="week-${weekNumStr}-quiz-status" onchange="toggleQuizEditor('${weekNumStr}', this.value)">
+                                <option value="none" ${quizStatus === 'none' ? 'selected' : ''}>No Quiz</option>
+                                <option value="optional" ${quizStatus === 'optional' ? 'selected' : ''}>Optional Quiz</option>
+                                <option value="mandatory" ${quizStatus === 'mandatory' ? 'selected' : ''}>Mandatory Quiz</option>
+                            </select>
+                        </div>
+                        <div id="week-${weekNumStr}-quiz-builder" style="display:${quizStatus === 'none' ? 'none' : 'block'}; margin-top:10px; padding:15px; background-color:#f0f8f0; border:1px solid #d4e9d4; border-radius:5px;">
+                            <div class="form-group">
+                                <label for="week-${weekNumStr}-quiz-title">Quiz Title (Optional):</label>
+                                <input type="text" id="week-${weekNumStr}-quiz-title" placeholder="e.g., Week ${weekNumStr} Knowledge Check" value="${quizTitle}">
+                            </div>
+                            <div id="week-${weekNumStr}-questions-container">
+                                </div>
+                            <button type="button" class="button button-small" onclick="addQuizQuestionHandler('${weekNumStr}')" style="margin-top:10px; background-color: #007bff;">+ Add Question</button>
+                        </div>
+                    </div>
+                    <button type="button" class="button save-specific-week-btn" onclick="saveSpecificWeek('${weekNumStr}')">Save ${weekTitle} Content</button>
+                    <span id="save-status-week-${weekNumStr}" class="save-status-week"></span>
+                </div>
+            `;
+        }
+
+        function initializeTabs() {
+            if (!tabsNavContainer || !weeklyFormsContainer) {
+                console.error("Tab containers not found!"); return;
+            }
+            tabsNavContainer.innerHTML = '';
+            let firstAvailableWeekNum = null;
+
+            for (let i = 1; i <= MAX_WEEKS_STANDARD; i++) {
+                const weekNum = i.toString();
+                if (document.getElementById(`week-editor-${weekNum}`)) {
+                    createTabButton(weekNum, `Week ${weekNum}`);
+                    if (!firstAvailableWeekNum) firstAvailableWeekNum = weekNum;
+                }
+            }
+            if (document.getElementById(`week-editor-${EXAM_WEEK_NUM}`)) {
+                 createTabButton(EXAM_WEEK_NUM.toString(), `Exam Week ${EXAM_WEEK_NUM}`);
+                 if (!firstAvailableWeekNum) firstAvailableWeekNum = EXAM_WEEK_NUM.toString();
+            }
+            if (firstAvailableWeekNum) showWeekTab(firstAvailableWeekNum);
+        }
+
+        function createTabButton(weekNum, buttonText) {
+            const tabButton = document.createElement('button');
+            tabButton.textContent = buttonText;
+            tabButton.className = 'week-tab-button';
+            tabButton.setAttribute('data-weeknum', weekNum);
+            tabButton.onclick = function() { showWeekTab(weekNum); };
+            tabsNavContainer.appendChild(tabButton);
+        }
+
+        function showWeekTab(weekNumToShow) {
+            const weekEditors = weeklyFormsContainer.querySelectorAll('.week-editor');
+            weekEditors.forEach(editor => editor.classList.remove('active'));
+            const tabButtons = tabsNavContainer.querySelectorAll('.week-tab-button');
+            tabButtons.forEach(button => button.classList.remove('active'));
+            const activeEditor = document.getElementById(`week-editor-${weekNumToShow}`);
+            if (activeEditor) activeEditor.classList.add('active');
+            const activeButton = tabsNavContainer.querySelector(`.week-tab-button[data-weeknum="${weekNumToShow}"]`);
+            if (activeButton) activeButton.classList.add('active');
+        }
+
+        function toggleQuizEditor(weekNum, status) {
+            const quizBuilderDiv = document.getElementById(`week-${weekNum}-quiz-builder`);
+            if (quizBuilderDiv) {
+                quizBuilderDiv.style.display = (status === 'none') ? 'none' : 'block';
+            }
+        }
+
+        function addQuizQuestionHandler(weekNum) {
+            const questionsContainer = document.getElementById(`week-${weekNum}-questions-container`);
+            if (!questionsContainer) return;
+            questionCounter++;
+
+            const questionItem = document.createElement('div');
+            questionItem.className = 'quiz-question-item';
+            questionItem.innerHTML = `
+                <div class="form-group">
+                    <label>Question Text (${questionsContainer.children.length + 1}):</label>
+                    <textarea class="quiz-question-text" rows="2" placeholder="Enter question"></textarea>
+                </div>
+                <div class="quiz-options-container">
+                    </div>
+                <button type="button" class="button button-small" onclick="addQuizOptionHandler(this.previousElementSibling, '${weekNum}-q${questionCounter}')" style="background-color: #17a2b8;">+ Add Option</button>
+                <button type="button" class="button button-small" onclick="this.parentElement.remove()" style="background-color:#dc3545;">Remove Question</button>
+            `;
+            questionsContainer.appendChild(questionItem);
+            addQuizOptionHandler(questionItem.querySelector('.quiz-options-container'), `${weekNum}-q${questionCounter}`);
+            addQuizOptionHandler(questionItem.querySelector('.quiz-options-container'), `${weekNum}-q${questionCounter}`);
+        }
+
+        function addQuizOptionHandler(optionsContainer, questionGroupName) {
+            if (!optionsContainer) return;
+            const optionItem = document.createElement('div');
+            optionItem.className = 'quiz-option-item';
+            optionItem.innerHTML = `
+                <input type="text" class="quiz-option-text" placeholder="Option text ${optionsContainer.children.length + 1}" style="flex-grow:1; margin-right:5px;">
+                <label class="quiz-option-correct-label"><input type="radio" name="radio-correct-${questionGroupName}" class="quiz-option-correct"> Correct?</label>
+                <button type="button" class="button button-small" onclick="this.parentElement.remove()" style="background-color:#fd7e14; color:white;">&times;</button>
+            `;
+            optionsContainer.appendChild(optionItem);
+        }
+
+        function populateQuizEditor(weekNum, quizData) {
+            const statusSelect = document.getElementById(`week-${weekNum}-quiz-status`);
+            const titleInput = document.getElementById(`week-${weekNum}-quiz-title`);
+            const questionsContainer = document.getElementById(`week-${weekNum}-questions-container`);
+
+            if (statusSelect) statusSelect.value = quizData.status || 'none';
+            toggleQuizEditor(weekNum, statusSelect.value);
+            if (titleInput) titleInput.value = quizData.title || '';
+            if (questionsContainer) questionsContainer.innerHTML = '';
+
+            if (quizData.questions && Array.isArray(quizData.questions)) {
+                quizData.questions.forEach((qData, index) => {
+                    questionCounter++;
+                    const questionItem = document.createElement('div');
+                    questionItem.className = 'quiz-question-item';
+                    let optionsHTML = '';
+                    if (qData.options && Array.isArray(qData.options)) {
+                        qData.options.forEach((optData, optIndex) => {
+                            optionsHTML += `
+                                <div class="quiz-option-item">
+                                    <input type="text" class="quiz-option-text" value="${escapeHtml(optData.text || '')}" style="flex-grow:1; margin-right:5px;">
+                                    <label class="quiz-option-correct-label"><input type="radio" name="radio-correct-${weekNum}-q${questionCounter}" class="quiz-option-correct" ${optData.isCorrect ? 'checked' : ''}> Correct?</label>
+                                    <button type="button" class="button button-small" onclick="this.parentElement.remove()" style="background-color:#fd7e14; color:white;">&times;</button>
+                                </div>`;
+                        });
+                    }
+
+                    questionItem.innerHTML = `
+                        <div class="form-group">
+                            <label>Question Text (${index + 1}):</label>
+                            <textarea class="quiz-question-text" rows="2">${escapeHtml(qData.text || '')}</textarea>
+                        </div>
+                        <div class="quiz-options-container">${optionsHTML}</div>
+                        <button type="button" class="button button-small" onclick="addQuizOptionHandler(this.previousElementSibling, '${weekNum}-q${questionCounter}')" style="background-color: #17a2b8;">+ Add Option</button>
+                        <button type="button" class="button button-small" onclick="this.parentElement.remove()" style="background-color:#dc3545;">Remove Question</button>
+                    `;
+                    if (questionsContainer) questionsContainer.appendChild(questionItem);
+                });
+            }
+        }
+
+        function collectQuizDataForWeek(weekNum) {
+            const quizStatusSelect = document.getElementById(`week-${weekNum}-quiz-status`);
+            const status = quizStatusSelect ? quizStatusSelect.value : 'none';
+
+            if (status === 'none') {
+                return null;
+            }
+
+            const quizTitleInput = document.getElementById(`week-${weekNum}-quiz-title`);
+            const questionsContainer = document.getElementById(`week-${weekNum}-questions-container`);
+
+            const quizData = {
+                status: status,
+                title: quizTitleInput ? quizTitleInput.value.trim() : '',
+                questions: []
+            };
+
+            if (questionsContainer) {
+                const questionItems = questionsContainer.querySelectorAll('.quiz-question-item');
+                questionItems.forEach((qItem, qIndex) => {
+                    const qTextarea = qItem.querySelector('.quiz-question-text');
+                    const questionData = {
+                        id: `q${qIndex + 1}`,
+                        type: "multiple-choice",
+                        text: qTextarea ? qTextarea.value.trim() : '',
+                        options: []
+                    };
+
+                    const optionItems = qItem.querySelectorAll('.quiz-options-container .quiz-option-item');
+                    optionItems.forEach(optItem => {
+                        const optText = optItem.querySelector('.quiz-option-text');
+                        const optCorrect = optItem.querySelector('.quiz-option-correct');
+                        if (optText && optCorrect) {
+                            questionData.options.push({
+                                text: optText.value.trim(),
+                                isCorrect: optCorrect.checked
+                            });
+                        }
+                    });
+                    quizData.questions.push(questionData);
+                });
+            }
+            return quizData;
+        }
+
+        async function createDefaultThreadsInForum(targetForumId, courseTitle, adminUserId, adminDisplayName) {
+    if (!adminUserId || !adminDisplayName) {
+        console.warn("LOG: Admin details not provided for default threads. Using generic. AdminUID:", adminUserId, "AdminName:", adminDisplayName);
+        adminUserId = "system_fallback_uid";
+        adminDisplayName = "Course Moderator";
+    }
+
+    console.log(`LOG: Attempting to create default threads for forum: ${targetForumId} (Course: ${courseTitle}) by Admin: ${adminDisplayName} (ID: ${adminUserId})`);
+
+    const defaultThreadsToCreate = [
+        {
+            title: `❓ Questions about ${courseTitle}`,
+            initialPostContent: `Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to "${courseTitle}", please post them here as a reply or start a new discussion.\n\nLet's learn together!`
+        },
+        {
+            title: `💬 General Chat and Introductions for ${courseTitle}`,
+            initialPostContent: `Hi everyone enrolled in "${courseTitle}"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?`
+        },
+        // --- NEW DEFAULT THREAD ADDED HERE ---
+        {
+            title: `🤝 Study Group and Collaboration Corner for ${courseTitle}`,
+            initialPostContent: `Looking to form a study group for "${courseTitle}"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!`
+        }
+        // You can add more default thread definitions here
+    ];
+
+    let threadsSuccessfullyCreated = 0;
+    for (const threadDef of defaultThreadsToCreate) {
+        console.log(`LOG: Preparing to create default thread: "${threadDef.title}"`);
+        try {
+            const threadsRef = firebase.database().ref(`forumData/threads/${targetForumId}`);
+            const newThreadRef = threadsRef.push();
+            const threadId = newThreadRef.key;
+            console.log(`LOG: Generated new threadId: ${threadId}`);
+
+            const postsRef = firebase.database().ref(`forumData/posts/${threadId}`);
+            const newPostRef = postsRef.push();
+            const postId = newPostRef.key;
+            console.log(`LOG: Generated new postId: ${postId}`);
+
+            const timestamp = firebase.database.ServerValue.TIMESTAMP;
+            const threadData = {
+                title: threadDef.title, forumId: targetForumId, authorId: adminUserId, authorName: adminDisplayName,
+                createdAt: timestamp, lastReplyAt: timestamp, postCount: 1, firstPostId: postId, isPinned: true // Pinned by default
+            };
+            const postData = {
+                threadId: threadId, forumId: targetForumId, authorId: adminUserId, authorName: adminDisplayName,
+                content: threadDef.initialPostContent, createdAt: timestamp
+            };
+
+            const updates = {};
+            updates[`forumData/threads/${targetForumId}/${threadId}`] = threadData;
+            updates[`forumData/posts/${threadId}/${postId}`] = postData;
+
+            const forumMetaRef = firebase.database().ref(`forumData/forums/${targetForumId}`);
+            console.log(`LOG: Fetching current metadata for forum ${targetForumId} before update.`);
+            const forumSnapshot = await forumMetaRef.once('value');
+            const currentForumData = forumSnapshot.val() || {};
+            console.log(`LOG: Current forum metadata:`, currentForumData);
+
+            updates[`forumData/forums/${targetForumId}/threadCount`] = (currentForumData.threadCount || 0) + 1;
+            updates[`forumData/forums/${targetForumId}/postCount`] = (currentForumData.postCount || 0) + 1;
+            updates[`forumData/forums/${targetForumId}/lastPostInfo`] = {
+                threadId: threadId, postId: postId, authorId: adminUserId, authorName: adminDisplayName,
+                timestamp: timestamp, threadTitle: threadDef.title
+            };
+
+            console.log(`LOG: Updates object for thread "${threadDef.title}":`, JSON.parse(JSON.stringify(updates)));
+            await firebase.database().ref().update(updates);
+            threadsSuccessfullyCreated++;
+            console.log(`LOG: SUCCESS - Default thread "${threadDef.title}" created in ${targetForumId}`);
+        } catch (error) {
+            console.error(`LOG: ERROR creating default thread "${threadDef.title}" for ${targetForumId}:`, error);
+        }
+    }
+    console.log(`LOG: Finished creating default threads. Total successful: ${threadsSuccessfullyCreated}`);
+    return threadsSuccessfullyCreated;
+}
+
+        window.saveSpecificWeek = function(weekNum) {
+            // ... (your existing saveSpecificWeek function - keep as is) ...
+            if (!currentCourseId) return alert("Error: No course ID loaded.");
+            const statusSpan = document.getElementById(`save-status-week-${weekNum}`);
+            const saveBtn = document.querySelector(`#week-editor-${weekNum} .save-specific-week-btn`);
+            if (!statusSpan || !saveBtn) { console.error("Elements missing for week", weekNum); return; }
+
+            statusSpan.textContent = "Saving..."; statusSpan.style.color = "orange"; saveBtn.disabled = true;
+
+            const weekContentData = {
+                storyline: document.getElementById(`week-${weekNum}-storyline`)?.value.trim() || '',
+                topic: document.getElementById(`week-${weekNum}-topic`)?.value.trim() || '',
+                summary: document.getElementById(`week-${weekNum}-summary`)?.value.trim() || '',
+                assignment: document.getElementById(`week-${weekNum}-assignment`)?.value.trim() || ''
+            };
+            
+            weekContentData.quiz = collectQuizDataForWeek(weekNum);
+
+            const isEmptyLesson = !weekContentData.topic && !weekContentData.summary && !weekContentData.assignment && !weekContentData.storyline;
+            const isQuizEffectivelyEmpty = !weekContentData.quiz || weekContentData.quiz.status === 'none';
+
+            const weekRef = firebase.database().ref(`courses/${currentCourseId}/weeks/${weekNum}`);
+            let savePromise;
+
+            if (isEmptyLesson && isQuizEffectivelyEmpty) {
+                savePromise = weekRef.remove(); 
+            } else {
+                if (weekContentData.quiz && weekContentData.quiz.status === 'none') {
+                    weekContentData.quiz = null; 
+                }
+                savePromise = weekRef.set(weekContentData);
+            }
+
+            savePromise.then(() => {
+                statusSpan.textContent = "Saved!"; statusSpan.style.color = "green";
+            }).catch(error => {
+                statusSpan.textContent = `Error: ${error.message}`; statusSpan.style.color = "red";
+            }).finally(() => {
+                saveBtn.disabled = false;
+                setTimeout(() => { if (statusSpan) statusSpan.textContent = ""; }, 3000);
+            });
+        };
+
+        if (saveAllWeeksButton) {
+            saveAllWeeksButton.addEventListener('click', function() {
+                console.log("LOG: 'Save All Weeks' button clicked.");
+                if (!currentCourseId) {
+                    alert("Error: No course ID loaded. Cannot save all weeks.");
+                    if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "Error: Course ID missing."; saveAllStatusDiv.style.color = "red"; }
+                    return;
+                }
+                this.disabled = true;
+                if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "Saving all weeks..."; saveAllStatusDiv.style.color = "orange"; }
+
+                const allWeeksPayload = {};
+                let maxExistingWeekNum = 0;
+                const weekEditorDivs = weeklyFormsContainer.querySelectorAll('.week-editor');
+                weekEditorDivs.forEach(div => {
+                    const numStr = div.id.split('-').pop(); const num = parseInt(numStr);
+                    if (!isNaN(num) && num > maxExistingWeekNum) maxExistingWeekNum = num;
+                });
+                for (let i = 1; i <= maxExistingWeekNum; i++) {
+                    const weekNumStr = i.toString();
+                    if (document.getElementById(`week-editor-${weekNumStr}`)) {
+                        allWeeksPayload[weekNumStr] = {
+                            storyline: document.getElementById(`week-${weekNumStr}-storyline`)?.value.trim() || '',
+                            topic: document.getElementById(`week-${weekNumStr}-topic`)?.value.trim() || '',
+                            summary: document.getElementById(`week-${weekNumStr}-summary`)?.value.trim() || '',
+                            assignment: document.getElementById(`week-${weekNumStr}-assignment`)?.value.trim() || '',
+                            quiz: collectQuizDataForWeek(weekNumStr)
+                        };
+                        if (allWeeksPayload[weekNumStr].quiz && allWeeksPayload[weekNumStr].quiz.status === 'none') {
+                           allWeeksPayload[weekNumStr].quiz = null; // Ensure 'none' quiz status removes the quiz node
+                        }
+                         const isEmptyLesson = !allWeeksPayload[weekNumStr].topic && !allWeeksPayload[weekNumStr].summary && !allWeeksPayload[weekNumStr].assignment && !allWeeksPayload[weekNumStr].storyline;
+                         const isQuizEffectivelyEmpty = !allWeeksPayload[weekNumStr].quiz; // Simpler check now
+                         if (isEmptyLesson && isQuizEffectivelyEmpty) {
+                            allWeeksPayload[weekNumStr] = null;
+                         }
+                    }
+                }
+                console.log("LOG: All weeks payload prepared:", JSON.parse(JSON.stringify(allWeeksPayload)));
+
+                const weeksRef = firebase.database().ref(`courses/${currentCourseId}/weeks`);
+                weeksRef.set(allWeeksPayload)
+                    .then(() => {
+                        console.log("LOG: All weeks successfully saved to Firebase.");
+                        if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "All weeks saved successfully! Ensuring course forum exists..."; saveAllStatusDiv.style.color = "green"; }
+                        
+                        const courseTitleText = courseTitleDisplay.textContent;
+                        const actualCourseTitle = (courseTitleText && !courseTitleText.startsWith("Error:") && !courseTitleText.startsWith("Loading course...")) ? courseTitleText : currentCourseId;
+                        const courseForumId = `forum_${currentCourseId}`;
+                        const courseForumPath = `forumData/forums/${courseForumId}`;
+                        const courseLoungeCategoryId = "course_lounges";
+                        console.log(`LOG: Checking/Creating forum. Course: ${actualCourseTitle}, Forum ID: ${courseForumId}, Path: ${courseForumPath}`);
+
+                        return firebase.database().ref(courseForumPath).once('value')
+                            .then(snapshot => {
+                                console.log(`LOG: Snapshot for forum path ${courseForumPath} exists:`, snapshot.exists());
+                                if (!snapshot.exists()) {
+                                    console.log(`LOG: Forum ${courseForumId} does not exist. Creating...`);
+                                    const newForumData = {
+                                        categoryId: courseLoungeCategoryId, title: `Course Lounge: ${actualCourseTitle}`,
+                                        description: `Discussions for the course: ${actualCourseTitle}.`,
+                                        postCount: 0, threadCount: 0, createdAt: firebase.database.ServerValue.TIMESTAMP
+                                    };
+                                    console.log("LOG: New forum data to be set:", JSON.parse(JSON.stringify(newForumData)));
+                                    return firebase.database().ref(courseForumPath).set(newForumData)
+                                        .then(() => {
+                                            console.log(`LOG: Successfully CREATED forum shell for ${courseForumId}.`);
+                                            return 'created';
+                                        })
+                                        .catch(err => {
+                                            console.error(`LOG: ERROR creating forum shell for ${courseForumId}:`, err);
+                                            throw err; // Propagate error
+                                        });
+                                } else {
+                                    console.log(`LOG: Forum ${courseForumId} already exists.`);
+                                    return 'existed'; // No need for Promise.resolve here, just return the string
+                                }
+                            });
+                    })
+                    .then((forumStatus) => {
+                        console.log(`LOG: Forum status received: ${forumStatus}`);
+                        const courseTitleForThreads = (courseTitleDisplay.textContent && !courseTitleDisplay.textContent.startsWith("Error:") && !courseTitleDisplay.textContent.startsWith("Loading course...")) ? courseTitleDisplay.textContent : currentCourseId;
+                        const courseForumId = `forum_${currentCourseId}`; // Ensure this is in scope
+
+                        if (forumStatus === 'created') {
+                            console.log(`LOG: Course forum ${courseForumId} was newly created. Attempting to add default threads.`);
+                            if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "All weeks saved. Forum created. Adding default threads..."; }
+
+                            const adminUID = firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'system_fallback_uid';
+                            const adminName = (currentUserProfile?.atticNickname || currentUserProfile?.displayName || "Course Moderator");
+                            console.log(`LOG: Calling createDefaultThreadsInForum for ${courseForumId} with title "${courseTitleForThreads}", adminUID "${adminUID}", adminName "${adminName}"`);
+                            
+                            return createDefaultThreadsInForum(courseForumId, courseTitleForThreads, adminUID, adminName)
+                                .then(threadsCreatedCount => {
+                                    console.log(`LOG: createDefaultThreadsInForum returned: ${threadsCreatedCount} threads created.`);
+                                    if (threadsCreatedCount > 0) {
+                                        if (saveAllStatusDiv) { saveAllStatusDiv.textContent = `All weeks saved. Forum created with ${threadsCreatedCount} default thread(s).`; }
+                                    } else {
+                                        if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "All weeks saved. Forum created (default threads not added, or error in process)."; }
+                                    }
+                                    return 'forum_and_threads_processed';
+                                });
+                        } else if (forumStatus === 'existed') {
+                            console.log(`LOG: Course forum ${courseForumId} already existed. No default threads will be added by this 'Save All Weeks' operation.`);
+                            if (saveAllStatusDiv) { saveAllStatusDiv.textContent = "All weeks saved. Course forum already exists."; }
+                            return 'forum_existed';
+                        }
+                        console.warn(`LOG: Unknown forum status: ${forumStatus}`);
+                        return 'unknown_forum_status';
+                    })
+                    .catch(error => {
+                        console.error("LOG: ERROR in 'Save All Weeks' chain (weeks, forum shell, or default threads):", error);
+                        if (saveAllStatusDiv) { saveAllStatusDiv.textContent = `Error: ${error.message}`; saveAllStatusDiv.style.color = "red"; }
+                    })
+                    .finally(() => {
+                        console.log("LOG: 'Save All Weeks' process finished (finally block).");
+                        this.disabled = false;
+                        if (saveAllStatusDiv) {
+                            setTimeout(() => {
+                                if (saveAllStatusDiv.textContent.includes("saved") || saveAllStatusDiv.textContent.includes("Error:") || saveAllStatusDiv.textContent.includes("exists") || saveAllStatusDiv.textContent.includes("threads")) {
+                                   saveAllStatusDiv.textContent = "";
+                                }
+                            }, 7000);
+                        }
+                    });
+            });
+        }
+
+        // Event listener for the new "Add Default Threads" button
+        if (addDefaultThreadsButton) {
+            addDefaultThreadsButton.addEventListener('click', function() {
+                console.log("LOG: 'Add Default Threads' button clicked.");
+                if (!currentCourseId) {
+                    alert("Error: No course ID loaded. Cannot add default threads.");
+                    if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = "Error: Course ID missing."; defaultThreadsStatusDiv.style.color = "red"; }
+                    return;
+                }
+                if (!currentUserProfile) {
+                    alert("Error: Admin profile not loaded. Please wait or reload.");
+                    if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = "Error: Admin profile not available."; defaultThreadsStatusDiv.style.color = "red"; }
+                    return;
+                }
+
+                this.disabled = true;
+                if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = "Checking forum and attempting to add default threads..."; defaultThreadsStatusDiv.style.color = "orange"; }
+
+                const courseTitleForThreads = (courseTitleDisplay.textContent && !courseTitleDisplay.textContent.startsWith("Error:") && !courseTitleDisplay.textContent.startsWith("Loading course...")) ? courseTitleDisplay.textContent : currentCourseId;
+                const courseForumId = `forum_${currentCourseId}`;
+                const adminUID = firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'system_fallback_uid';
+                const adminName = (currentUserProfile?.atticNickname || currentUserProfile?.displayName || "Course Moderator");
+                const courseForumPath = `forumData/forums/${courseForumId}`;
+                console.log(`LOG: 'Add Default Threads' initiated for forum ${courseForumId}`);
+
+                firebase.database().ref(courseForumPath).once('value')
+                    .then(snapshot => {
+                        if (!snapshot.exists()) {
+                            console.warn(`LOG: Forum shell for ${courseForumId} does not exist. Cannot add default threads. Advise running 'Save All Weeks'.`);
+                            if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = "Forum shell not found. Please 'Save All Weeks' first to create the forum."; defaultThreadsStatusDiv.style.color = "red"; }
+                            this.disabled = false; // Re-enable button
+                            return Promise.reject('forum_shell_missing_for_add_button'); 
+                        }
+                        console.log(`LOG: Forum shell for ${courseForumId} exists. Proceeding to call createDefaultThreadsInForum.`);
+                        return createDefaultThreadsInForum(courseForumId, courseTitleForThreads, adminUID, adminName);
+                    })
+                    .then(threadsCreatedCount => {
+                        // This block will only be reached if the previous .then() didn't reject
+                        if (typeof threadsCreatedCount === 'number') { // Ensure it's the count, not the rejection string
+                            console.log(`LOG: createDefaultThreadsInForum returned: ${threadsCreatedCount} for 'Add Default Threads' button.`);
+                            if (threadsCreatedCount > 0) {
+                                if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = `${threadsCreatedCount} default thread(s) added successfully.`; defaultThreadsStatusDiv.style.color = "green"; }
+                            } else {
+                                if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = "No new default threads added (check console for details if errors occurred within createDefaultThreadsInForum)."; defaultThreadsStatusDiv.style.color = "orange"; }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        if (error !== 'forum_shell_missing_for_add_button') {
+                            console.error("LOG: ERROR in 'Add Default Threads' button logic:", error);
+                            if (defaultThreadsStatusDiv) { defaultThreadsStatusDiv.textContent = `Error adding default threads: ${error.message}`; defaultThreadsStatusDiv.style.color = "red"; }
+                        }
+                        // If error is 'forum_shell_missing_for_add_button', it's already handled by the message
+                    })
+                    .finally(() => {
+                        console.log("LOG: 'Add Default Threads' process finished (finally block).");
+                        this.disabled = false; 
+                        setTimeout(() => {
+                            if (defaultThreadsStatusDiv && (defaultThreadsStatusDiv.textContent.includes("added") || defaultThreadsStatusDiv.textContent.includes("Error") || defaultThreadsStatusDiv.textContent.includes("not found") || defaultThreadsStatusDiv.textContent.includes("No new"))) {
+                               defaultThreadsStatusDiv.textContent = "";
+                            }
+                        }, 7000);
+                    });
+            });
+        }
+
+        // --- Initial Page Load Trigger ---
+        if (firebase && firebase.auth) {
+            firebase.auth().onAuthStateChanged(checkContentAdminStatus);
+        } else { 
+            console.error("LOG: Firebase or Firebase Auth not available on initial page script run.");
+            adminCheckMessage.innerHTML = '<p><strong>CRITICAL ERROR:</strong> Firebase services not loaded. Please refresh or contact support.</p>';
+            adminCheckMessage.style.display = 'block';
+            editorContainer.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

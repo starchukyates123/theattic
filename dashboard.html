@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Dashboard - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* Basic styling for dashboard cards if not already in styles.css */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .dashboard-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .dashboard-card h3 {
+            margin-top: 0;
+            color: #556b2f; /* Using a theme color */
+        }
+        .course-list-widget {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .course-list-widget li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex; /* For aligning button */
+            justify-content: space-between; /* For aligning button */
+            align-items: center; /* For aligning button */
+        }
+        .course-list-widget li:last-child {
+            border-bottom: none;
+        }
+        .course-list-widget button { /* Style for unregister button */
+            margin-left: 10px;
+            padding: 3px 8px;
+            font-size: 0.9em;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #toggle-courses-btn { /* Style for the new button */
+            display: block; /* Or inline-block */
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #toggle-courses-btn:hover {
+            background-color: #5a6268;
+        }
+        /* Styling for the new Opportunities card links */
+        .opportunities-links a {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            background-color: #8fbc8f; /* Theme green */
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        .opportunities-links a:hover {
+            background-color: #79a079; /* Darker green on hover */
+        }
+        /* Styling for the standalone Explore Roleplay Classes button */
+        .explore-rp-classes-button {
+            background-color: #556b2f;
+            color: white;
+            padding: 10px 15px;
+            margin: 5px; /* Keep its own margin */
+            text-decoration: none; /* If it were an 'a' tag */
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            display: block; /* Make it a block to center it if it's the only item in a grid cell */
+            /* To make it span full width if desired, and be centered if it's in its own row:
+               grid-column: 1 / -1;
+               margin-left: auto;
+               margin-right: auto;
+               max-width: 300px; /* Optional: constrain its max width */
+            */
+        }
+        .explore-rp-classes-button:hover {
+            background-color: #6B8E23;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+    <h1>The Attic - Your Dashboard</h1>
+    <nav>
+        <a href="index.html" style="margin-right: 15px;">Home</a>
+        <a href="courses.html" style="margin-right: 15px;">Courses</a>
+        <a href="forums.html" style="margin-right: 15px;">Forums</a>
+        <a href="account_settings.html">My Account</a>
+        <button id="signOutBtn" style="background-color: #dc3545; color: white; margin-left: 15px;">Sign Out</button> 
+    </nav>
+</header>
+
+    <main>
+        <div class="dashboard-grid">
+            <div class="dashboard-card" id="welcome-user">
+                <h2 id="user-greeting">Welcome!</h2>
+                <p id="user-dashboard-intro">This is your personal hub for The Attic. What would you like to explore today?</p>
+                <div id="admin-link-container" style="display: none; margin-top:15px;">
+                    <button onclick="window.location.href='admin.html'">Admin Centre</button>
+                </div>
+                <div id="ta-link-container" style="display: none; margin-top:15px;">
+                    <button onclick="window.location.href='ta_centre.html'">TA Centre</button>
+                </div>
+                <div id="professor-link-container" style="display: none; margin-top:15px;">
+                    <button onclick="window.location.href='professor_dashboard.html'">Professor Dashboard</button>
+                </div>
+            </div>
+
+            <div class="dashboard-card" id="magnet-program-card">
+                <h3>Your Magnet Program</h3>
+                <div id="magnet-program-info">
+                    <p>Loading program details...</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card" id="current-courses-card">
+                <h3>Your Current Courses</h3>
+                <div id="current-courses-list">
+                    <p>Loading your courses...</p>
+                </div>
+                <button id="toggle-courses-btn" style="display:none;">See all courses</button>
+            </div>
+
+            <div class="dashboard-card" id="forum-activity-card">
+                <h3>Recent Forum Activity</h3>
+                <div id="recent-forum-activity">
+                    <p>Forum activity updates will appear here. (Feature coming soon)</p>
+                    </div>
+            </div>
+
+            <div class="dashboard-card" id="opportunities-card">
+                <h3>Opportunities</h3>
+                <p>Want to get more involved in The Attic community?</p>
+                <div class="opportunities-links">
+                    <a href="apply_for_ta.html">Apply to be a TA</a>
+                    <a href="apply_for_professor.html">Apply to be a Professor</a>
+                    <a href="request_special_access.html">Join Support/Special Groups</a>
+                </div>
+            </div>
+
+            <div class="dashboard-card" id="chronicle-card">
+                <h3>Your Chronicle</h3>
+                <div id="chronicle-summary">
+                    <p>A summary of your recent Chronicle entries or opportunities will appear here. (Feature coming soon)</p>
+                    <p style="margin-top:10px;"><a href="my_story.html">View My Story</a> | <a href="chronicle_opportunities.html">Find Opportunities</a></p>
+                </div>
+            </div>
+            
+            <button class="explore-rp-classes-button" onclick="window.location.href='roleplay_class_listings.html'">
+                Explore Roleplay Classes
+            </button>
+             <button class="button" onclick="window.location.href='course_lounges.html'" style="margin-top: 5px;">View Course Lounges</button>
+
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+<script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+        authDomain: "attic-4ae31.firebaseapp.com",
+        projectId: "attic-4ae31",
+        storageBucket: "attic-4ae31.appspot.com", 
+        messagingSenderId: "259372678655",
+        appId: "1:259372678655:web:df9c03e07e022392837bca",
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+    };
+
+    const signOutBtn = document.getElementById('signOutBtn');
+
+if (signOutBtn) {
+    signOutBtn.addEventListener('click', () => {
+        if (firebase && firebase.auth) { // Check if Firebase auth is available
+            firebase.auth().signOut().then(() => {
+                // Sign-out successful.
+                alert("You have been signed out.");
+                window.location.href = 'index.html'; // Redirect to homepage or login page
+            }).catch((error) => {
+                // An error happened.
+                console.error('Sign Out Error', error);
+                alert("Error signing out: " + error.message);
+            });
+        } else {
+            alert("Error: Firebase authentication service not available.");
+        }
+    });
+}
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined') {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on dashboard.html");
+            } else {
+                firebase.app(); 
+                console.log("Firebase already initialized on dashboard.html (using existing app).");
+            }
+        } else {
+            console.error("Firebase core SDK missing for dashboard.html!");
+            throw new Error("Firebase core SDK not loaded on dashboard!");
+        }
+    } catch (initError) {
+        console.error("Firebase init error on dashboard:", initError.message);
+        const body = document.querySelector('body'); 
+        if (body) {
+             const errorDiv = document.createElement('div');
+             errorDiv.innerHTML = "<p style='color:red; padding:20px; text-align:center;'>CRITICAL ERROR: Essential site services could not load. Please try refreshing the page or contact support if the issue persists.</p>";
+             if (body.firstChild) body.insertBefore(errorDiv, body.firstChild);
+             else body.appendChild(errorDiv);
+        } else {
+            alert("CRITICAL ERROR: Essential site services could not load. Please refresh.");
+        }
+    }
+
+    // --- Global Variables ---
+    let currentUser = null;
+    const INITIAL_COURSE_DISPLAY_LIMIT = 3; 
+    let allUserCourseDetails = []; 
+    let showingAllCourses = false; 
+
+    // --- Utility Functions ---
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // --- Course Display Logic ---
+    function displayUserCourses() {
+        const coursesContainer = document.getElementById('current-courses-list');
+        const toggleBtn = document.getElementById('toggle-courses-btn');
+
+        if (!coursesContainer || !toggleBtn) {
+            console.warn("Dashboard: Course display elements not found.");
+            return;
+        }
+
+        coursesContainer.innerHTML = ''; 
+
+        if (allUserCourseDetails.length === 0) {
+            coursesContainer.innerHTML = '<p>You have no active courses for Year 1. <a href="courses.html">Explore Courses</a></p>';
+            toggleBtn.style.display = 'none';
+            return;
+        }
+
+        const coursesToDisplay = showingAllCourses ? allUserCourseDetails : allUserCourseDetails.slice(0, INITIAL_COURSE_DISPLAY_LIMIT);
+        
+        const ul = document.createElement('ul');
+        ul.className = 'course-list-widget';
+        
+        coursesToDisplay.forEach(courseDetails => {
+            const li = document.createElement('li');
+            const courseInfoSpan = document.createElement('span');
+            courseInfoSpan.innerHTML = `<a href="course_detail.html?id=${courseDetails.id}"><strong>${escapeHtml(courseDetails.title || courseDetails.id)}</strong></a> - <span>${escapeHtml(courseDetails.type || 'N/A')} (Status: ${escapeHtml(courseDetails.registrationStatus)})</span>`;
+            
+            const unregisterButton = document.createElement('button');
+            unregisterButton.textContent = 'Unregister';
+            unregisterButton.onclick = function() {
+                unregisterFromCourse(courseDetails.id); 
+            };
+
+            li.appendChild(courseInfoSpan);
+            li.appendChild(unregisterButton);
+            ul.appendChild(li);
+        });
+
+        coursesContainer.appendChild(ul);
+
+        if (allUserCourseDetails.length > INITIAL_COURSE_DISPLAY_LIMIT) {
+            toggleBtn.style.display = 'block';
+            toggleBtn.textContent = showingAllCourses ? `Show fewer courses` : `See all ${allUserCourseDetails.length} courses`;
+        } else {
+            toggleBtn.style.display = 'none';
+        }
+    }
+
+
+    // --- Course Loading and Unregister Functions ---
+    function unregisterFromCourse(courseId) { 
+        if (!currentUser) {
+            alert("You must be logged in to unregister from a course.");
+            return;
+        }
+        if (!courseId) {
+            alert("Course ID is missing. Cannot unregister.");
+            console.error("unregisterFromCourse called without courseId");
+            return;
+        }
+
+        const courseDetailRef = firebase.database().ref('courses/' + courseId); 
+        courseDetailRef.once('value').then(snapshot => { 
+            const courseData = snapshot.val(); 
+            const courseTitle = courseData ? (courseData.title || courseId) : courseId; 
+
+            if (window.confirm(`Are you sure you want to unregister from the course: "${escapeHtml(courseTitle)}"?`)) { 
+                const userCourseStatusRef = firebase.database().ref(`userProgress/${currentUser.uid}/year1/courses/${courseId}/status`); 
+                
+                userCourseStatusRef.set("dropped") 
+                    .then(() => {
+                        alert(`You have successfully unregistered from "${escapeHtml(courseTitle)}".`); 
+                        loadUserCourses(currentUser.uid);  
+                    })
+                    .catch(error => {
+                        console.error("Error unregistering from course:", error); 
+                        alert(`Failed to unregister from the course: ${error.message}`); 
+                    });
+            }
+        }).catch(error => {
+            console.error("Error fetching course title for unregistration confirmation:", error); 
+            if (window.confirm(`Are you sure you want to unregister from the course (ID: ${courseId})? This course's details could not be fully loaded.`)) { 
+                 const userCourseStatusRef = firebase.database().ref(`userProgress/${currentUser.uid}/year1/courses/${courseId}/status`); 
+                 userCourseStatusRef.set("dropped") 
+                    .then(() => {
+                        alert(`You have successfully unregistered from course ID: ${courseId}.`); 
+                        loadUserCourses(currentUser.uid); 
+                    })
+                    .catch(errorSet => {
+                        console.error("Error unregistering from course (fallback):", errorSet); 
+                        alert(`Failed to unregister from the course: ${errorSet.message}`); 
+                    });
+            }
+        });
+    }
+
+    function loadUserCourses(userId) {
+        if (!firebase || !firebase.database) {
+            console.error("Firebase database not available for loadUserCourses.");
+            return;
+        }
+        const coursesRef = firebase.database().ref('userProgress/' + userId + '/year1/courses'); 
+        const coursesContainer = document.getElementById('current-courses-list'); 
+        
+        if (!coursesContainer) {
+            console.warn("Dashboard: 'current-courses-list' container not found."); 
+            return; 
+        }
+        coursesContainer.innerHTML = '<p>Loading your courses...</p>'; 
+
+        coursesRef.once('value').then(snapshot => { 
+            if (!coursesContainer) return; 
+
+            if (!snapshot.exists()) { 
+                allUserCourseDetails = []; 
+                displayUserCourses(); 
+                return;
+            }
+            const userCoursesData = snapshot.val(); 
+            let activeCoursePromises = [];
+
+            for (const courseId in userCoursesData) { 
+                const courseEntry = userCoursesData[courseId]; 
+                if (courseEntry) { 
+                    const courseStatus = courseEntry.status; 
+                    if (courseStatus === 'registered' || courseStatus === 'in_progress') {  
+                        const courseDetailRef = firebase.database().ref('courses/' + courseId); 
+                        activeCoursePromises.push(
+                            courseDetailRef.once('value').then(snap => { 
+                                const details = snap.val(); 
+                                return { 
+                                    ...(details || {}), 
+                                    id: snap.key, 
+                                    registrationStatus: courseStatus 
+                                };
+                            }).catch(err => {
+                                console.warn(`Failed to load details for course ${courseId}:`, err);
+                                return null; 
+                            })
+                        );
+                    }
+                }
+            }
+
+            if (activeCoursePromises.length === 0) {
+                allUserCourseDetails = [];
+                displayUserCourses(); 
+                return;
+            }
+
+            Promise.all(activeCoursePromises).then(courseDetailsArray => { 
+                allUserCourseDetails = courseDetailsArray.filter(details => details !== null && details.id); 
+                showingAllCourses = false; 
+                displayUserCourses(); 
+            }).catch(error => {
+                console.error("Error processing course details for dashboard:", error); 
+                if (coursesContainer) coursesContainer.innerHTML = '<p>Error loading your course details. Please try refreshing.</p>'; 
+            });
+
+        }).catch(error => {
+            console.error("Error fetching user courses from userProgress:", error); 
+            if (coursesContainer) coursesContainer.innerHTML = '<p>Error loading your courses. Please try refreshing.</p>'; 
+        });
+    }
+
+
+    function loadMagnetProgramInfo(programKey) {
+        const programInfoDiv = document.getElementById('magnet-program-info');  
+        if (!programInfoDiv) {
+            console.warn("Dashboard: 'magnet-program-info' container not found."); 
+            return; 
+        }
+
+        if (programKey && programKey !== "Undecided") { 
+            let programName = programKey.replace(/_/g, ' '); 
+            programName = programName.charAt(0).toUpperCase() + programName.slice(1); 
+
+            programInfoDiv.innerHTML = `
+                <p>You are part of the <strong>${escapeHtml(programName)}</strong> program!</p>
+                <p><a href="forums.html?magnet=${encodeURIComponent(programKey)}">Go to Program Forum</a></p>
+            `; 
+        } else {
+            programInfoDiv.innerHTML = `
+                <p>You haven't selected a Magnet Program yet, or your program is 'Undecided'.</p>
+                <p><a href="attic_gateway.html">Choose or Update Program</a></p>
+            `; 
+        }
+    }
+    
+    function updateOpportunitiesCardVisibility(userProfile) {
+        const opportunitiesCard = document.getElementById('opportunities-card');
+        if (!opportunitiesCard) return;
+
+        if (userProfile && (userProfile.role === 'admin' || userProfile.role === 'ta' || userProfile.role === 'professor')) {
+            opportunitiesCard.style.display = 'none'; 
+        } else {
+            opportunitiesCard.style.display = 'block'; 
+        }
+    }
+
+
+    // --- Auth State Change Logic ---
+    if (firebase && firebase.auth) {
+        firebase.auth().onAuthStateChanged(user => { 
+            const greetingEl = document.getElementById('user-greeting'); 
+            const introEl = document.getElementById('user-dashboard-intro'); 
+            const adminLinkContainer = document.getElementById('admin-link-container'); 
+            const taLinkContainer = document.getElementById('ta-link-container'); 
+            const professorLinkContainer = document.getElementById('professor-link-container');
+            
+            if (adminLinkContainer) adminLinkContainer.style.display = 'none'; 
+            if (taLinkContainer) taLinkContainer.style.display = 'none'; 
+            if (professorLinkContainer) professorLinkContainer.style.display = 'none';
+
+            if (user) {
+                currentUser = user; 
+                if (greetingEl) greetingEl.textContent = `Loading your details...`;  
+                if (introEl) introEl.textContent = 'Please wait while we fetch your information.'; 
+                let displayName = user.email;  
+
+                const profileRef = firebase.database().ref('users/' + user.uid + '/profile'); 
+                profileRef.once('value').then(snapshot => { 
+                    if (snapshot.exists()) { 
+                        const profileData = snapshot.val(); 
+                        const nameToUse = profileData.atticNickname || profileData.displayName || user.displayName; 
+                        if (nameToUse) {
+                            displayName = nameToUse; 
+                        }
+
+                        if (greetingEl) greetingEl.textContent = `Welcome back, ${escapeHtml(displayName)}!`; 
+                        if (introEl) introEl.textContent = "This is your personal hub for The Attic. What would you like to explore today?"; 
+
+                        if (profileData.role === 'admin') { 
+                            if (adminLinkContainer) adminLinkContainer.style.display = 'block'; 
+                            if (taLinkContainer) taLinkContainer.style.display = 'block';  
+                            if (professorLinkContainer) professorLinkContainer.style.display = 'block';
+                        } else if (profileData.role === 'ta') { 
+                            if (taLinkContainer) taLinkContainer.style.display = 'block'; 
+                        } else if (profileData.role === 'professor') { 
+                            if (professorLinkContainer) professorLinkContainer.style.display = 'block';
+                        }
+                        
+                        updateOpportunitiesCardVisibility(profileData); 
+
+                        loadMagnetProgramInfo(profileData.magnetProgram); 
+                        loadUserCourses(user.uid);  
+                    } else { 
+                        if (greetingEl) greetingEl.textContent = `Welcome, ${escapeHtml(displayName)}!`; 
+                        if (introEl) introEl.textContent = "It looks like your profile isn't fully set up yet. Please complete the Attic Gateway process to personalize your dashboard."; 
+                        loadMagnetProgramInfo(null);  
+                        updateOpportunitiesCardVisibility(null); 
+                        
+                        const coursesContainer = document.getElementById('current-courses-list'); 
+                        if (coursesContainer) coursesContainer.innerHTML = '<p>Complete your profile setup to see courses. <a href="attic_gateway.html">Start Gateway</a></p>'; 
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user profile for dashboard:", error); 
+                    if (greetingEl) greetingEl.textContent = `Welcome, ${escapeHtml(displayName)}!`; 
+                    if (introEl) introEl.textContent = "There was an error loading your profile information. Some features may be unavailable."; 
+                    loadMagnetProgramInfo(null);  
+                    updateOpportunitiesCardVisibility(null); 
+                    loadUserCourses(user.uid);  
+                });
+
+            } else { 
+                currentUser = null; 
+                allUserCourseDetails = []; 
+                showingAllCourses = false; 
+
+                if (greetingEl) greetingEl.textContent = 'Welcome to The Attic!'; 
+                if (introEl) introEl.innerHTML = 'Please <a href="login.html">log in</a> or <a href="register.html">register</a> to access your dashboard.'; 
+                
+                const magnetInfoDiv = document.getElementById('magnet-program-info'); 
+                if (magnetInfoDiv) magnetInfoDiv.innerHTML = '<p>Please log in to see your Magnet Program details.</p>'; 
+                updateOpportunitiesCardVisibility(null); 
+                displayUserCourses(); 
+
+                const forumActivityContainer = document.getElementById('recent-forum-activity'); 
+                if(forumActivityContainer) forumActivityContainer.innerHTML = '<p>Log in to see forum activity.</p>'; 
+                const chronicleContainer = document.getElementById('chronicle-summary'); 
+                if(chronicleContainer) chronicleContainer.innerHTML = '<p>Log in to see your Chronicle.</p>'; 
+            }
+        });
+    } else {
+        console.error("Firebase Auth SDK not available for dashboard.html. Page will not function correctly."); 
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.querySelector('body'); 
+            if(body) {
+                const errorDiv = document.createElement('div'); 
+                errorDiv.innerHTML = "<p style='color:red; padding:20px; text-align:center;'>Critical Error: Authentication services could not load. Please refresh or contact support.</p>"; 
+                if (body.firstChild) body.insertBefore(errorDiv, body.firstChild); 
+                else body.appendChild(errorDiv); 
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('toggle-courses-btn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                showingAllCourses = !showingAllCourses;
+                displayUserCourses();
+            });
+        }
+        updateOpportunitiesCardVisibility(null); 
+    });
+</script>
+</body>
+</html>

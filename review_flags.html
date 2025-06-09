@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Flags - Admin Centre</title>
+    <link rel="stylesheet" href="styles.css"> <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-functions.js"></script>
+
+</head>
+
+<body>
+    <header>
+        <h1>The Attic - Review Flagged Content/Users</h1>
+    </header>
+
+    <main>
+        <div id="admin-review-content" style="display: none; padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px;">
+            <h2>Flagged Items for Review</h2>
+            <p>This page lists items (users, posts, etc.) that have been flagged for administrative review.</p>
+            
+            <div id="flagged-items-list" style="margin-top: 20px;">
+                <p>Loading flagged items...</p>
+                </div>
+        </div>
+
+        <div id="access-denied-review" style="display: block; padding: 20px; margin: 20px; background-color: #ffebee; border: 1px solid #ef5350; border-radius: 8px; color: #c62828;">
+            <p>Loading authentication status...</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <button onclick="window.location.href='admin.html'">Back to Admin Centre</button>
+            <button onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
+        </div>
+        <div id="userDetailsModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.4);">
+  <div style="background-color:#fefefe; margin:15% auto; padding:20px; border:1px solid #888; width:80%; max-width:500px; border-radius:8px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);">
+    <span id="closeUserDetailsModal" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+    <h2>User Details</h2>
+    <div id="userDetailsContent">
+      <p>Loading user information...</p>
+    </div>
+    <button id="closeModalButton" style="margin-top:15px;">Close</button>
+  </div>
+</div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+    // --- 0. Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // From your admin.html
+        authDomain: "attic-4ae31.firebaseapp.com",        // From your admin.html
+        projectId: "attic-4ae31",                         // From your admin.html
+        storageBucket: "attic-4ae31.appspot.com",         // From your admin.html (verify this vs login.html's firebasestorage.app)
+        messagingSenderId: "259372678655",                // From your admin.html
+        appId: "1:259372678655:web:df9c03e07e022392837bca",// From your admin.html
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/", // From your admin.html
+        measurementId: "G-2WWH3YVXT5"                     // Add this if used elsewhere, from admin.html
+    };
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined') {
+            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+            if (!firebase.auth) console.error("Firebase Auth SDK missing!");
+            if (!firebase.database) console.error("Firebase Database SDK missing!");
+            if (!firebase.functions) console.error("Firebase Functions SDK missing! (Needed for disable_auth)");
+        } else {
+            console.error("Firebase core SDK missing!");
+            throw new Error("Firebase SDKs not loaded");
+        }
+    } catch (initError) {
+        console.error("Error during Firebase initialization on review_flags:", initError);
+        const accessDeniedReviewEl = document.getElementById('access-denied-review');
+        if (accessDeniedReviewEl) {
+            accessDeniedReviewEl.innerHTML = '<p>Critical Error: Firebase could not be initialized. Page may not function.</p>';
+            accessDeniedReviewEl.style.display = 'block';
+            const adminReviewContentEl = document.getElementById('admin-review-content');
+            if (adminReviewContentEl) adminReviewContentEl.style.display = 'none';
+        }
+    }
+
+    // --- Global Variables ---
+    const adminReviewContentEl = document.getElementById('admin-review-content');
+    const accessDeniedReviewEl = document.getElementById('access-denied-review');
+    const flaggedItemsListEl = document.getElementById('flagged-items-list');
+
+    const userDetailsModalEl = document.getElementById('userDetailsModal');
+    const userDetailsContentEl = document.getElementById('userDetailsContent');
+    const closeUserDetailsModalSpan = document.getElementById('closeUserDetailsModal');
+    const closeModalButton = document.getElementById('closeModalButton');
+
+    // --- Database Path for Reports/Flags ---
+    const REPORTS_PATH = 'reports';
+
+    // --- Function to Close User Details Modal ---
+    function closeUserDetailsModal() {
+        if (userDetailsModalEl) {
+            userDetailsModalEl.style.display = 'none';
+        }
+        if (userDetailsContentEl) {
+            userDetailsContentEl.innerHTML = '<p>Loading user information...</p>'; // Reset content
+        }
+    }
+
+    // --- Admin Access Check ---
+    function checkAdminStatusReview(user) {
+        if (!adminReviewContentEl || !accessDeniedReviewEl) {
+            console.error("Admin review content or access denied divs are missing!");
+            return;
+        }
+        if (user) {
+            const profileRef = firebase.database().ref('users/' + user.uid + '/profile');
+            profileRef.once('value').then(snapshot => {
+                const profileData = snapshot.val();
+                if (profileData && profileData.role === 'admin') {
+                    accessDeniedReviewEl.style.display = 'none';
+                    adminReviewContentEl.style.display = 'block';
+                    loadFlaggedItems();
+                } else {
+                    adminReviewContentEl.style.display = 'none';
+                    accessDeniedReviewEl.innerHTML = '<p><strong>Access Denied:</strong> You do not have administrative privileges for this section.</p>';
+                    accessDeniedReviewEl.style.display = 'block';
+                }
+            }).catch(error => {
+                console.error("Error fetching profile for review page:", error);
+                adminReviewContentEl.style.display = 'none';
+                accessDeniedReviewEl.innerHTML = '<p><strong>Error:</strong> Could not verify user privileges.</p>';
+                accessDeniedReviewEl.style.display = 'block';
+            });
+        } else {
+            adminReviewContentEl.style.display = 'none';
+            accessDeniedReviewEl.innerHTML = '<p>Admin access required. Please <a href="login.html">log in</a>.</p>';
+            accessDeniedReviewEl.style.display = 'block';
+            setTimeout(() => { if (!firebase.auth().currentUser) window.location.href = 'login.html'; }, 3000);
+        }
+    }
+
+    // --- Load and Display Flagged Items ---
+    function loadFlaggedItems() {
+        if (!flaggedItemsListEl || !firebase || !firebase.database) {
+            if(flaggedItemsListEl) flaggedItemsListEl.innerHTML = '<p style="color: red;">Database connection or element error.</p>';
+            console.error("loadFlaggedItems: Database connection or flaggedItemsListEl element missing.");
+            return;
+        }
+        
+        const reportsRef = firebase.database().ref(REPORTS_PATH)
+                                 .orderByChild('status')
+                                 .equalTo('pending_review');
+        
+        flaggedItemsListEl.innerHTML = '<p>Fetching flagged items...</p>';
+
+        reportsRef.on('value', (snapshot) => {
+            if (!flaggedItemsListEl) return; 
+            flaggedItemsListEl.innerHTML = ''; 
+
+            if (snapshot.exists()) {
+                const reports = snapshot.val();
+                const ul = document.createElement('ul');
+                ul.style.listStyleType = 'none';
+                ul.style.paddingLeft = '0';
+
+                const reportIds = Object.keys(reports).sort((a, b) => {
+                    const reportA = reports[a];
+                    const reportB = reports[b];
+                    const tsA = (reportA && typeof reportA.timestamp === 'number') ? reportA.timestamp : 0;
+                    const tsB = (reportB && typeof reportB.timestamp === 'number') ? reportB.timestamp : 0;
+                    return tsB - tsA;
+                });
+
+                reportIds.forEach(reportId => {
+                    const report = reports[reportId];
+                    if (!report) {
+                        console.warn("Skipping null/undefined report object for ID:", reportId);
+                        return;
+                    }
+
+                    const li = document.createElement('li');
+                    li.style.border = '1px solid #ddd';
+                    li.style.padding = '15px';
+                    li.style.marginBottom = '15px';
+                    li.style.borderRadius = '5px';
+                    li.setAttribute('data-report-id', reportId);
+
+                    const safeReason = report.reason ? String(report.reason).replace(/</g, "&lt;").replace(/>/g, "&gt;") : 'No reason provided.';
+                    const safeContentLink = report.contentLink ? String(report.contentLink).replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+                    const displayTimestamp = report.timestamp ? new Date(report.timestamp).toLocaleString() : 'N/A';
+                    const reportedUserIdForOnClick = report.reportedUserId || ''; 
+
+                    let reportDetailsHTML = `
+                        <h4>Report ID: ${reportId}</h4>
+                        <p><strong>Reported User ID:</strong> ${report.reportedUserId || 'N/A'}</p>
+                        <p><strong>Reason:</strong> ${safeReason}</p>
+                        <p><strong>Reporter User ID:</strong> ${report.reporterUserId || 'System/Admin Flagged'}</p>
+                        <p><strong>Timestamp:</strong> ${displayTimestamp}</p>
+                        <p><strong>Status:</strong> ${report.status || 'N/A'}</p>
+                    `;
+
+                    if (report.contentType) {
+                        reportDetailsHTML += `<p><strong>Content Type:</strong> ${String(report.contentType).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+                    }
+                    if (safeContentLink) {
+                        reportDetailsHTML += `<p><strong>Content Path:</strong> ${safeContentLink}</p>`;
+                    }
+
+                    reportDetailsHTML += `
+                        <div style="margin-top: 10px;">
+                            <button onclick="viewReportedUser('${reportedUserIdForOnClick}', '${reportId}')" style="margin-right: 5px; background-color:#007bff; color:white;">View User/Context</button>
+                            <button onclick="resolveReport('${reportId}', 'resolved_dismissed')" style="margin-right: 5px; background-color:#28a745; color:white;">Dismiss Report</button>
+                            <button onclick="takeActionOnUser('${reportedUserIdForOnClick}', 'warn', '${reportId}')" style="margin-right: 5px; background-color:#ffc107;">Warn User & Resolve</button>
+                            <button onclick="takeActionOnUser('${reportedUserIdForOnClick}', 'block_user', '${reportId}')" style="margin-right: 5px; background-color:#fd7e14; color:white;">Block User & Resolve</button>
+                            <button onclick="takeActionOnUser('${reportedUserIdForOnClick}', 'disable_auth', '${reportId}')" style="margin-right: 5px; background-color:#dc3545; color:white;">Disable Login & Resolve</button>
+                        </div>
+                    `;
+                    
+                    try {
+                        li.innerHTML = reportDetailsHTML;
+                        ul.appendChild(li);
+                    } catch (e) {
+                        console.error("Error setting li.innerHTML for reportId:", reportId, e);
+                        const errorLi = document.createElement('li');
+                        errorLi.style.color = 'red';
+                        errorLi.textContent = `Error rendering report ${reportId}. Check console.`;
+                        ul.appendChild(errorLi);
+                    }
+                });
+                flaggedItemsListEl.appendChild(ul);
+            } else {
+                flaggedItemsListEl.innerHTML = '<p>No pending flagged items found.</p>';
+            }
+        }, (error) => {
+            console.error("Error loading flagged items from Firebase:", error);
+            if (flaggedItemsListEl) flaggedItemsListEl.innerHTML = '<p style="color: red;">Error loading flagged items. Check console.</p>';
+        });
+    }
+    
+    // --- Action Functions for Flagged Items ---
+    function viewReportedUser(userId, reportId) {
+        if (!userId || userId === 'undefined' || userId === 'null' || userId.trim() === '') {
+            alert("User ID not provided or invalid for this report. Cannot show details.");
+            return;
+        }
+
+        if (userDetailsModalEl) userDetailsModalEl.style.display = 'block';
+        if (userDetailsContentEl) userDetailsContentEl.innerHTML = `<p>Fetching details for User ID: ${userId}...</p>`;
+        console.log(`Viewing details for User ID: ${userId} related to Report ID: ${reportId}`);
+
+        firebase.database().ref('users/' + userId).once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                const userData = snapshot.val(); 
+                const profile = userData.profile || {}; 
+                const warnings = userData.warnings || {};
+                
+                let detailsHTML = `
+                    <p><strong>User ID:</strong> ${userId}</p>
+                    <p><strong>Display Name:</strong> ${profile.displayName || 'N/A'}</p>
+                    <p><strong>Attic Nickname:</strong> ${profile.atticNickname || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${profile.email || 'N/A'}</p>
+                    <p><strong>Role:</strong> ${profile.role || 'user'}</p>
+                    <p><strong>Joined:</strong> ${profile.joinDate ? new Date(profile.joinDate).toLocaleDateString() : 'N/A'}</p>
+                    <p><strong>Account Status:</strong> 
+                        ${profile.isBlocked ? '<span style="color:red;">Blocked</span>' : '<span style="color:green;">Active</span>'}
+                        ${profile.authDisabled ? ' (Auth Disabled by Admin)' : ''}
+                    </p>
+                    <h4>Warnings:</h4>
+                `;
+
+                const warningKeys = Object.keys(warnings);
+                if (warningKeys.length > 0) {
+                    detailsHTML += '<ul style="padding-left: 20px;">';
+                    warningKeys.forEach(key => {
+                        const warning = warnings[key];
+                        detailsHTML += `<li>${new Date(warning.timestamp).toLocaleString()}: ${warning.reason || `Related to report ${key}`} (Admin: ${warning.adminId || 'N/A'})</li>`;
+                    });
+                    detailsHTML += '</ul>';
+                } else {
+                    detailsHTML += '<p>No warnings on record.</p>';
+                }
+                
+                if (userDetailsContentEl) userDetailsContentEl.innerHTML = detailsHTML;
+
+            } else {
+                if (userDetailsContentEl) userDetailsContentEl.innerHTML = `<p>User profile not found for ID: ${userId}.</p>`;
+            }
+        }).catch(err => {
+            console.error("Error fetching user for review:", err);
+            if (userDetailsContentEl) userDetailsContentEl.innerHTML = `<p>Error fetching user details: ${err.message}.</p>`;
+        });
+    }
+
+    function resolveReport(reportId, newStatus, autoDismiss = true) {
+        if (!reportId || !newStatus) {
+            alert("Report ID or new status missing for resolving report.");
+            return;
+        }
+        
+        let message = autoDismiss ? `Are you sure you want to mark report ${reportId} as "${newStatus}"?` : `Marking report ${reportId} as "${newStatus}". Proceed?`;
+        if (autoDismiss && !confirm(message)) return;
+
+        const reportUpdates = {
+            status: newStatus,
+            resolvedAt: firebase.database.ServerValue.TIMESTAMP,
+            resolvedBy: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'admin_action'
+        };
+
+        firebase.database().ref(`${REPORTS_PATH}/${reportId}`).update(reportUpdates)
+            .then(() => {
+                if (autoDismiss) alert(`Report ${reportId} status updated to ${newStatus}.`);
+                console.log(`Report ${reportId} status updated to ${newStatus}.`);
+            })
+            .catch(error => {
+                console.error("Error resolving report:", reportId, error);
+                alert(`Failed to update report status for ${reportId}: ${error.message}`);
+            });
+    }
+
+    async function takeActionOnUser(userId, actionType, reportIdToUpdate) {
+        if (!userId || userId === 'undefined' || userId === 'null' || userId.trim() === '') {
+            alert("User ID not provided or invalid for action.");
+            return;
+        }
+        if (!reportIdToUpdate) {
+            alert("Report ID not provided for updating after action.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to perform '${actionType}' on user ${userId} and update report ${reportIdToUpdate}?`)) {
+            return;
+        }
+
+        let actionTakenSuccessfully = false;
+        let resolutionStatus = 'resolved_action_failed'; 
+
+        try {
+            switch (actionType) {
+                case 'warn':
+                    console.log(`Action: 'Warn' user ${userId}.`);
+                    await firebase.database().ref(`users/${userId}/warnings/${reportIdToUpdate}`).set({
+                        reason: `Related to report ${reportIdToUpdate}`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        adminId: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'admin_action'
+                    });
+                    alert(`User ${userId} has been marked with a 'warning' in their record. Report ${reportIdToUpdate} will be updated.`);
+                    actionTakenSuccessfully = true;
+                    resolutionStatus = 'resolved_warned';
+                    break;
+
+                case 'block_user':
+                    console.log(`Action: 'Block User' ${userId}.`);
+                    await firebase.database().ref(`users/${userId}/profile/isBlocked`).set(true);
+                    alert(`User ${userId} 'isBlocked' flag set to true. Report ${reportIdToUpdate} will be updated.`);
+                    actionTakenSuccessfully = true;
+                    resolutionStatus = 'resolved_user_blocked';
+                    break;
+
+                case 'disable_auth':
+                    console.log(`Action: 'Disable Auth' for user ${userId} via Cloud Function.`);
+                    if (!firebase.functions) {
+                        alert("Firebase Functions SDK is not available. Cannot disable user account without a Cloud Function.");
+                        return; 
+                    }
+                    const setUserDisabled = firebase.functions().httpsCallable('setAdminUserDisabledStatus');
+                    await setUserDisabled({ userId: userId, disabled: true }); 
+                    // For immediate feedback in the modal, also update the local user's profile data if you wish
+                    await firebase.database().ref(`users/${userId}/profile/authDisabled`).set(true);
+                    alert(`Cloud Function 'setAdminUserDisabledStatus' called to disable authentication for user ${userId}. Report ${reportIdToUpdate} will be updated.`);
+                    actionTakenSuccessfully = true;
+                    resolutionStatus = 'resolved_auth_disabled';
+                    break;
+
+                default:
+                    alert(`Unknown action type: ${actionType}`);
+                    return; 
+            }
+
+            if (actionTakenSuccessfully && reportIdToUpdate) {
+                resolveReport(reportIdToUpdate, resolutionStatus, false); 
+            }
+
+        } catch (error) {
+            console.error(`Error taking action '${actionType}' on user ${userId}:`, error);
+            alert(`Failed to perform '${actionType}' on user ${userId}: ${error.message}. Report status not updated.`);
+        }
+    }
+
+    // --- Event Listeners for Modal Close Actions ---
+    if (closeUserDetailsModalSpan) {
+        closeUserDetailsModalSpan.onclick = closeUserDetailsModal;
+    }
+    if (closeModalButton) {
+        closeModalButton.onclick = closeUserDetailsModal;
+    }
+    if (userDetailsModalEl) {
+        userDetailsModalEl.onclick = function(event) {
+            if (event.target == userDetailsModalEl) { // Clicked on the background
+                closeUserDetailsModal();
+            }
+        }
+    }
+    
+    // --- Initial Call for Admin Check ---
+    if (firebase && firebase.auth) {
+        firebase.auth().onAuthStateChanged(checkAdminStatusReview);
+    } else {
+        console.error("Firebase Auth SDK not available for initial check on review page.");
+        if (accessDeniedReviewEl) { // Ensure element exists before trying to modify it
+            accessDeniedReviewEl.innerHTML = '<p>Error: Firebase Auth unavailable. Ensure SDKs are loaded and config is correct.</p>';
+            accessDeniedReviewEl.style.display = 'block';
+            if (adminReviewContentEl) adminReviewContentEl.style.display = 'none';
+        }
+    }
+</script>

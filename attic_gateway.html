@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Attic Gateway - Your Journey Begins</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { font-family: 'Open Sans', sans-serif; line-height: 1.6; background-color: #f8f8f8; color: #444; margin: 0; padding: 0; }
+        header { background-color: #556b2f; color: #f5f5dc; padding: 20px 20px; text-align: center; }
+        header h1 { font-family: 'Merriweather', serif; margin-bottom: 5px; font-size: 2.2em; }
+        main { padding: 0 10px; } /* Add some padding for smaller screens */
+        .gateway-container { padding: 20px; margin: 20px auto; max-width: 750px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .gateway-section { margin-bottom: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 5px; border-left: 5px solid #8fbc8f; }
+        .gateway-section h2 { color: #556b2f; margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 1.5em; }
+        .gateway-section p, .gateway-section .question-prompt { line-height: 1.7; color: #333; margin-bottom: 15px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #556b2f; }
+        .form-group input[type="text"], .form-group textarea {
+            width: 97%; /* Adjusted for padding */
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group small { display: block; margin-top: 5px; font-size: 0.85em; color: #666; }
+        
+        /* Quiz Styling */
+        .quiz-question-container { margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #fdfdfd; }
+        .quiz-question-container .question { font-weight: bold; margin-bottom: 10px; color: #556b2f; }
+        .quiz-question-container .answer { margin-bottom: 8px; }
+        .quiz-question-container .answer label { font-weight: normal; margin-left: 5px; }
+
+        .navigation-buttons { margin-top: 20px; text-align: right; }
+        .navigation-buttons button, #submitGatewayButton {
+            background-color: #8fbc8f; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .navigation-buttons button:hover, #submitGatewayButton:hover { background-color: #79a079; }
+        .navigation-buttons button#prevStepButton { background-color: #aaa; }
+        .navigation-buttons button#prevStepButton:hover { background-color: #888; }
+
+        #status-message { margin-top: 20px; padding: 12px; border-radius: 5px; display: none; font-weight: bold; text-align: center; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        footer { background-color: #556b2f; color: #f5f5dc; text-align: center; padding: 15px; font-size: 0.9em; margin-top: 30px; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // Your actual API key
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on attic_gateway.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase Auth or Database SDK not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on attic_gateway.html:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                const body = document.querySelector('body');
+                if(body) body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start. Please refresh or try again later.</p>";
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>The Attic Gateway</h1>
+        <p>Your Journey into The Attic Begins Here...</p>
+    </header>
+
+    <main>
+        <div class="gateway-container">
+            <form id="gatewayForm">
+                <div class="gateway-section" id="step-glimpse">
+                    <h2>The First Glimpse</h2>
+                    <p class="question-prompt">You've found it! A hidden doorway, shimmering faintly, with the words 'The Attic' etched above. You push it open... <br><strong>What's the very first amazing or curious thing that catches your attention?</strong></p>
+                    <div class="form-group">
+                        <label for="firstImpression">My first impression is...</label>
+                        <input type="text" id="firstImpression" name="firstImpression" required maxlength="150" placeholder="e.g., a spiral staircase to the stars, the scent of ancient magic, a room filled with floating books...">
+                        <small>Just a short, creative thought!</small>
+                    </div>
+                </div>
+
+                <div class="gateway-section" id="step-story-persona" style="display:none;">
+                    <h2>Your Story & Persona</h2>
+                    <p class="question-prompt">Every new arrival brings a unique story. Let's add yours to The Attic's chronicles and know how you'd like to be addressed.</p>
+                    <div class="form-group">
+                        <label for="atticNickname">What name will you go by in The Attic? (Optional)</label>
+                        <input type="text" id="atticNickname" name="atticNickname" maxlength="50" placeholder="Your chosen nickname or character name">
+                    </div>
+                    <div class="form-group">
+                        <label for="yourAtticStory">Your Attic Story (Encouraged)</label>
+                        <textarea id="yourAtticStory" name="yourAtticStory" rows="5" maxlength="1000" placeholder="Briefly, how did you find The Attic, and what's one big hope you carry as you step through this gateway?"></textarea>
+                        <small>Think of this as the first entry in your Attic Journal. Around 100-150 words is great!</small>
+                    </div>
+                </div>
+
+                <div class="gateway-section" id="step-quiz" style="display:none;">
+                    <h2>Discover Your Path</h2>
+                    <p class="question-prompt">The Attic has many paths. This 'Pathfinder's Compass' (our quick quiz) will help reveal which Magnet Program resonates with your spirit.</p>
+                    <div id="quizQuestionsContainer">
+                        </div>
+                </div>
+                
+                <div id="quizQuestionTemplates" style="display:none;">
+                    <div class="quiz-question-container" data-quiz-step="1">
+                        <p class="question">Question 1: Which of the following topics sparks the most curiosity in you?</p>
+                        <div class="answer"><input type="radio" id="q1_eco" name="q1" value="eco"><label for="q1_eco"> The environment and sustainability.</label></div>
+                        <div class="answer"><input type="radio" id="q1_thinker" name="q1" value="thinker"><label for="q1_thinker"> Problem-solving and logical thinking.</label></div>
+                        <div class="answer"><input type="radio" id="q1_mover" name="q1" value="mover"><label for="q1_mover"> Physical activity and creating with my hands.</label></div>
+                        <div class="answer"><input type="radio" id="q1_creative" name="q1" value="creative"><label for="q1_creative"> Artistic expression and creativity.</label></div>
+                        <div class="answer"><input type="radio" id="q1_kind" name="q1" value="kind"><label for="q1_kind"> Helping others and community building.</label></div>
+                    </div>
+                    <div class="quiz-question-container" data-quiz-step="2">
+                        <p class="question">Question 2: If you had a free Saturday afternoon, how would you most likely spend it?</p>
+                        <div class="answer"><input type="radio" id="q2_eco" name="q2" value="eco"><label for="q2_eco"> Exploring a local park or nature trail.</label></div>
+                        <div class="answer"><input type="radio" id="q2_thinker" name="q2" value="thinker"><label for="q2_thinker"> Working on a puzzle or reading a non-fiction book.</label></div>
+                        <div class="answer"><input type="radio" id="q2_mover" name="q2" value="mover"><label for="q2_mover"> Playing a sport or working on a DIY project.</label></div>
+                        <div class="answer"><input type="radio" id="q2_creative" name="q2" value="creative"><label for="q2_creative"> Creating something artistic like writing, painting, or music.</label></div>
+                        <div class="answer"><input type="radio" id="q2_kind" name="q2" value="kind"><label for="q2_kind"> Volunteering for a local charity or helping a friend.</label></div>
+                    </div>
+                    <div class="quiz-question-container" data-quiz-step="3">
+                        <p class="question">Question 3: What kind of feeling do you value most in a learning environment?</p>
+                        <div class="answer"><input type="radio" id="q3_eco" name="q3" value="eco"><label for="q3_eco"> Connection to the natural world.</label></div>
+                        <div class="answer"><input type="radio" id="q3_thinker" name="q3" value="thinker"><label for="q3_thinker"> Intellectual stimulation.</label></div>
+                        <div class="answer"><input type="radio" id="q3_mover" name="q3" value="mover"><label for="q3_mover"> Active engagement.</label></div>
+                        <div class="answer"><input type="radio" id="q3_creative" name="q3" value="creative"><label for="q3_creative"> Creative freedom.</label></div>
+                        <div class="answer"><input type="radio" id="q3_kind" name="q3" value="kind"><label for="q3_kind"> A sense of belonging and support.</label></div>
+                    </div>
+                    <div class="quiz-question-container" data-quiz-step="4">
+                        <p class="question">Question 4: Which of these activities do you enjoy the most?</p>
+                        <div class="answer"><input type="radio" id="q4_eco" name="q4" value="eco"><label for="q4_eco"> Learning about plants and animals.</label></div>
+                        <div class="answer"><input type="radio" id="q4_thinker" name="q4" value="thinker"><label for="q4_thinker"> Debating ideas and solving mysteries.</label></div>
+                        <div class="answer"><input type="radio" id="q4_mover" name="q4" value="mover"><label for="q4_mover"> Building and fixing things.</label></div>
+                        <div class="answer"><input type="radio" id="q4_creative" name="q4" value="creative"><label for="q4_creative"> Drawing, painting, or playing a musical instrument.</label></div>
+                        <div class="answer"><input type="radio" id="q4_kind" name="q4" value="kind"><label for="q4_kind"> Working on group projects for a common goal.</label></div>
+                    </div>
+                    <div class="quiz-question-container" data-quiz-step="5">
+                        <p class="question">Question 5: Imagine a group project where you can choose your role. Which role would you be most drawn to?</p>
+                        <div class="answer"><input type="radio" id="q5_eco" name="q5" value="eco"><label for="q5_eco"> The researcher, gathering information about the environment.</label></div>
+                        <div class="answer"><input type="radio" id="q5_thinker" name="q5" value="thinker"><label for="q5_thinker"> The strategist, planning and organizing the project's logic.</label></div>
+                        <div class="answer"><input type="radio" id="q5_mover" name="q5" value="mover"><label for="q5_mover"> The builder, creating the physical components of the project.</label></div>
+                        <div class="answer"><input type="radio" id="q5_creative" name="q5" value="creative"><label for="q5_creative"> The designer, focusing on the visual and expressive aspects.</label></div>
+                        <div class="answer"><input type="radio" id="q5_kind" name="q5" value="kind"><label for="q5_kind"> The facilitator, ensuring everyone's ideas are heard and valued.</label></div>
+                    </div>
+                </div>
+                <div class="navigation-buttons">
+                    <button type="button" id="prevStepButton" style="display:none;">Previous</button>
+                    <button type="button" id="nextStepButton">Next</button>
+                </div>
+                
+                <button type="submit" id="submitGatewayButton" style="display:none; width:100%; padding:15px; font-size:1.2em; margin-top:20px;">Complete Gateway Entry</button>
+            </form>
+            <div id="status-message"></div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+   <script>
+    const gatewayForm = document.getElementById('gatewayForm');
+    const statusMessageDiv = document.getElementById('status-message');
+
+    // Section DIVs
+    const stepGlimpse = document.getElementById('step-glimpse');
+    const stepStoryPersona = document.getElementById('step-story-persona');
+    const stepQuiz = document.getElementById('step-quiz');
+    const allMainSteps = [stepGlimpse, stepStoryPersona, stepQuiz];
+    let currentMainStepIndex = 0;
+
+    // Quiz specific elements
+    const quizQuestionsContainer = document.getElementById('quizQuestionsContainer');
+    const quizQuestionTemplates = document.getElementById('quizQuestionTemplates'); // Ensure this ID exists in your HTML
+    const allQuizQuestionDivs = quizQuestionTemplates ? Array.from(quizQuestionTemplates.querySelectorAll('.quiz-question-container')) : [];
+    let currentQuizQuestionIndex = 0;
+    let collectedQuizAnswers = {}; // To store answers as user progresses
+
+    // Navigation buttons
+    const prevStepButton = document.getElementById('prevStepButton');
+    const nextStepButton = document.getElementById('nextStepButton');
+    const submitGatewayButton = document.getElementById('submitGatewayButton');
+
+    function showStatus(message, type = 'error') { // Renamed from showAppStatus to showStatus for consistency
+        if (!statusMessageDiv) {
+            console.error("statusMessageDiv not found. Message:", message);
+            return;
+        }
+        statusMessageDiv.textContent = message;
+        statusMessageDiv.className = `status-${type}`; // Use the base class name from your CSS
+        statusMessageDiv.style.display = 'block';
+        statusMessageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (type === 'success' || type === 'processing' || type === 'info') {
+            setTimeout(() => {
+                if (statusMessageDiv.textContent === message) {
+                    statusMessageDiv.style.display = 'none';
+                }
+            }, 4000);
+        }
+    }
+
+    function displayCurrentStep() {
+        console.log(`// Displaying main step. Index: ${currentMainStepIndex}, Element ID: ${allMainSteps[currentMainStepIndex] ? allMainSteps[currentMainStepIndex].id : 'N/A'}`);
+        allMainSteps.forEach(step => { if(step) step.style.display = 'none'; });
+        if (allMainSteps[currentMainStepIndex]) {
+            allMainSteps[currentMainStepIndex].style.display = 'block';
+            allMainSteps[currentMainStepIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        if (allMainSteps[currentMainStepIndex] === stepQuiz) {
+            if(quizQuestionsContainer) quizQuestionsContainer.style.display = 'block';
+            displayCurrentQuizQuestion();
+        } else {
+            if(quizQuestionsContainer) quizQuestionsContainer.style.display = 'none';
+        }
+        updateButtonVisibility();
+    }
+
+    function displayCurrentQuizQuestion() {
+        if (!quizQuestionsContainer) return;
+        quizQuestionsContainer.innerHTML = '';
+        console.log(`// Attempting to display quiz question. Index: ${currentQuizQuestionIndex}. Total quiz questions: ${allQuizQuestionDivs.length}`);
+        if (allQuizQuestionDivs && allQuizQuestionDivs[currentQuizQuestionIndex]) {
+            const questionNode = allQuizQuestionDivs[currentQuizQuestionIndex].cloneNode(true);
+            quizQuestionsContainer.appendChild(questionNode);
+            console.log(`// Appended quiz question content: "${questionNode.querySelector('.question').textContent.trim()}"`);
+
+            const questionName = `q${currentQuizQuestionIndex + 1}`;
+            if (collectedQuizAnswers[questionName]) {
+                const preSelectedRadio = questionNode.querySelector(`input[name="${questionName}"][value="${collectedQuizAnswers[questionName]}"]`);
+                if (preSelectedRadio) {
+                    preSelectedRadio.checked = true;
+                }
+            }
+        } else {
+            console.error(`// Quiz question at index ${currentQuizQuestionIndex} not found in allQuizQuestionDivs.`);
+        }
+    }
+    
+    function updateButtonVisibility() {
+        const isQuizActive = allMainSteps[currentMainStepIndex] === stepQuiz;
+        const isLastQuizQuestion = currentQuizQuestionIndex >= allQuizQuestionDivs.length - 1;
+        const isLastMainStep = currentMainStepIndex >= allMainSteps.length - 1;
+
+        if (prevStepButton) {
+            if (isQuizActive) {
+                prevStepButton.style.display = (currentQuizQuestionIndex > 0 || currentMainStepIndex > 0) ? 'inline-block' : 'none';
+            } else {
+                prevStepButton.style.display = (currentMainStepIndex > 0) ? 'inline-block' : 'none';
+            }
+        }
+
+        if (nextStepButton) {
+            if (isQuizActive) {
+                nextStepButton.style.display = (!isLastQuizQuestion) ? 'inline-block' : 'none';
+            } else {
+                nextStepButton.style.display = (!isLastMainStep) ? 'inline-block' : 'none';
+            }
+        }
+        
+        if (submitGatewayButton) {
+            // Show submit button only if it's the last main step AND (if that step is the quiz, it's the last quiz question)
+            if (isLastMainStep) {
+                 if (isQuizActive && isLastQuizQuestion) {
+                    submitGatewayButton.style.display = 'block';
+                 } else if (!isQuizActive) { // If last main step is not the quiz step
+                    submitGatewayButton.style.display = 'block';
+                 } else {
+                    submitGatewayButton.style.display = 'none';
+                 }
+            } else {
+                 submitGatewayButton.style.display = 'none';
+            }
+        }
+    }
+
+    if (nextStepButton) {
+        nextStepButton.addEventListener('click', () => {
+            if(statusMessageDiv) statusMessageDiv.style.display = 'none';
+
+            const currentStepElement = allMainSteps[currentMainStepIndex];
+            if (!currentStepElement) return;
+
+            if (currentStepElement === stepGlimpse) {
+                const firstImpressionInput = document.getElementById('firstImpression');
+                if (firstImpressionInput && !firstImpressionInput.value.trim()) {
+                    showStatus('Please share your first impression to continue!', 'error'); return;
+                }
+            } else if (currentStepElement === stepStoryPersona) {
+                // Optional fields, but you might add validation if needed (e.g., for yourAtticStory)
+                // const storyInput = document.getElementById('yourAtticStory');
+                // if (storyInput && !storyInput.value.trim()) {
+                //     showStatus('Please share your Attic Story to continue!', 'error'); return;
+                // }
+            } else if (currentStepElement === stepQuiz) {
+                const currentQuizQuestionDiv = quizQuestionsContainer.querySelector('.quiz-question-container');
+                const questionNumber = currentQuizQuestionIndex + 1;
+                const questionName = `q${questionNumber}`;
+                const checkedRadio = currentQuizQuestionDiv ? currentQuizQuestionDiv.querySelector(`input[name="${questionName}"]:checked`) : null;
+
+                if (!checkedRadio) {
+                    showStatus(`Please answer Quiz Question ${questionNumber}.`, 'error');
+                    console.log(`// Validation failed for quiz question ${questionNumber}. No answer selected.`);
+                    return;
+                }
+                collectedQuizAnswers[questionName] = checkedRadio.value;
+                console.log(`// Answer stored for ${questionName}: ${checkedRadio.value}.`);
+                console.log(`// All collectedQuizAnswers so far:`, JSON.stringify(collectedQuizAnswers));
+
+                currentQuizQuestionIndex++;
+                if (currentQuizQuestionIndex < allQuizQuestionDivs.length) {
+                    displayCurrentQuizQuestion();
+                    updateButtonVisibility();
+                    return; // Don't advance main step yet
+                }
+                // If it was the last quiz question, flow will continue to advance main step below
+            }
+
+            // Advance to the next main step if not handled by quiz internal navigation
+            if (currentMainStepIndex < allMainSteps.length - 1) {
+                currentMainStepIndex++;
+                if (allMainSteps[currentMainStepIndex] === stepQuiz) { // If entering quiz step
+                    currentQuizQuestionIndex = 0; // Reset to first quiz question
+                }
+                displayCurrentStep();
+            }
+        });
+    }
+
+
+    if (prevStepButton) {
+        prevStepButton.addEventListener('click', () => {
+            if(statusMessageDiv) statusMessageDiv.style.display = 'none';
+            if (allMainSteps[currentMainStepIndex] === stepQuiz && currentQuizQuestionIndex > 0) {
+                currentQuizQuestionIndex--;
+                displayCurrentQuizQuestion();
+            } else if (currentMainStepIndex > 0) {
+                currentMainStepIndex--;
+                if (allMainSteps[currentMainStepIndex] === stepQuiz) { // If moving back to the quiz step
+                    currentQuizQuestionIndex = allQuizQuestionDivs.length - 1; // Go to last quiz question
+                }
+            }
+            displayCurrentStep();
+        });
+    }
+
+    // -----------------------------------------------------------------------------------
+    // NEW SUBMIT HANDLER - Replace your old gatewayForm.addEventListener('submit', ...)
+    // -----------------------------------------------------------------------------------
+    if (gatewayForm) {
+        gatewayForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            console.log('// Gateway form submitted (New Chronicle Logic).');
+            
+            if (!firebase.auth().currentUser) {
+                showStatus('Error: You seem to be logged out. Please log in again.', 'error');
+                setTimeout(() => window.location.href = 'login.html?redirect=attic_gateway.html', 3000);
+                return;
+            }
+
+            // Ensure the last quiz question is captured if the quiz is the current step
+            if (allMainSteps[currentMainStepIndex] === stepQuiz) {
+                const lastQuestionName = `q${allQuizQuestionDivs.length}`; // Assumes quiz questions are q1, q2, ... qN
+                const lastQuestionDiv = quizQuestionsContainer.querySelector(`.quiz-question-container[data-quiz-step="${allQuizQuestionDivs.length}"]`) || quizQuestionsContainer.querySelector('.quiz-question-container'); // Robust selection
+                const checkedInput = lastQuestionDiv ? lastQuestionDiv.querySelector(`input[name="${lastQuestionName}"]:checked`) : null;
+
+                if (!checkedInput && allQuizQuestionDivs.length > 0) { // Only validate if there are quiz questions
+                    showStatus(`Please answer the final Quiz Question ${allQuizQuestionDivs.length}.`, 'error');
+                    if(submitGatewayButton) submitGatewayButton.disabled = false; // Re-enable button
+                    return;
+                }
+                if(checkedInput) collectedQuizAnswers[lastQuestionName] = checkedInput.value;
+                console.log(`// Stored answer for final quiz question ${lastQuestionName}: ${checkedInput ? checkedInput.value : 'Not answered/No quiz'}`);
+            }
+            
+            if(submitGatewayButton) submitGatewayButton.disabled = true;
+            showStatus('Processing your entry into The Attic...', 'processing');
+
+            const user = firebase.auth().currentUser;
+            const db = firebase.database();
+            const userProfileRef = db.ref('users/' + user.uid + '/profile');
+            const userChronicleEntriesRef = db.ref('users/' + user.uid + '/profile/chronicleEntries');
+
+            const firstImpressionText = document.getElementById('firstImpression')?.value.trim() || "";
+            const atticStoryText = document.getElementById('yourAtticStory')?.value.trim() || "";
+            const calculatedAtticNickname = document.getElementById('atticNickname')?.value.trim() || user.displayName || user.email || "New Member";
+
+            const counts = { eco: 0, thinker: 0, mover: 0, creative: 0, kind: 0 };
+            for (const qName in collectedQuizAnswers) {
+                const answerValue = collectedQuizAnswers[qName];
+                if (counts.hasOwnProperty(answerValue)) {
+                    counts[answerValue]++;
+                }
+            }
+            let assignedProgram = '';
+            let maxCount = -1;
+            const totalAnswersCounted = Object.values(counts).reduce((sum, count) => sum + count, 0);
+            if (totalAnswersCounted > 0) {
+                for (const program in counts) {
+                    if (counts[program] > maxCount) {
+                        maxCount = counts[program];
+                        assignedProgram = program;
+                    }
+                }
+            }
+            const programKeys = Object.keys(counts);
+            const finalAssignedProgram = assignedProgram || programKeys[Math.floor(Math.random() * programKeys.length)] || 'kind';
+
+            const profileUpdates = {
+                atticNickname: calculatedAtticNickname,
+                displayName: user.displayName || calculatedAtticNickname,
+                email: user.email,
+                quizAnswers: { ...collectedQuizAnswers },
+                magnetProgram: finalAssignedProgram,
+                applicationDate: new Date().toISOString(),
+                gatewayComplete: true,
+                role: 'student' 
+            };
+            
+            console.log(`// Gateway Data for Profile Update:`, JSON.stringify(profileUpdates));
+            console.log(`// First Impression Text:`, firstImpressionText);
+            console.log(`// Attic Story Text:`, atticStoryText);
+
+            const chronicleEntryPromises = [];
+            const serverTimestamp = firebase.database.ServerValue.TIMESTAMP;
+
+            if (firstImpressionText) {
+                const impressionEntry = {
+                    promptIdRef: "prompt_gateway_impression",
+                    promptTitleSnapshot: "My First Glimpse of The Attic",
+                    studentResponse: firstImpressionText,
+                    timestamp: serverTimestamp,
+                    type: "gateway_impression"
+                };
+                chronicleEntryPromises.push(userChronicleEntriesRef.push(impressionEntry).then(ref => console.log("Impression entry saved:", ref.key)).catch(e => console.error("Error saving impression:", e)));
+            }
+
+            if (atticStoryText) {
+                const storyEntry = {
+                    promptIdRef: "prompt_gateway_story",
+                    promptTitleSnapshot: "My Attic Story - The Beginning",
+                    studentResponse: atticStoryText,
+                    timestamp: serverTimestamp,
+                    type: "gateway_story"
+                };
+                chronicleEntryPromises.push(userChronicleEntriesRef.push(storyEntry).then(ref => console.log("Attic Story entry saved:", ref.key)).catch(e => console.error("Error saving attic story:", e)));
+            }
+
+            userProfileRef.update(profileUpdates)
+                .then(() => {
+                    console.log("Main profile data updated successfully.");
+                    if (chronicleEntryPromises.length > 0) {
+                        return Promise.all(chronicleEntryPromises);
+                    }
+                    return Promise.resolve();
+                })
+                .then(() => {
+                    console.log("All gateway data, including chronicle entries, processed successfully.");
+                    showStatus(`Welcome, ${profileUpdates.atticNickname}! Your entry is complete. Your Magnet Program is: ${profileUpdates.magnetProgram}. Preparing your orientation...`, 'success');
+                    setTimeout(() => {
+                        window.location.href = 'first_day_orientation.html';
+                    }, 3500);
+                })
+                .catch(error => {
+                    console.error("Error saving gateway data:", error);
+                    showStatus(`Error processing your entry: ${error.message}`, 'error');
+                    if(submitGatewayButton) submitGatewayButton.disabled = false;
+                });
+        });
+    }
+    // -----------------------------------------------------------------------------------
+    // END OF NEW SUBMIT HANDLER
+    // -----------------------------------------------------------------------------------
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!firebase || !firebase.auth || !firebase.database) {
+            showStatus("Critical Error: Authentication service not available.", "error");
+            if(gatewayForm) gatewayForm.style.display = 'none'; // Hide form if Firebase is broken
+            return;
+        }
+        // Check if essential navigation buttons exist
+        if (!prevStepButton || !nextStepButton || !submitGatewayButton || !quizQuestionTemplates) {
+             console.error("CRITICAL: One or more navigation buttons or quiz templates are missing from the HTML.");
+             showStatus("Page Error: Navigation elements missing. Cannot proceed.", "error");
+             if(gatewayForm) gatewayForm.style.display = 'none';
+             return;
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                const userProfileRef = firebase.database().ref('users/' + user.uid + '/profile');
+                userProfileRef.once('value').then(snapshot => {
+                    const profile = snapshot.val();
+                    if (profile && profile.gatewayComplete === true) {
+                        if (profile.orientationComplete === true) {
+                            showStatus('You have already completed the full onboarding. Redirecting to dashboard...', 'info');
+                            setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                        } else {
+                            showStatus('Gateway entry complete. Redirecting to orientation...', 'info');
+                            setTimeout(() => window.location.href = 'first_day_orientation.html', 1500);
+                        }
+                    } else {
+                        // User is logged in but hasn't completed gateway, show the first step.
+                        currentMainStepIndex = 0;
+                        currentQuizQuestionIndex = 0;
+                        collectedQuizAnswers = {}; // Reset answers
+                        displayCurrentStep();
+                        if(gatewayForm) gatewayForm.style.display = 'block'; // Ensure form is visible
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user profile on gateway page:", error);
+                    showStatus("Error checking your onboarding status. Please refresh.", "error");
+                    if(gatewayForm) gatewayForm.style.display = 'none';
+                });
+            } else {
+                showStatus('You need to be logged in to enter The Attic Gateway. Redirecting to login...', 'error');
+                if(gatewayForm) gatewayForm.style.display = 'none';
+                setTimeout(() => { window.location.href = 'login.html?redirect=attic_gateway.html'; }, 2500);
+            }
+        });
+    });
+   </script>
+</body>
+</html>

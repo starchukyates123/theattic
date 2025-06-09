@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleplay Class Details - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 0; background-color: #f4f4f4; color: #333; }
+        header { background: #556b2f; color: #fff; padding: 1rem 0; text-align: center; }
+        header h1 { margin: 0; font-size: 2em; }
+        nav { text-align: center; padding: 10px; background-color: #e0e0e0; }
+        nav a { margin: 0 10px; text-decoration: none; color: #333; }
+        nav a:hover { color: #556b2f; }
+        main { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        .class-detail-container { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .class-detail-container h1.class-title { color: #556b2f; margin-top: 0; border-bottom: 2px solid #8fbc8f; padding-bottom: 10px; }
+        .meta-info { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
+        .meta-info p { margin: 8px 0; font-size: 0.95em; color: #555; }
+        .meta-info strong { color: #333; }
+        .description-section h4, .term-details-section h4, .lessons-section h3, .assignments-section h3 { color: #556b2f; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .actions { margin-top: 25px; text-align: center; }
+        .actions button, .action-link { background-color: #556b2f; color: white !important; padding: 12px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 1em; border-radius: 5px; border: none; cursor: pointer; transition: background-color 0.3s ease; margin: 5px; }
+        .actions button:hover, .action-link:hover { background-color: #6B8E23; }
+        .actions button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .status-message { padding:10px; margin: 15px 0; border-radius:5px; text-align:center; }
+        .status-error { background-color:#f8d7da; color:#721c24; }
+        .status-loading { background-color:#e2e3e5; color:#383d41; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; }
+        .class-status-display { font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block;}
+        .class-status-display.enrollment_open { background-color: #28a745; color: white; }
+        .class-status-display.upcoming { background-color: #ffc107; color: #333; }
+        .class-status-display.active_lesson_1, .class-status-display.enrollment_closed { background-color: #6c757d; color: white; }
+        .class-status-display.full { background-color: #dc3545; color: white;}
+        .class-status-display.default, .class-status-display.unknown  { background-color: #6c757d; color: white;}
+
+        footer { text-align: center; padding: 20px 0; margin-top: 30px; font-size: 0.9em; color: #777; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="class-page-main-title">Class Details</h1>
+    </header>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="roleplay_class_listings.html">All Classes</a>
+        <a href="forums.html">Forums</a>
+    </nav>
+    <main>
+        <div id="class-detail-content" class="class-detail-container">
+            <p class="status-message status-loading">Loading class details...</p>
+        </div>
+        <div id="enrollment-section" class="actions" style="display:none;">
+            <button id="enroll-button">Enroll Now</button>
+            <p id="enrollment-status-message" class="status-message" style="display:none;"></p>
+        </div>
+        <div id="classroom-links-section" class="actions" style="display:none;">
+             <button id="enter-classroom-btn">Enter Main Classroom</button>
+             <button id="view-assignments-btn">View Assignments</button>
+             <button id="go-to-forum-btn">Go to Class Forum</button>
+        </div>
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <a href="roleplay_class_listings.html" class="action-link" style="background-color: #6c757d;">Back to Class Listings</a>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+  authDomain: "attic-4ae31.firebaseapp.com",
+  databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+  projectId: "attic-4ae31",
+  storageBucket: "attic-4ae31.firebasestorage.app",
+  messagingSenderId: "259372678655",
+  appId: "1:259372678655:web:df9c03e07e022392837bca",
+  measurementId: "G-2WWH3YVXT5"
+};
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        const classDetailContentEl = document.getElementById('class-detail-content');
+        const classPageMainTitleEl = document.getElementById('class-page-main-title');
+        const enrollmentSectionEl = document.getElementById('enrollment-section');
+        const enrollButtonEl = document.getElementById('enroll-button');
+        const enrollmentStatusMessageEl = document.getElementById('enrollment-status-message');
+        const classroomLinksSectionEl = document.getElementById('classroom-links-section');
+        const enterClassroomBtnEl = document.getElementById('enter-classroom-btn');
+        const viewAssignmentsBtnEl = document.getElementById('view-assignments-btn');
+        const goToForumBtnEl = document.getElementById('go-to-forum-btn');
+
+
+        let classId = null;
+        let currentUser = null;
+        let currentUserProfile = null; // To store user's profile for display name
+        let currentClassData = null;
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        
+        function formatStatusForDisplay(statusKey) {
+            if (!statusKey) return 'Unknown';
+            return statusKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+
+        function displayClassDetails(classData) {
+            currentClassData = classData; // Store globally for enrollment function
+            if (!classDetailContentEl) return;
+
+            if (!classData) {
+                classPageMainTitleEl.textContent = "Class Not Found";
+                classDetailContentEl.innerHTML = `<p class="status-message status-error">The requested class (ID: ${escapeHtml(classId)}) could not be found.</p>`;
+                enrollmentSectionEl.style.display = 'none';
+                classroomLinksSectionEl.style.display = 'none';
+                return;
+            }
+
+            document.title = `${escapeHtml(classData.title || 'Class Details')} - The Attic`;
+            classPageMainTitleEl.textContent = escapeHtml(classData.title || 'Class Details');
+            
+            let htmlContent = `<h1 class="class-title">${escapeHtml(classData.title)}</h1>`;
+            htmlContent += `<div class="meta-info">`;
+            htmlContent += `<p><strong>Professor:</strong> ${escapeHtml(classData.professorName || 'TBA')}</p>`;
+
+            const enrolledCount = classData.currentEnrollmentCount || 0;
+            const limit = classData.enrollmentLimit;
+            let enrollmentText = `${enrolledCount}`;
+            enrollmentText += limit ? ` / ${limit}` : ` (Open Enrollment)`;
+            htmlContent += `<p><strong>Current Enrollment:</strong> ${enrollmentText}</p>`;
+            
+            // Use currentTerm.status if available, otherwise fallback to overall classData.status
+            const displayStatus = classData.currentTerm?.status || classData.status || 'unknown';
+            let statusClass = displayStatus.replace(/\s+/g, '_').toLowerCase();
+            if (displayStatus === 'enrollment_open' && limit && enrolledCount >= limit) {
+                statusClass = 'full';
+            }
+             if (!['enrollment_open', 'upcoming', 'active_lesson_1', 'enrollment_closed', 'full'].includes(statusClass)) {
+                statusClass = 'default';
+            }
+
+            htmlContent += `<p><strong>Status:</strong> <span class="class-status-display status-${statusClass}">${formatStatusForDisplay(displayStatus)}</span></p>`;
+            
+            // General Term Info (from main workshop 'term' field)
+            if (classData.term) {
+                 htmlContent += `<p><strong>Term Period:</strong> ${escapeHtml(classData.term)}</p>`;
+            }
+            // Specific Term Name (from currentTerm.termName)
+             if (classData.currentTerm && classData.currentTerm.termName) {
+                htmlContent += `<p><strong>Current Term Name:</strong> ${escapeHtml(classData.currentTerm.termName)}</p>`;
+            }
+
+            if (classData.completionBadge && classData.completionBadge.name) {
+                htmlContent += `<p><strong>Completion Badge:</strong> ${escapeHtml(classData.completionBadge.name)}</p>`;
+                 if(classData.completionBadge.imageUrl) {
+                    htmlContent += `<img src="${escapeHtml(classData.completionBadge.imageUrl)}" alt="${escapeHtml(classData.completionBadge.name)}" style="max-width:100px; height:auto; margin-top:5px;">`;
+                }
+            }
+            htmlContent += `</div>`; // End meta-info
+
+            htmlContent += `<div class="description-section"><h4>Class Overview:</h4>`;
+            htmlContent += `<p>${escapeHtml(classData.description || 'No further details provided.').replace(/\n/g, '<br>')}</p></div>`;
+            
+            // Brief mention of lessons/assignments, linking to dedicated pages
+            htmlContent += `<section class="lessons-section"><h3>Class Structure</h3>
+                               <p>Lessons and key story beats will be posted in the Main Classroom. Assignments and extra credit opportunities can be found in the Assignments section.</p>
+                           </section>`;
+
+            classDetailContentEl.innerHTML = htmlContent;
+            updateActionButtons();
+        }
+
+        function updateActionButtons() {
+            if (!currentUser || !currentClassData) {
+                enrollmentSectionEl.style.display = 'none';
+                classroomLinksSectionEl.style.display = 'none';
+                if (!currentUser && currentClassData) { // Show login to enroll if class is open
+                    const classStatus = currentClassData.currentTerm?.status || currentClassData.status;
+                    if (classStatus === 'enrollment_open') {
+                        enrollmentStatusMessageEl.innerHTML = `Please <a href="login.html?redirect=${encodeURIComponent(window.location.href)}">log in</a> to enroll.`;
+                        enrollmentStatusMessageEl.style.display = 'block';
+                        enrollmentSectionEl.style.display = 'block';
+                        enrollButtonEl.style.display = 'none';
+                    }
+                }
+                return;
+            }
+
+            const isEnrolled = currentClassData.enrolledStudents && currentClassData.enrolledStudents[currentUser.uid];
+            const isProfessor = currentClassData.professorUid === currentUser.uid; // Check against professorUid
+            const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+            const classStatus = currentClassData.currentTerm?.status || currentClassData.status;
+            const isFull = (currentClassData.currentEnrollmentCount || 0) >= (currentClassData.enrollmentLimit || Infinity);
+
+            // Enrollment Button Logic
+            enrollmentSectionEl.style.display = 'block';
+            if (isEnrolled) {
+                enrollButtonEl.textContent = 'Already Enrolled';
+                enrollButtonEl.disabled = true;
+                enrollButtonEl.style.display = 'block';
+                enrollmentStatusMessageEl.textContent = 'You are enrolled in this class.';
+                enrollmentStatusMessageEl.className = 'status-message status-info';
+                enrollmentStatusMessageEl.style.display = 'block';
+            } else if (classStatus === 'enrollment_open' && !isFull) {
+                enrollButtonEl.textContent = 'Enroll Now';
+                enrollButtonEl.disabled = false;
+                enrollButtonEl.style.display = 'block';
+                enrollmentStatusMessageEl.style.display = 'none';
+            } else {
+                enrollButtonEl.style.display = 'none';
+                if (isFull && classStatus === 'enrollment_open') {
+                    enrollmentStatusMessageEl.textContent = 'This class is currently full.';
+                } else {
+                    enrollmentStatusMessageEl.textContent = `Enrollment is currently ${formatStatusForDisplay(classStatus)}.`;
+                }
+                enrollmentStatusMessageEl.className = 'status-message status-info';
+                enrollmentStatusMessageEl.style.display = 'block';
+            }
+
+            // Classroom Links Logic
+            if (isEnrolled || isProfessor || isAdmin) {
+                classroomLinksSectionEl.style.display = 'block';
+                enterClassroomBtnEl.onclick = () => window.location.href = `rp_classroom_main.html?classId=${classId}`;
+                viewAssignmentsBtnEl.onclick = () => window.location.href = `rp_class_assignments.html?classId=${classId}`;
+                if (currentClassData.forumId) {
+                    goToForumBtnEl.style.display = 'inline-block';
+                    goToForumBtnEl.onclick = () => window.location.href = `rp_class_forum.html?classId=${classId}&forumId=${currentClassData.forumId}`;
+                     // Note: rp_class_forum.html also needs to know the workshop/class ID to link back etc.
+                     // It might be better if rp_class_forum.html primarily uses its own forumId to fetch threads,
+                     // and the classId is passed for context (like navigation back to class info/syllabus).
+                     // The current rp_class_forum.html provided by user gets classId, not forumId directly from URL for its primary logic.
+                     // This implies classDataGlobal in rp_class_forum should have forumId. Let's assume that's fine for now.
+                } else {
+                    goToForumBtnEl.style.display = 'none';
+                }
+            } else {
+                classroomLinksSectionEl.style.display = 'none';
+            }
+        }
+        
+        window.enrollInClass = function() { // Removed parameter, uses global classId
+            if (!currentUser || !currentUserProfile || !currentClassData || !classId) {
+                alert("Could not process enrollment. User or class data missing. Please refresh.");
+                return;
+            }
+
+            const classStatus = currentClassData.currentTerm?.status || currentClassData.status;
+            if (classStatus !== 'enrollment_open') {
+                alert("Enrollment for this class is not currently open.");
+                return;
+            }
+
+            if ((currentClassData.currentEnrollmentCount || 0) >= (currentClassData.enrollmentLimit || Infinity)) {
+                alert("This class is full.");
+                return;
+            }
+            
+            if (currentClassData.enrolledStudents && currentClassData.enrolledStudents[currentUser.uid]) {
+                alert("You are already enrolled in this class.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to enroll in "${currentClassData.title}"?`)) return;
+
+            enrollButtonEl.disabled = true;
+            enrollButtonEl.textContent = 'Enrolling...';
+
+            const updates = {};
+            const studentDisplayName = currentUserProfile.displayName || currentUserProfile.atticNickname || currentUser.email.split('@')[0];
+
+            // Path changed to /workshops/
+            updates[`/workshops/${classId}/enrolledStudents/${currentUser.uid}`] = {
+                enrolledAt: firebase.database.ServerValue.TIMESTAMP,
+                displayName: studentDisplayName
+            };
+            updates[`/workshops/${classId}/currentEnrollmentCount`] = firebase.database.ServerValue.increment(1);
+            
+            // Update user's progress (assuming 'year1' for now, adjust path if needed)
+            updates[`/userProgress/${currentUser.uid}/year1/courses/${classId}`] = {
+                title: currentClassData.title,
+                status: 'registered', // Or 'in_progress' if class starts immediately
+                enrolledAt: firebase.database.ServerValue.TIMESTAMP,
+                workshopType: currentClassData.type // Store type for easier filtering on user's dashboard
+            };
+
+            db.ref().update(updates)
+                .then(() => {
+                    alert("Successfully enrolled!");
+                    // The 'on' listener for classRef should automatically update the UI.
+                    // No need to call fetchClassDetails manually if using '.on'.
+                })
+                .catch(error => {
+                    console.error("Error enrolling:", error);
+                    alert("Enrollment failed: " + error.message + "\nThis could be due to database rules or a network issue.");
+                    enrollButtonEl.disabled = false; // Re-enable button on error
+                    enrollButtonEl.textContent = 'Enroll Now';
+                });
+        };
+        
+        function fetchAndDisplayClassDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            classId = urlParams.get('id');
+
+            if (!classId) {
+                classPageMainTitleEl.textContent = "Error";
+                classDetailContentEl.innerHTML = `<p class="status-message status-error">No class ID specified in the URL.</p>`;
+                enrollmentSectionEl.style.display = 'none';
+                classroomLinksSectionEl.style.display = 'none';
+                return;
+            }
+            
+            // Path changed to /workshops/
+            const classRef = db.ref(`/workshops/${classId}`);
+            // Use '.on' to listen for real-time updates (e.g., enrollment count changes)
+            classRef.on('value', snapshot => {
+                if (snapshot.exists()) {
+                    displayClassDetails(snapshot.val());
+                } else {
+                    displayClassDetails(null); // Handles class not found
+                }
+            }, errorObject => { 
+                console.error("Error fetching details from Firebase:", errorObject);
+                classPageMainTitleEl.textContent = "Error Loading";
+                classDetailContentEl.innerHTML = `<p class="status-message status-error">Error loading details: ${escapeHtml(errorObject.message || 'Unknown Firebase error')}</p>`;
+                enrollmentSectionEl.style.display = 'none';
+                classroomLinksSectionEl.style.display = 'none';
+            });
+        }
+
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            if (user) {
+                db.ref(`users/${currentUser.uid}/profile`).once('value').then(profileSnapshot => {
+                    currentUserProfile = profileSnapshot.exists() ? profileSnapshot.val() : { displayName: currentUser.email.split('@')[0] }; // Basic fallback
+                    fetchAndDisplayClassDetails(); 
+                }).catch(err => {
+                    console.error("Error fetching user profile:", err);
+                    currentUserProfile = { displayName: currentUser.email.split('@')[0] }; // Basic fallback
+                    fetchAndDisplayClassDetails();
+                });
+            } else {
+                currentUserProfile = null;
+                fetchAndDisplayClassDetails(); // Still attempt to display public class info
+            }
+        });
+
+        if (enrollButtonEl) {
+            enrollButtonEl.addEventListener('click', enrollInClass); // Removed parameter from call
+        }
+
+    </script>
+</body>
+</html>

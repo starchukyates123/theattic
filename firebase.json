@@ -1,0 +1,1995 @@
+{
+  "accessRequests": {
+    "-OQ6gtFYmqti1NFqhv-N": {
+      "requestTimestamp": 1747107157114,
+      "requestedGroupKey": "esl",
+      "requestedGroupName": "ESL Support Group",
+      "reviewTimestamp": 1747107189703,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "Admin User",
+      "userEmail": "learningpod123@gmail.com",
+      "userId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2"
+    },
+    "-OQ8rKxgVcckSNmg7oiS": {
+      "requestTimestamp": 1747143452459,
+      "requestedGroupKey": "neurodiverse",
+      "requestedGroupName": "Neurodiverse Support Group",
+      "reviewTimestamp": 1747143467063,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "Admin User",
+      "userEmail": "learningpod123@gmail.com",
+      "userId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2"
+    },
+    "-OQ9SsfvwaBQVq9E38Ct": {
+      "requestTimestamp": 1747153554225,
+      "requestedGroupKey": "parents",
+      "requestedGroupName": "Parent Support Group",
+      "reviewTimestamp": 1747296595885,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "Admin User",
+      "userEmail": "learningpod123@gmail.com",
+      "userId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2"
+    },
+    "-OQKToRip8Fc-L4osOuw": {
+      "requestTimestamp": 1747338348381,
+      "requestedGroupKey": "neurodiverse",
+      "requestedGroupName": "Neurodiverse Support Group",
+      "reviewTimestamp": 1747344579017,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "J Gray",
+      "userEmail": "jonasy@gmail.com",
+      "userId": "jiHsgzihnvVCWXozkkF2VaiUrt62"
+    }
+  },
+  "courses": {
+    "Y1CORE_EMOT": {
+      "description": "Exploring emotional intelligence, self-awareness, and healthy coping strategies.",
+      "title": "Understanding Emotions and Feelings",
+      "type": "Core",
+      "weeks": [
+        null,
+        {
+          "assignment": "yoho",
+          "quiz": {
+            "questions": [
+              {
+                "id": "q1",
+                "options": [
+                  {
+                    "isCorrect": true,
+                    "text": "yes"
+                  },
+                  {
+                    "isCorrect": false,
+                    "text": "no"
+                  }
+                ],
+                "text": "yes",
+                "type": "multiple-choice"
+              }
+            ],
+            "status": "optional",
+            "title": "do u know?"
+          },
+          "storyline": "test storybase 1",
+          "summary": "howdy",
+          "topic": "feelings"
+        },
+        {
+          "assignment": "YEAH",
+          "quiz": {
+            "questions": [
+              {
+                "id": "q1",
+                "options": [
+                  {
+                    "isCorrect": true,
+                    "text": "yes"
+                  },
+                  {
+                    "isCorrect": false,
+                    "text": "no"
+                  }
+                ],
+                "text": "PASS",
+                "type": "multiple-choice"
+              }
+            ],
+            "status": "mandatory",
+            "title": "MUST PASS"
+          },
+          "storyline": "tes the story",
+          "summary": "tester out yahhh",
+          "topic": "test"
+        },
+        {
+          "assignment": "better do it",
+          "storyline": "",
+          "summary": "week 3 tester out",
+          "topic": "wee 3"
+        }
+      ],
+      "year": "1"
+    },
+    "Y1CORE_MATH": {
+      "description": "Practical math skills applicable to daily life and problem-solving.",
+      "title": "Math for Real Life",
+      "type": "Core",
+      "weeks": [
+        null,
+        {
+          "assignment": "lets seeeeeee",
+          "quiz": {
+            "questions": [
+              {
+                "id": "q1",
+                "options": [
+                  {
+                    "isCorrect": false,
+                    "text": "test"
+                  },
+                  {
+                    "isCorrect": true,
+                    "text": "test"
+                  }
+                ],
+                "text": "test",
+                "type": "multiple-choice"
+              }
+            ],
+            "status": "optional",
+            "title": "test test"
+          },
+          "storyline": "",
+          "summary": "testing it out",
+          "topic": "test"
+        },
+        {
+          "assignment": "lets test!",
+          "storyline": "",
+          "summary": "testing again soo",
+          "topic": "test"
+        },
+        {
+          "assignment": "saaaaaaaaaaaaaaaaave",
+          "storyline": "",
+          "summary": "savfe save save",
+          "topic": "saving"
+        }
+      ],
+      "year": "1"
+    },
+    "Y1CORE_Read": {
+      "description": "Read it up!",
+      "title": "Reading Fun and Comprehension",
+      "type": "Core",
+      "weeks": [
+        null,
+        {
+          "assignment": "test",
+          "quiz": {
+            "questions": [
+              {
+                "id": "q1",
+                "options": [
+                  {
+                    "isCorrect": false,
+                    "text": "test"
+                  },
+                  {
+                    "isCorrect": true,
+                    "text": "yes!"
+                  }
+                ],
+                "text": "do u know? test",
+                "type": "multiple-choice"
+              }
+            ],
+            "status": "mandatory",
+            "title": "must know"
+          },
+          "storyline": "",
+          "summary": "test",
+          "topic": "test"
+        },
+        {
+          "assignment": "test",
+          "storyline": "",
+          "summary": "TEST",
+          "topic": "test"
+        },
+        {
+          "assignment": "yep",
+          "storyline": "",
+          "summary": "aaagain",
+          "topic": "test again"
+        }
+      ],
+      "year": "1"
+    },
+    "Y1CORE_WRIT": {
+      "description": "Core writing skills for everyday application and creative expression.",
+      "title": "Writing for Life",
+      "type": "Core",
+      "year": "1"
+    },
+    "Y1ELEC_CREA": {
+      "description": "Explore various forms of creative expression, from art to performance.",
+      "title": "Creative Expressions Workshop",
+      "type": "Elective",
+      "weeks": [
+        null,
+        {
+          "assignment": "heres the assignment test",
+          "storyline": "hey there storyline test",
+          "summary": "testing it out",
+          "topic": "test"
+        },
+        {
+          "assignment": "test",
+          "storyline": "test",
+          "summary": "trying to test it out",
+          "topic": "TEST"
+        }
+      ],
+      "year": "1"
+    },
+    "Y1ELEC_ENVI": {
+      "description": "Learn about local ecosystems, conservation, and environmental stewardship.",
+      "title": "Our Environment Matters",
+      "type": "Elective",
+      "year": "1"
+    },
+    "Y1ELEC_MOVE": {
+      "description": "Focus on physical activity, body awareness, and mindful practices.",
+      "title": "Movement and Mindfulness",
+      "type": "Elective",
+      "year": "1"
+    },
+    "Y1ELEC_SIGN": {
+      "description": "Learn the basics of sign language and deaf culture.",
+      "title": "Introduction to Sign Language",
+      "type": "Elective",
+      "year": "1"
+    }
+  },
+  "forumData": {
+    "categories": {
+      "class_lounges": {
+        "description": "Dedicated discussion spaces for each class.",
+        "name": "Class Lounges",
+        "order": 6
+      },
+      "events": {
+        "description": "Forums for school events and activities.",
+        "name": "Events",
+        "order": 4
+      },
+      "general": {
+        "description": "General discussion for all members.",
+        "name": "General",
+        "order": 1
+      },
+      "magnet_programs": {
+        "description": "Forums for specific Magnet Programs.",
+        "name": "Magnet Programs",
+        "order": 2
+      },
+      "private": {
+        "description": "Private forums for specific groups.",
+        "name": "Private Forums",
+        "order": 3
+      },
+      "test_cat": {
+        "description": "Testing purposes",
+        "name": "Test Category",
+        "order": 5
+      },
+      "workshops_category": {
+        "description": "Dedicated spaces for interactive forum-based workshops.",
+        "name": "Forum Workshops",
+        "order": 7
+      }
+    },
+    "forums": {
+      "creative_expressionists": {
+        "accessGroup": "creative",
+        "categoryId": "magnet_programs",
+        "description": "Celebrating artistic and creative talents.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Creative Expressionists"
+      },
+      "eco_explorers": {
+        "accessGroup": "eco",
+        "categoryId": "magnet_programs",
+        "description": "For those passionate about the environment.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Eco-Explorers"
+      },
+      "esl_support": {
+        "accessGroup": "esl",
+        "categoryId": "private",
+        "description": "Support for English as a Second Language learners.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQMaGmq9ulHgiEZKmEJ",
+          "threadId": "-OQMaGmpEIH5yNJZ2EO4",
+          "threadTitle": "heyyyy",
+          "timestamp": 1747373858024
+        },
+        "postCount": 3,
+        "threadCount": 2,
+        "title": "ESL Support"
+      },
+      "forum_Y1CORE_EMOT": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381178441,
+        "description": "Discussions for the course: Understanding Emotions and Feelings.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1C3ApxWBZl2MEa-d",
+          "threadId": "-OQN1C39YHV1c0j0-pis",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Understanding Emotions and Feelings",
+          "timestamp": 1747381178732
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Understanding Emotions and Feelings"
+      },
+      "forum_Y1CORE_MATH": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381185507,
+        "description": "Discussions for the course: Math for Real Life.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1DmZuLlQJ3hQf75r",
+          "threadId": "-OQN1DmZuLlQJ3hQf75q",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Math for Real Life",
+          "timestamp": 1747381185794
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Math for Real Life"
+      },
+      "forum_Y1CORE_Read": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381202036,
+        "description": "Discussions for the course: Reading Fun and Comprehension.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1Hp4ULpU3iFEwXYA",
+          "threadId": "-OQN1Hp3utHGhz3orvqD",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Reading Fun and Comprehension",
+          "timestamp": 1747381202344
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Reading Fun and Comprehension"
+      },
+      "forum_Y1CORE_WRIT": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381212905,
+        "description": "Discussions for the course: Writing for Life.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1KTyia7-qrY2ff5h",
+          "threadId": "-OQN1KTxPG-URkDCU2GY",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Writing for Life",
+          "timestamp": 1747381213218
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Writing for Life"
+      },
+      "forum_Y1ELEC_CREA": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381222981,
+        "description": "Discussions for the course: Creative Expressions Workshop.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1MwIrYgDhSVjXVUO",
+          "threadId": "-OQN1MwIrYgDhSVjXVUN",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Creative Expressions Workshop",
+          "timestamp": 1747381223285
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Creative Expressions Workshop"
+      },
+      "forum_Y1ELEC_ENVI": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381235856,
+        "description": "Discussions for the course: Our Environment Matters.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1Q4hEGEXJ3Q04PuU",
+          "threadId": "-OQN1Q4hEGEXJ3Q04PuT",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Our Environment Matters",
+          "timestamp": 1747381236175
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Our Environment Matters"
+      },
+      "forum_Y1ELEC_MOVE": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381255314,
+        "description": "Discussions for the course: Movement and Mindfulness.",
+        "lastPostInfo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "postId": "-OQN1UpPl9rWpBIOMTEZ",
+          "threadId": "-OQN1UpPl9rWpBIOMTEY",
+          "threadTitle": "🤝 Study Group and Collaboration Corner for Movement and Mindfulness",
+          "timestamp": 1747381255610
+        },
+        "postCount": 3,
+        "threadCount": 3,
+        "title": "Course Lounge: Movement and Mindfulness"
+      },
+      "forum_Y1ELEC_SIGN": {
+        "categoryId": "course_lounges",
+        "createdAt": 1747381263394,
+        "description": "Discussions for the course: Introduction to Sign Language.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQYEBCvn82XOA4Q2a63",
+          "threadId": "-OQN1WkWjk4HFCJhmibr",
+          "threadTitle": "❓ Questions about Introduction to Sign Language",
+          "timestamp": 1747569132515
+        },
+        "postCount": 4,
+        "threadCount": 3,
+        "title": "Course Lounge: Introduction to Sign Language"
+      },
+      "forum_ws_class_9twQO": {
+        "accessGroup": "ws_class_9twQO_access",
+        "accessType": "rp_class_restricted",
+        "categoryId": "workshops_category",
+        "createdAt": 1747755521267,
+        "description": "Discussion forum for: test...",
+        "isWorkshopForum": true,
+        "lastPostInfo": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQiLC_ovceNTY3Ed-Sp",
+          "threadId": "-OQiLC_ovceNTY3Ed-So",
+          "threadTitle": "👋 class - Introductions & General Chat",
+          "timestamp": 1747755522467
+        },
+        "linkedWorkshopId": "-OQiLCHKp0CSDDq9twQO",
+        "postCount": 3,
+        "professorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "threadCount": 3,
+        "title": "RP Classroom: class",
+        "workshopId": "-OQiLCHKp0CSDDq9twQO"
+      },
+      "general_discussion": {
+        "categoryId": "general",
+        "description": "Talk about anything related to the school.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQiSGyqS89tzGM_0edp",
+          "threadId": "-OQiSGyqS89tzGM_0edo",
+          "threadTitle": "hiii",
+          "timestamp": 1747757375465
+        },
+        "postCount": 4,
+        "threadCount": 1,
+        "title": "General Discussion"
+      },
+      "kind_world_builders": {
+        "accessGroup": "kind",
+        "categoryId": "magnet_programs",
+        "description": "Dedicated to helping others and building community.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OPkyI4TEw-lit_5yNNY",
+          "threadId": "-OPkyI4TEw-lit_5yNNX",
+          "threadTitle": "hiii",
+          "timestamp": 1746725843351
+        },
+        "postCount": 1,
+        "threadCount": 1,
+        "title": "Kind World Builders"
+      },
+      "loung_Y1READ": {
+        "categoryId": "class_lounges",
+        "description": "lets talk about reading!",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "READTOME"
+      },
+      "loung_YA": {
+        "categoryId": "general",
+        "description": "I love liiifeeeee.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Love life here!"
+      },
+      "movers": {
+        "accessGroup": "mover",
+        "categoryId": "magnet_programs",
+        "description": "Emphasizing physical activity and hands-on creation.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Movers"
+      },
+      "neurodiverse_support": {
+        "accessGroup": "neurodiverse",
+        "categoryId": "private",
+        "description": "Support for neurodiverse students.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQMf0dOepblUYQ4Qi3T",
+          "threadId": "-OQMeziaTn3XVz7Qg2eg",
+          "threadTitle": "hey there!~",
+          "timestamp": 1747375102644
+        },
+        "postCount": 4,
+        "threadCount": 1,
+        "title": "Neurodiverse Support"
+      },
+      "parent_support": {
+        "accessGroup": "parents",
+        "categoryId": "private",
+        "description": "Support for student parents.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Parent Support"
+      },
+      "school_events": {
+        "categoryId": "events",
+        "description": "Forums for school dances, games, and other events.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "School Events"
+      },
+      "test_forum_public": {
+        "categoryId": "test_cat",
+        "description": "Anyone logged in should see this.",
+        "lastPostInfo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "postId": "-OQSan0-WSqOifMNHbUi",
+          "threadId": "-OPkxdUKWwHAR3vdzLvO",
+          "threadTitle": "hii!",
+          "timestamp": 1747474657451
+        },
+        "postCount": 3,
+        "threadCount": 1,
+        "title": "My First Public Forum"
+      },
+      "thinkers": {
+        "accessGroup": "thinker",
+        "categoryId": "magnet_programs",
+        "description": "Focused on problem-solving and logical thinking.",
+        "postCount": 0,
+        "threadCount": 0,
+        "title": "Thinkers"
+      }
+    },
+    "posts": {
+      "-OPkxdUKWwHAR3vdzLvO": {
+        "-OPkxdULY2f5SPBlMYKw": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hey there!",
+          "createdAt": 1746725672973
+        },
+        "-OQKTyuCKRXHzpYXW_Q-": {
+          "authorName": "J Gray",
+          "authorUid": "jiHsgzihnvVCWXozkkF2VaiUrt62",
+          "content": "hey whats up>?",
+          "createdAt": 1747338391281
+        },
+        "-OQSan0-WSqOifMNHbUi": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hii\nhope you are well!",
+          "createdAt": 1747474657451
+        }
+      },
+      "-OPkxkrFVyXd9U3A9NqA": {
+        "-OPkxkrFVyXd9U3A9NqB": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hiii  how are u doing?",
+          "createdAt": 1746725703720
+        },
+        "-OQ4B78SzxI6naLbxidS": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "how is it?",
+          "createdAt": 1747065012934
+        },
+        "-OQMcEOac4mIIFG14jZI": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hi there",
+          "createdAt": 1747374372558
+        }
+      },
+      "-OPkyI4TEw-lit_5yNNX": {
+        "-OPkyI4TEw-lit_5yNNY": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hey how you doing?",
+          "createdAt": 1746725843351
+        }
+      },
+      "-OQ9YMQU2NyVNke1Ooqe": {
+        "-OQ9YMQU2NyVNke1Ooqf": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hey there! hope all is well",
+          "createdAt": 1747154990864
+        },
+        "-OQ9YOFXyJ7ZGmz05Yf1": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hiiiiiiiiiiiiiiiiiiiiiii",
+          "createdAt": 1747154998411
+        }
+      },
+      "-OQMaGmpEIH5yNJZ2EO4": {
+        "-OQMaGmq9ulHgiEZKmEJ": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hiiiiiiiiiiiiii",
+          "createdAt": 1747373858024
+        }
+      },
+      "-OQMdZWm7Y2kuotupaX9": {
+        "-OQMdZWm7Y2kuotupaXA": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hey test test!",
+          "createdAt": 1747374721190
+        },
+        "-OQMdaOe1nhKKpLwik1q": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hi there",
+          "createdAt": 1747374728915
+        }
+      },
+      "-OQMeziaTn3XVz7Qg2eg": {
+        "-OQMeziaTn3XVz7Qg2eh": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "fellow studetns!",
+          "createdAt": 1747375094747
+        },
+        "-OQMf0dOepblUYQ4Qi3T": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "ur the best!!",
+          "createdAt": 1747375102644
+        }
+      },
+      "-OQN0LpBuBLhEdeoNa0J": {
+        "-OQN0LpBuBLhEdeoNa0K": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Understanding Emotions and Feelings\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747380956595,
+          "forumId": "forum_Y1CORE_EMOT",
+          "threadId": "-OQN0LpBuBLhEdeoNa0J"
+        }
+      },
+      "-OQN0LqrViUrXShyFGM_": {
+        "-OQN0Lqsz6ELoYxLzCCm": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Understanding Emotions and Feelings\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747380956714,
+          "forumId": "forum_Y1CORE_EMOT",
+          "threadId": "-OQN0LqrViUrXShyFGM_"
+        }
+      },
+      "-OQN1C0BA1zazmxhHUuQ": {
+        "-OQN1C0BA1zazmxhHUuR": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Understanding Emotions and Feelings\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747381178538,
+          "forumId": "forum_Y1CORE_EMOT",
+          "threadId": "-OQN1C0BA1zazmxhHUuQ"
+        }
+      },
+      "-OQN1C1eKTF7tRcw0Wqn": {
+        "-OQN1C1eKTF7tRcw0Wqo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Understanding Emotions and Feelings\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747381178635,
+          "forumId": "forum_Y1CORE_EMOT",
+          "threadId": "-OQN1C1eKTF7tRcw0Wqn"
+        }
+      },
+      "-OQN1C39YHV1c0j0-pis": {
+        "-OQN1C3ApxWBZl2MEa-d": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Looking to form a study group for \"Understanding Emotions and Feelings\"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!",
+          "createdAt": 1747381178732,
+          "forumId": "forum_Y1CORE_EMOT",
+          "threadId": "-OQN1C39YHV1c0j0-pis"
+        }
+      },
+      "-OQN1DjYEVOI-X4dT6ln": {
+        "-OQN1DjYEVOI-X4dT6lo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Math for Real Life\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747381185604,
+          "forumId": "forum_Y1CORE_MATH",
+          "threadId": "-OQN1DjYEVOI-X4dT6ln"
+        }
+      },
+      "-OQN1Dl3Yi1mn815pemm": {
+        "-OQN1Dl3Yi1mn815pemn": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Math for Real Life\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747381223188,
+          "forumId": "forum_Y1ELEC_CREA",
+          "threadId": "-OQN1Muk3jPsMMHAZbWw"
+        }
+      },
+      "-OQN1MwIrYgDhSVjXVUN": {
+        "-OQN1MwIrYgDhSVjXVUO": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Looking to form a study group for \"Creative Expressions Workshop\"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!",
+          "createdAt": 1747381223285,
+          "forumId": "forum_Y1ELEC_CREA",
+          "threadId": "-OQN1MwIrYgDhSVjXVUN"
+        }
+      },
+      "-OQN1Q1E-cVOHdH70zCm": {
+        "-OQN1Q1E-cVOHdH70zCn": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Our Environment Matters\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747381235951,
+          "forumId": "forum_Y1ELEC_ENVI",
+          "threadId": "-OQN1Q1E-cVOHdH70zCm"
+        }
+      },
+      "-OQN1Q2hoERKcc3_z4qC": {
+        "-OQN1Q2hoERKcc3_z4qD": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Our Environment Matters\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747381236078,
+          "forumId": "forum_Y1ELEC_ENVI",
+          "threadId": "-OQN1Q2hoERKcc3_z4qC"
+        }
+      },
+      "-OQN1Q4hEGEXJ3Q04PuT": {
+        "-OQN1Q4hEGEXJ3Q04PuU": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Looking to form a study group for \"Our Environment Matters\"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!",
+          "createdAt": 1747381236175,
+          "forumId": "forum_Y1ELEC_ENVI",
+          "threadId": "-OQN1Q4hEGEXJ3Q04PuT"
+        }
+      },
+      "-OQN1UmMSL0n-eJMj3cv": {
+        "-OQN1UmMSL0n-eJMj3cw": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Movement and Mindfulness\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747381255418,
+          "forumId": "forum_Y1ELEC_MOVE",
+          "threadId": "-OQN1UmMSL0n-eJMj3cv"
+        }
+      },
+      "-OQN1Unt7HYp2MU2G65c": {
+        "-OQN1UnuSs9lSvoSrUys": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Movement and Mindfulness\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747381255515,
+          "forumId": "forum_Y1ELEC_MOVE",
+          "threadId": "-OQN1Unt7HYp2MU2G65c"
+        }
+      },
+      "-OQN1UpPl9rWpBIOMTEY": {
+        "-OQN1UpPl9rWpBIOMTEZ": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Looking to form a study group for \"Movement and Mindfulness\"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!",
+          "createdAt": 1747381255610,
+          "forumId": "forum_Y1ELEC_MOVE",
+          "threadId": "-OQN1UpPl9rWpBIOMTEY"
+        }
+      },
+      "-OQN1WkWjk4HFCJhmibr": {
+        "-OQN1WkXPlbKpzOhpbWZ": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Welcome! If you have any questions about the course material, assignments, schedule, or anything else related to \"Introduction to Sign Language\", please post them here as a reply or start a new discussion.\n\nLet's learn together!",
+          "createdAt": 1747381263496,
+          "forumId": "forum_Y1ELEC_SIGN",
+          "threadId": "-OQN1WkWjk4HFCJhmibr"
+        },
+        "-OQSPePjTQk_XPdHnOb2": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hi there!",
+          "createdAt": 1747471476502
+        },
+        "-OQYEBCvn82XOA4Q2a63": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hi there test",
+          "createdAt": 1747569132515
+        }
+      },
+      "-OQN1Wm2PbeX3ugRtBRn": {
+        "-OQN1Wm2PbeX3ugRtBRo": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Hi everyone enrolled in \"Introduction to Sign Language\"!\n\nUse this space to chat about the course, introduce yourselves if you like, share relevant thoughts or resources, or just connect with your fellow learners. What are you hoping to get out of this course?",
+          "createdAt": 1747381263593,
+          "forumId": "forum_Y1ELEC_SIGN",
+          "threadId": "-OQN1Wm2PbeX3ugRtBRn"
+        }
+      },
+      "-OQN1Wna3o-1yH7ryos9": {
+        "-OQN1Wna3o-1yH7ryosA": {
+          "authorId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "authorName": "Sadina Star",
+          "content": "Looking to form a study group for \"Introduction to Sign Language\"? Want to collaborate on understanding difficult topics or practicing skills?\n\nUse this thread to find study buddies, schedule group sessions (you can use external tools for calls if needed), or discuss collaborative approaches to learning the material. Let's help each other succeed!",
+          "createdAt": 1747381263697,
+          "forumId": "forum_Y1ELEC_SIGN",
+          "threadId": "-OQN1Wna3o-1yH7ryos9"
+        }
+      },
+      "-OQbN23K6oaWBa-e-6En": {
+        "-OQbN23K6oaWBa-e-6Eo": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "This is the primary thread for \"class\". Your Professor, Admin User, will post key lessons, story updates, and important announcements here. Participants can reply to engage with prompts and official content.",
+          "createdAt": 1747638563140,
+          "forumId": "forum_ws_class_36_cZ",
+          "threadId": "-OQbN23K6oaWBa-e-6En"
+        }
+      },
+      "-OQbN23K6oaWBa-e-6Ep": {
+        "-OQbN23K6oaWBa-e-6Eq": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Have questions about \"class\"? Need clarification on a task or a game mechanic? Post your questions here. Fellow students or Admin User can help answer!",
+          "createdAt": 1747638563140,
+          "forumId": "forum_ws_class_36_cZ",
+          "threadId": "-OQbN23K6oaWBa-e-6Ep"
+        }
+      },
+      "-OQbN23K6oaWBa-e-6Er": {
+        "-OQbN23K6oaWBa-e-6Es": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Welcome to \"class\"! Use this thread to introduce yourselves (in or out of character, as appropriate for the class style), share your excitement, or for general chit-chat related to our class.",
+          "createdAt": 1747638563140,
+          "forumId": "forum_ws_class_36_cZ",
+          "threadId": "-OQbN23K6oaWBa-e-6Er"
+        }
+      },
+      "-OQbNuXcU2_qXea0EN_f": {
+        "-OQbNuXcU2_qXea0EN_g": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "This is the primary thread for \"test\". Your Professor, Admin User, will post key lessons, story updates, and important announcements here. Participants can reply to engage with prompts and official content.",
+          "createdAt": 1747638790361,
+          "forumId": "forum_ws_test_9Hm2S",
+          "threadId": "-OQbNuXcU2_qXea0EN_f"
+        }
+      },
+      "-OQbNuXdmjJohNdme4et": {
+        "-OQbNuXdmjJohNdme4eu": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Have questions about \"test\"? Need clarification on a task or a game mechanic? Post your questions here. Fellow students or Admin User can help answer!",
+          "createdAt": 1747638790361,
+          "forumId": "forum_ws_test_9Hm2S",
+          "threadId": "-OQbNuXdmjJohNdme4et"
+        }
+      },
+      "-OQbNuXdmjJohNdme4ev": {
+        "-OQbNuXdmjJohNdme4ew": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Welcome to \"test\"! Use this thread to introduce yourselves (in or out of character, as appropriate for the class style), share your excitement, or for general chit-chat related to our class.",
+          "createdAt": 1747638790361,
+          "forumId": "forum_ws_test_9Hm2S",
+          "threadId": "-OQbNuXdmjJohNdme4ev"
+        }
+      },
+      "-OQdNO7au__35xp1CZxG": {
+        "-OQdNO7au__35xp1CZxH": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "This is the primary thread for \"class\". Your Professor, Admin User, will post key lessons, story updates, and important announcements here. Participants can reply to engage with prompts and official content.",
+          "createdAt": 1747672207959,
+          "forumId": "forum_ws_class_MUDkz",
+          "threadId": "-OQdNO7au__35xp1CZxG"
+        }
+      },
+      "-OQdNO7bK26yoNTEaPF3": {
+        "-OQdNO7bK26yoNTEaPF4": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Have questions about \"class\"? Need clarification on a task or a game mechanic? Post your questions here. Fellow students or Admin User can help answer!",
+          "createdAt": 1747672207959,
+          "forumId": "forum_ws_class_MUDkz",
+          "threadId": "-OQdNO7bK26yoNTEaPF3"
+        }
+      },
+      "-OQdNO7bK26yoNTEaPF5": {
+        "-OQdNO7bK26yoNTEaPF6": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Welcome to \"class\"! Use this thread to introduce yourselves (in or out of character, as appropriate for the class style), share your excitement, or for general chit-chat related to our class.",
+          "createdAt": 1747672207959,
+          "forumId": "forum_ws_class_MUDkz",
+          "threadId": "-OQdNO7bK26yoNTEaPF5"
+        }
+      },
+      "-OQiLC_ovceNTY3Ed-Sk": {
+        "-OQiLC_ovceNTY3Ed-Sl": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "This is the primary thread for \"class\". Your Professor, Admin User, will post key lessons, story updates, and important announcements here. Participants can reply to engage with prompts and official content.",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "threadId": "-OQiLC_ovceNTY3Ed-Sk"
+        }
+      },
+      "-OQiLC_ovceNTY3Ed-Sm": {
+        "-OQiLC_ovceNTY3Ed-Sn": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Have questions about \"class\"? Need clarification on a task or a game mechanic? Post your questions here. Fellow students or Admin User can help answer!",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "threadId": "-OQiLC_ovceNTY3Ed-Sm"
+        }
+      },
+      "-OQiLC_ovceNTY3Ed-So": {
+        "-OQiLC_ovceNTY3Ed-Sp": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "Welcome to \"class\"! Use this thread to introduce yourselves (in or out of character, as appropriate for the class style), share your excitement, or for general chit-chat related to our class.",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "threadId": "-OQiLC_ovceNTY3Ed-So"
+        }
+      },
+      "-OQiSGyqS89tzGM_0edo": {
+        "-OQiSGyqS89tzGM_0edp": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "content": "hello and nicw to meet u all~!",
+          "createdAt": 1747757375465
+        }
+      },
+      "forum_ws_test_BvRZT": {
+        "-OQbGa4ZIy-FWdkPgZ2Z": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636871574,
+          "forumId": "forum_ws_test_BvRZT",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbGa4ZIy-FWdkPgZ2_",
+            "timestamp": 1747636871574
+          },
+          "postCount": 1,
+          "title": "📜 test - Main Lessons & Story Beats!"
+        },
+        "-OQbGa4ZIy-FWdkPgZ2a": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636871574,
+          "forumId": "forum_ws_test_BvRZT",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbGa4ZIy-FWdkPgZ2b",
+            "timestamp": 1747636871574
+          },
+          "postCount": 1,
+          "title": "❓ test - Q&A and Help Desk"
+        },
+        "-OQbGa4ZIy-FWdkPgZ2c": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636871574,
+          "forumId": "forum_ws_test_BvRZT",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbGa4_z6UiNesnOy4M",
+            "timestamp": 1747636871574
+          },
+          "postCount": 1,
+          "title": "👋 test - Introductions & General Chat"
+        }
+      },
+      "forum_ws_test_GqXUE3": {
+        "-OQYa1BDqyxwNVE0EY5j": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747575120719,
+          "forumId": "forum_ws_test_GqXUE3",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQYa1BDqyxwNVE0EY5k",
+            "timestamp": 1747575120719
+          },
+          "postCount": 1,
+          "title": "📜 test - Main Lesson & Story!"
+        },
+        "-OQYa1BDqyxwNVE0EY5l": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747575120719,
+          "forumId": "forum_ws_test_GqXUE3",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQYa1BDqyxwNVE0EY5m",
+            "timestamp": 1747575120719
+          },
+          "postCount": 1,
+          "title": "❓ test - Questions & Help Desk"
+        },
+        "-OQYa1BDqyxwNVE0EY5n": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747575120719,
+          "forumId": "forum_ws_test_GqXUE3",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQYa1BDqyxwNVE0EY5o",
+            "timestamp": 1747575120719
+          },
+          "postCount": 1,
+          "title": "👋 test - Introductions & General Chat"
+        }
+      },
+      "forum_ws_test_hiOS4O": {
+        "-OQaS5zxhbHKyIGVQJ6e": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747623112895,
+          "forumId": "forum_ws_test_hiOS4O",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQaS5zxhbHKyIGVQJ6f",
+            "timestamp": 1747623112895
+          },
+          "postCount": 1,
+          "title": "📜 test - Main Lesson & Story!"
+        },
+        "-OQaS5zxhbHKyIGVQJ6g": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747623112895,
+          "forumId": "forum_ws_test_hiOS4O",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQaS5zxhbHKyIGVQJ6h",
+            "timestamp": 1747623112895
+          },
+          "postCount": 1,
+          "title": "❓ test - Questions & Help Desk"
+        },
+        "-OQaS5zxhbHKyIGVQJ6i": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747623112895,
+          "forumId": "forum_ws_test_hiOS4O",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQaS5zxhbHKyIGVQJ6j",
+            "timestamp": 1747623112895
+          },
+          "postCount": 1,
+          "title": "👋 test - Introductions & Chat"
+        }
+      },
+      "forum_ws_test_jbVBK": {
+        "-OQbEJeBgucJ6cmVAfki": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636275908,
+          "forumId": "forum_ws_test_jbVBK",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbEJeBgucJ6cmVAfkj",
+            "timestamp": 1747636275908
+          },
+          "postCount": 1,
+          "title": "📜 test - Main Lessons & Story Beats!"
+        },
+        "-OQbEJeBgucJ6cmVAfkk": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636275908,
+          "forumId": "forum_ws_test_jbVBK",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbEJeBgucJ6cmVAfkl",
+            "timestamp": 1747636275908
+          },
+          "postCount": 1,
+          "title": "❓ test - Q&A and Help Desk"
+        },
+        "-OQbEJeCJxO6Ig62jGfb": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747636275908,
+          "forumId": "forum_ws_test_jbVBK",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbEJeCJxO6Ig62jGfc",
+            "timestamp": 1747636275908
+          },
+          "postCount": 1,
+          "title": "👋 test - Introductions & General Chat"
+        }
+      },
+      "forum_ws_test_nmNoAY": {
+        "-OQbB6t8HSVbVtSXhCaQ": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747635437182,
+          "forumId": "forum_ws_test_nmNoAY",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbB6t9AW0Rg_corr5M",
+            "timestamp": 1747635437182
+          },
+          "postCount": 1,
+          "title": "📜 test - Main Lesson & Story!"
+        },
+        "-OQbB6t9AW0Rg_corr5N": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747635437182,
+          "forumId": "forum_ws_test_nmNoAY",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbB6t9AW0Rg_corr5O",
+            "timestamp": 1747635437182
+          },
+          "postCount": 1,
+          "title": "❓ test - Questions & Help Desk"
+        },
+        "-OQbB6t9AW0Rg_corr5P": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747635437182,
+          "forumId": "forum_ws_test_nmNoAY",
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQbB6t9AW0Rg_corr5Q",
+            "timestamp": 1747635437182
+          },
+          "postCount": 1,
+          "title": "👋 test - Introductions & Chat"
+        }
+      },
+      "kind_world_builders": {
+        "-OPkyI4TEw-lit_5yNNX": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1746725843351,
+          "lastPostInfo": {
+            "authorName": "Sadina Star",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OPkyI4TEw-lit_5yNNY",
+            "timestamp": 1746725843351
+          },
+          "postCount": 1,
+          "title": "hiii"
+        }
+      },
+      "neurodiverse_support": {
+        "-OQMeziaTn3XVz7Qg2eg": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747375094747,
+          "lastPostInfo": {
+            "authorName": "Sadina Star",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQMf0dOepblUYQ4Qi3T",
+            "timestamp": 1747375102644
+          },
+          "postCount": 2,
+          "title": "hey there!~"
+        }
+      },
+      "test_forum_public": {
+        "-OPkxdUKWwHAR3vdzLvO": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1746725672973,
+          "lastPostInfo": {
+            "authorName": "Sadina Star",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQSan0-WSqOifMNHbUi",
+            "timestamp": 1747474657451
+          },
+          "postCount": 3,
+          "title": "hii!"
+        }
+      }
+    },
+    "threads": {
+      "forum_ws_class_9twQO": {
+        "-OQiLC_ovceNTY3Ed-Sk": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQiLC_ovceNTY3Ed-Sl",
+            "timestamp": 1747755522467
+          },
+          "postCount": 1,
+          "title": "📜 class - Main Lessons & Story Beats!"
+        },
+        "-OQiLC_ovceNTY3Ed-Sm": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQiLC_ovceNTY3Ed-Sn",
+            "timestamp": 1747755522467
+          },
+          "postCount": 1,
+          "title": "❓ class - Q&A and Help Desk"
+        },
+        "-OQiLC_ovceNTY3Ed-So": {
+          "authorName": "Admin User",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747755522467,
+          "forumId": "forum_ws_class_9twQO",
+          "isPinned": true,
+          "lastPostInfo": {
+            "authorName": "Admin User",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQiLC_ovceNTY3Ed-Sp",
+            "timestamp": 1747755522467
+          },
+          "postCount": 1,
+          "title": "👋 class - Introductions & General Chat"
+        }
+      },
+      "general_discussion": {
+        "-OQiSGyqS89tzGM_0edo": {
+          "authorName": "Sadina Star",
+          "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "createdAt": 1747757375465,
+          "lastPostInfo": {
+            "authorName": "Sadina Star",
+            "authorUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+            "postId": "-OQiSGyqS89tzGM_0edp",
+            "timestamp": 1747757375465
+          },
+          "postCount": 1,
+          "title": "hiii"
+        }
+      }
+    }
+  },
+  "reports": {
+    "-OQSapgFf4gmTcfYiUKN": {
+      "contentLink": "thread_view.html?forumId=test_forum_public&id=-OPkxdUKWwHAR3vdzLvO#post--OQSan0-WSqOifMNHbUi",
+      "contentType": "forum_post",
+      "reason": "test",
+      "reportedContentId": "-OQSan0-WSqOifMNHbUi",
+      "reportedUserId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "reporterUserId": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "reporterUserName": "Sadina Star",
+      "resolvedAt": 1747474701218,
+      "resolvedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "resolved_dismissed",
+      "timestamp": 1747474668350
+    }
+  },
+  "storyPrompts": {
+    "prompt_gateway_impression": {
+      "descriptionOrPromptText": "You've found it! A hidden doorway, shimmering faintly, with the words 'The Attic' etched above. You push it open... What's the very first amazing or curious thing that catches your attention?",
+      "isActive": true,
+      "order": 1,
+      "title": "My First Glimpse of The Attic",
+      "type": "gateway_impression"
+    },
+    "prompt_gateway_story": {
+      "descriptionOrPromptText": "Every new arrival brings a unique story. Briefly, how did you find The Attic, and what's one big hope you carry as you step through this gateway?",
+      "isActive": true,
+      "order": 2,
+      "title": "My Attic Story - The Beginning",
+      "type": "gateway_story"
+    },
+    "prompt_orientation_reflection": {
+      "descriptionOrPromptText": "Your Orientation Day tour is concluding. As you stand ready to explore on your own, what's one thought, exciting idea, or perhaps a question that's sparking in your mind right now? This is for your private student journal.",
+      "isActive": true,
+      "order": 3,
+      "title": "First Day Reflections",
+      "type": "orientation_reflection"
+    },
+    "year1_reflection_template_2025": {
+      "descriptionOrPromptText": "As your first year in The Attic draws to a close, take a moment to reflect. What were the most significant discoveries you made, the challenges you overcame, and how have you grown during your time here? What are you looking forward to next?",
+      "isActive": true,
+      "order": 100,
+      "targetYear": 1,
+      "title": "My Year 1 Journey - Reflections",
+      "type": "yearly_reflection"
+    }
+  },
+  "submissionsByCourseWeek": {
+    "Y1CORE_EMOT_1": {
+      "-OQ8mStmFLtEzUHb4_Q7": {
+        "courseId": "Y1CORE_EMOT",
+        "feedback": "work on it!",
+        "grade": "Sapling",
+        "gradedAt": 1747142789372,
+        "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "gradedByName": "Admin User",
+        "status": "graded",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747142172385,
+        "submittedText": "enter looovee",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_EMOT_1",
+        "weekNum": 1
+      },
+      "-OQHzVH3RdBY1XBSx5v6": {
+        "courseId": "Y1CORE_EMOT",
+        "status": "submitted",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747296584946,
+        "submittedText": "here u go",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_EMOT_1",
+        "weekNum": 1
+      }
+    },
+    "Y1CORE_EMOT_2": {
+      "-OQKS38uyzE_532bZks2": {
+        "courseId": "Y1CORE_EMOT",
+        "status": "submitted",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747337888479,
+        "submittedText": "submittt",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_EMOT_2",
+        "weekNum": 2
+      },
+      "-OQKqSZ-7aP83G3lAoVz": {
+        "courseId": "Y1CORE_EMOT",
+        "status": "submitted",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747344546139,
+        "submittedText": "pass",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_EMOT_2",
+        "weekNum": 2
+      }
+    },
+    "Y1CORE_MATH_1": {
+      "-OQKOJfE4kbO5v8xJV08": {
+        "courseId": "Y1CORE_MATH",
+        "status": "submitted",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747336909415,
+        "submittedText": "respond",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_MATH_1",
+        "weekNum": 1
+      }
+    },
+    "Y1CORE_MATH_2": {
+      "-OQKQhu30jytrHHhiOxe": {
+        "courseId": "Y1CORE_MATH",
+        "status": "submitted",
+        "studentDisplayName": "Sadina Star",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1747337535227,
+        "submittedText": "hey",
+        "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_MATH_2",
+        "weekNum": 2
+      }
+    },
+    "Y1CORE_Read_1": {
+      "-OQ4CztxP79hhLbzE7Rd": {
+        "archivedAt": 1747297396094,
+        "archivedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "archivedByName": "Admin User",
+        "courseId": "Y1CORE_Read",
+        "feedback": "hey",
+        "grade": "Seedling",
+        "gradedAt": 1747143598055,
+        "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "gradedByName": "Admin User",
+        "isArchived": true,
+        "status": "graded",
+        "studentDisplayName": "Meownom",
+        "studentUid": "wgZehFmNlyL5ECwv5ablh3eKPVJ2",
+        "submissionPushId": "-OQ4CztxP79hhLbzE7Rd",
+        "submittedAt": 1747065503417,
+        "submittedText": "hey",
+        "userSubmissionPath": "userSubmissions/wgZehFmNlyL5ECwv5ablh3eKPVJ2/Y1CORE_Read_1",
+        "weekNum": 1
+      },
+      "-OQKTfU3OU9VoCourc9y": {
+        "courseId": "Y1CORE_Read",
+        "status": "submitted",
+        "studentDisplayName": "J Gray",
+        "studentUid": "jiHsgzihnvVCWXozkkF2VaiUrt62",
+        "submittedAt": 1747338311716,
+        "submittedText": "i did it",
+        "userSubmissionPath": "userSubmissions/jiHsgzihnvVCWXozkkF2VaiUrt62/Y1CORE_Read_1",
+        "weekNum": 1
+      }
+    }
+  },
+  "taApplications": {
+    "-OQII6UUnptRxZ5Y4b4I": {
+      "applicationReason": "I would love to help.",
+      "applicationTimestamp": 1747301726265,
+      "reviewTimestamp": 1747344566342,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "testttt",
+      "userEmail": "starchukariana@gmail.com",
+      "userId": "JQ0CoVe29YOophe8n6IS74TRgC53"
+    },
+    "-OQKTrc59f5PP7gK90vC": {
+      "applicationReason": "I am awesome.",
+      "applicationTimestamp": 1747338361405,
+      "reviewTimestamp": 1747344565463,
+      "reviewedByName": "Admin User",
+      "reviewedByUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+      "status": "approved",
+      "userDisplayName": "J Gray",
+      "userEmail": "jonasy@gmail.com",
+      "userId": "jiHsgzihnvVCWXozkkF2VaiUrt62"
+    }
+  },
+  "userProgress": {
+    "VwCWD9F25ecOzQ377NVv3Lo4HbA2": {
+      "year1": {
+        "courses": {
+          "Y1CORE_EMOT": {
+            "progress": 0,
+            "registeredAt": 1747796399456,
+            "status": "registered"
+          },
+          "Y1CORE_MATH": {
+            "assignments": [
+              null,
+              "submitted",
+              "submitted"
+            ],
+            "examWeekStatus": "pending",
+            "registeredAt": 1747144298462,
+            "status": "in_progress"
+          },
+          "Y1CORE_Read": {
+            "assignments": {
+              "3": "graded"
+            },
+            "examWeekStatus": "pending",
+            "registeredAt": 1747296496778,
+            "status": "in_progress"
+          },
+          "Y1CORE_WRIT": {
+            "examWeekStatus": "pending",
+            "registeredAt": 1747296300523,
+            "status": "registered"
+          },
+          "Y1ELEC_CREA": {
+            "examWeekStatus": "pending",
+            "registeredAt": 1747344107718,
+            "status": "registered"
+          },
+          "Y1ELEC_ENVI": {
+            "examWeekStatus": "pending",
+            "registeredAt": 1747369855463,
+            "status": "registered"
+          },
+          "Y1ELEC_MOVE": {
+            "examWeekStatus": "pending",
+            "registeredAt": 1747301343150,
+            "status": "registered"
+          },
+          "Y1ELEC_SIGN": {
+            "examWeekStatus": "pending",
+            "registeredAt": 1747369850619,
+            "status": "registered"
+          }
+        },
+        "summary": {
+          "chosenElectives": {
+            "Y1ELEC_CREA": true,
+            "Y1ELEC_ENVI": true
+          },
+          "coreCoursesPassed": 0,
+          "coreCoursesRequired": 4,
+          "electiveCoursesPassed": 0,
+          "electiveCoursesRequired": 2,
+          "yearStatus": "incomplete"
+        }
+      }
+    },
+    "jiHsgzihnvVCWXozkkF2VaiUrt62": {
+      "year1": {
+        "courses": {
+          "Y1CORE_Read": {
+            "assignments": [
+              null,
+              "submitted"
+            ],
+            "examWeekStatus": "pending",
+            "registeredAt": 1747338300232,
+            "status": "in_progress"
+          }
+        }
+      }
+    },
+    "wgZehFmNlyL5ECwv5ablh3eKPVJ2": {
+      "year1": {
+        "courses": {
+          "Y1CORE_Read": {
+            "assignments": [
+              null,
+              "graded"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "userSubmissions": {
+    "VwCWD9F25ecOzQ377NVv3Lo4HbA2": {
+      "Y1CORE_EMOT_1": {
+        "courseId": "Y1CORE_EMOT",
+        "isArchived": false,
+        "status": "submitted",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submissionPushId": "-OQHzVH3RdBY1XBSx5v6",
+        "submittedAt": 1747296584946,
+        "submittedText": "here u go",
+        "weekNum": 1
+      },
+      "Y1CORE_EMOT_2": {
+        "courseId": "Y1CORE_EMOT",
+        "isArchived": false,
+        "status": "submitted",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submissionPushId": "-OQKqSZ-7aP83G3lAoVz",
+        "submittedAt": 1747344546139,
+        "submittedText": "pass",
+        "weekNum": 2
+      },
+      "Y1CORE_MATH_1": {
+        "courseId": "Y1CORE_MATH",
+        "isArchived": false,
+        "status": "submitted",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submissionPushId": "-OQKOJfE4kbO5v8xJV08",
+        "submittedAt": 1747336909415,
+        "submittedText": "respond",
+        "weekNum": 1
+      },
+      "Y1CORE_MATH_2": {
+        "courseId": "Y1CORE_MATH",
+        "isArchived": false,
+        "status": "submitted",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submissionPushId": "-OQKQhu30jytrHHhiOxe",
+        "submittedAt": 1747337535227,
+        "submittedText": "hey",
+        "weekNum": 2
+      },
+      "Y1CORE_Read_1": {
+        "courseId": "Y1CORE_Read",
+        "status": "submitted",
+        "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "submittedAt": 1746665256334,
+        "submittedText": "test",
+        "weekNum": 1
+      }
+    },
+    "jiHsgzihnvVCWXozkkF2VaiUrt62": {
+      "Y1CORE_Read_1": {
+        "courseId": "Y1CORE_Read",
+        "isArchived": false,
+        "status": "submitted",
+        "studentUid": "jiHsgzihnvVCWXozkkF2VaiUrt62",
+        "submissionPushId": "-OQKTfU3OU9VoCourc9y",
+        "submittedAt": 1747338311716,
+        "submittedText": "i did it",
+        "weekNum": 1
+      }
+    },
+    "wgZehFmNlyL5ECwv5ablh3eKPVJ2": {
+      "Y1CORE_Read_1": {
+        "courseId": "Y1CORE_Read",
+        "feedback": "hey",
+        "grade": "Seedling",
+        "gradedAt": 1747143598055,
+        "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+        "gradedByName": "Admin User",
+        "status": "graded",
+        "studentUid": "wgZehFmNlyL5ECwv5ablh3eKPVJ2",
+        "submissionPushId": "-OQ4CztxP79hhLbzE7Rd",
+        "submittedAt": 1747065503417,
+        "submittedText": "hey",
+        "weekNum": 1
+      }
+    }
+  },
+  "users": {
+    "JQ0CoVe29YOophe8n6IS74TRgC53": {
+      "profile": {
+        "applicationDate": "2025-05-15T09:34:45.850Z",
+        "atticNickname": "testttt",
+        "chronicleEntries": {
+          "-OQIHxOzxqq8hu-impq3": {
+            "promptIdRef": "prompt_gateway_impression",
+            "promptTitleSnapshot": "My First Glimpse of The Attic",
+            "studentResponse": "it's fun!",
+            "timestamp": 1747301684919,
+            "type": "gateway_impression"
+          }
+        },
+        "displayName": "testttt",
+        "email": "starchukariana@gmail.com",
+        "firstDayReflection": "this is coool\n25",
+        "gatewayComplete": true,
+        "magnetProgram": "eco",
+        "orientationComplete": true,
+        "role": "ta"
+      }
+    },
+    "U6ASdJgtY6QXydkLECMjoFPOAfm2": {
+      "profile": {
+        "applicationDate": "2025-05-15T09:48:04.834Z",
+        "atticNickname": "Sadina Star",
+        "chronicleEntries": {
+          "-OQIL-SzXN7zzWn1V-Fk": {
+            "promptIdRef": "prompt_gateway_impression",
+            "promptTitleSnapshot": "My First Glimpse of The Attic",
+            "studentResponse": "the walls are soft colours and it's nice to be here.",
+            "timestamp": 1747302483891,
+            "type": "gateway_impression"
+          },
+          "-OQIL-T0TWFhrAEi6daE": {
+            "promptIdRef": "prompt_gateway_story",
+            "promptTitleSnapshot": "My Attic Story - The Beginning",
+            "studentResponse": "I love life and found it in the midst of being lost alone.",
+            "timestamp": 1747302483897,
+            "type": "gateway_story"
+          },
+          "-OQIL2NjbExiVbWVMIbV": {
+            "promptIdRef": "prompt_orientation_reflection",
+            "promptTitleSnapshot": "First Day Reflections",
+            "studentResponse": "this was really cool.",
+            "timestamp": 1747302495842,
+            "type": "orientation_reflection"
+          }
+        },
+        "displayName": "Meow",
+        "email": "yatesariana@gmail.com",
+        "gatewayComplete": true,
+        "magnetProgram": "kind",
+        "orientationComplete": true,
+        "quizAnswers": {
+          "q1": "kind",
+          "q2": "creative",
+          "q3": "kind",
+          "q4": "kind",
+          "q5": "kind"
+        },
+        "role": "student"
+      }
+    },
+    "VwCWD9F25ecOzQ377NVv3Lo4HbA2": {
+      "profile": {
+        "activeWorkshopCount": 2,
+        "answers": {
+          "q1": "kind",
+          "q2": "kind",
+          "q3": "creative",
+          "q4": "kind",
+          "q5": "kind"
+        },
+        "applicationDate": "2025-05-08T09:03:23.473Z",
+        "atticNickname": "Sadina Star",
+        "chronicleEntries": {
+          "-OQIROrxuWLawVWTz5Rc": {
+            "promptIdRef": "year1_reflection_template_2025",
+            "promptTitleSnapshot": "My Year 1 Journey - Reflections",
+            "studentResponse": "i love my lifffeee",
+            "timestamp": 1747304160819,
+            "type": "yearly_reflection"
+          },
+          "-OQIRaKL4Yihl5BIbA3F": {
+            "promptIdRef": "What_do_u_do",
+            "promptTitleSnapshot": "have fun!",
+            "studentResponse": "testing it outtt",
+            "timestamp": 1747304211854,
+            "type": "generic_prompt"
+          },
+          "initial_impression": {
+            "promptIdRef": "prompt_gateway_impression",
+            "promptTitleSnapshot": "My First Glimpse of The Attic",
+            "studentResponse": "it's cold and damp but nice.",
+            "timestamp": 1746694983473,
+            "type": "gateway_impression"
+          },
+          "initial_reflection": {
+            "promptIdRef": "prompt_orientation_reflection",
+            "promptTitleSnapshot": "First Day Reflections",
+            "studentResponse": "I love this new place!",
+            "timestamp": 1746694983475,
+            "type": "orientation_reflection"
+          },
+          "initial_story": {
+            "promptIdRef": "prompt_gateway_story",
+            "promptTitleSnapshot": "My Attic Story - The Beginning",
+            "studentResponse": "I found it when I was lost in a storm. Lost in life...",
+            "timestamp": 1746694983474,
+            "type": "gateway_story"
+          }
+        },
+        "createdAt": 0,
+        "displayName": "Admin User",
+        "email": "learningpod123@gmail.com",
+        "firstDayReflection": "I love this new place!",
+        "firstImpression": "it's cold and damp but nice.",
+        "gatewayComplete": true,
+        "magnetProgram": "kind",
+        "orientationComplete": true,
+        "quizAnswers": {
+          "q5": "kind"
+        },
+        "role": "admin",
+        "specialAccessGroups": {
+          "esl": true,
+          "neurodiverse": true,
+          "parents": true,
+          "ws_mysterysolving_access": true,
+          "ws_test_GqXUE3_access": true
+        },
+        "yourAtticStory": "I found it when I was lost in a storm. Lost in life..."
+      }
+    },
+    "jiHsgzihnvVCWXozkkF2VaiUrt62": {
+      "profile": {
+        "activeWorkshopCount": 1,
+        "applicationDate": "2025-05-15T19:44:33.067Z",
+        "atticNickname": "J Gray",
+        "chronicleEntries": {
+          "-OQKTWjj84-rVW1YWhan": {
+            "promptIdRef": "prompt_gateway_impression",
+            "promptTitleSnapshot": "My First Glimpse of The Attic",
+            "studentResponse": "a calm area.",
+            "timestamp": 1747338271784,
+            "type": "gateway_impression"
+          },
+          "-OQKTWjkz-eQLbZrVtI7": {
+            "promptIdRef": "prompt_gateway_story",
+            "promptTitleSnapshot": "My Attic Story - The Beginning",
+            "studentResponse": "Idk. Lost.",
+            "timestamp": 1747338271785,
+            "type": "gateway_story"
+          },
+          "-OQKTZfMBwTe9MELlv7o": {
+            "promptIdRef": "prompt_orientation_reflection",
+            "promptTitleSnapshot": "First Day Reflections",
+            "studentResponse": "It was cool.",
+            "timestamp": 1747338283786,
+            "type": "orientation_reflection"
+          }
+        },
+        "createdAt": 1747338206768,
+        "displayName": "J Gray",
+        "email": "jonasy@gmail.com",
+        "gatewayComplete": true,
+        "magnetProgram": "creative",
+        "orientationComplete": true,
+        "quizAnswers": {
+          "q1": "kind",
+          "q2": "creative",
+          "q3": "kind",
+          "q4": "creative",
+          "q5": "creative"
+        },
+        "role": "ta",
+        "specialAccessGroups": {
+          "neurodiverse": true,
+          "ws_mysterysolving_access": true
+        }
+      }
+    },
+    "wgZehFmNlyL5ECwv5ablh3eKPVJ2": {
+      "profile": {
+        "applicationDate": "2025-05-12T15:57:21.339Z",
+        "atticNickname": "Meownom",
+        "chronicleEntries": {
+          "initial_impression": {
+            "promptIdRef": "prompt_gateway_impression",
+            "promptTitleSnapshot": "My First Glimpse of The Attic",
+            "studentResponse": "wow!",
+            "timestamp": 1747065441339,
+            "type": "gateway_impression"
+          },
+          "initial_reflection": {
+            "promptIdRef": "prompt_orientation_reflection",
+            "promptTitleSnapshot": "First Day Reflections",
+            "studentResponse": "this is fun!",
+            "timestamp": 1747065441341,
+            "type": "orientation_reflection"
+          },
+          "initial_story": {
+            "promptIdRef": "prompt_gateway_story",
+            "promptTitleSnapshot": "My Attic Story - The Beginning",
+            "studentResponse": "Wow it's fun!",
+            "timestamp": 1747065441340
+          }
+        },
+        "createdAt": 1747065404574,
+        "displayName": "Meownom",
+        "email": "starchukarianaa@gmail.com",
+        "firstDayReflection": "this is fun!",
+        "firstImpression": "wow!",
+        "gatewayComplete": true,
+        "magnetProgram": "mover",
+        "orientationComplete": true,
+        "quizAnswers": {
+          "q1": "creative",
+          "q2": "mover",
+          "q3": "mover",
+          "q4": "kind",
+          "q5": "kind"
+        },
+        "role": "student",
+        "yourAtticStory": "Wow it's fun!"
+      }
+    }
+  },
+  "roleplayClasses": {
+    "uniqueClassId1": {
+      "title": "Creative Writing: Collaborative Storytelling",
+      "description": "Work together in class to come up with a collaborative story, break into groups of 3 and make that story!",
+      "professorId": "<userIdOfProfessor>",
+      "professorName": "Professor [Name]",
+      "status": "openForEnrollment",
+      "badgeDetails": {
+        "badgeName": "Collaborative Storyteller Badge",
+        "badgeImageUrl": "/path/to/badge/image.png",
+        "description": "Awarded for successfully completing the Collaborative Storytelling class."
+      },
+      "termDetails": {
+        "termName": "Fall Semester 2025",
+        "approximateDuration": "3 months",
+        "expectedUpdateFrequency": "Weekly",
+        "startDate": "YYYY-MM-DD",
+        "endDate": "YYYY-MM-DD"
+      },
+      "enrollmentConfig": {
+        "maxStudents": 30,
+        "enrollmentOpen": true,
+        "applicationRequired": false
+      },
+      "enrolledStudents": {
+        "<studentUserId1>": {
+          "displayName": "Student A",
+          "enrolledDate": "YYYY-MM-DD"
+        }
+      },
+      "mainClassroomContent": {
+        "lessonPosts": {
+          "<lessonPostId1>": {
+            "postedBy": "<professorUserId>",
+            "timestamp": "<serverTimestamp>",
+            "title": "Week 1: The Pirate Ship – \"The First Clue\"",
+            "content": "The crew wakes up on the pirate ship...",
+            "visualStyle": "professorPost"
+          }
+        },
+        "lessonDiscussions": {
+          "<discussionPostId1>": {
+            "lessonPostId": "<lessonPostId1>",
+            "postedBy": "<studentUserId1>",
+            "timestamp": "<serverTimestamp>",
+            "content": "My character, Captain Fearless, attempts..."
+          }
+        }
+      },
+      "assignmentHub": {
+        "assignmentPrompts": {
+          "<assignmentPromptId1>": {
+            "postedBy": "<professorUserId>",
+            "timestamp": "<serverTimestamp>",
+            "title": "Assignment 1: Character Backstory",
+            "description": "Write a 500-word backstory...",
+            "dueDate": "YYYY-MM-DD"
+          }
+        },
+        "submissions": {
+          "<submissionId1>": {
+            "assignmentPromptId": "<assignmentPromptId1>",
+            "submittedBy": "<studentUserId2>",
+            "timestamp": "<serverTimestamp>",
+            "content": "...",
+            "grade": "Participated",
+            "feedback": "Great backstory!"
+          }
+        }
+      },
+      "createdAt": "<serverTimestamp>",
+      "updatedAt": "<serverTimestamp>",
+      "managedBy": "<adminOrProfessorUserId>"
+    }
+  }
+}

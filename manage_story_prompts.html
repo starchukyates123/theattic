@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Story Prompts - The Attic Admin</title>
+    <link rel="stylesheet" href="styles.css"> <style>
+        /* Styles specific to this admin page */
+        .admin-container { padding: 20px; margin: 20px auto; max-width: 900px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select,
+        .form-group textarea {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
+        .form-group small { display: block; font-size: 0.85em; color: #666; margin-top: 3px; }
+        fieldset { margin-top: 15px; border: 1px solid #ccc; padding: 10px 15px; border-radius: 5px; margin-bottom:15px;}
+        legend { font-weight: bold; color: #556b2f; padding: 0 5px; }
+        #existing-story-prompts-list ul { list-style-type: none; padding-left: 0; }
+        #existing-story-prompts-list li { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        #existing-story-prompts-list li div { margin-bottom: 3px; }
+        #existing-story-prompts-list button { font-size: 0.9em; padding: 4px 8px; }
+        #admin-auth-status { text-align: center; padding: 15px; margin-bottom: 20px; font-weight: bold; }
+        .status-error { color: red; }
+        .status-success { color: green; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Manage Story Prompts (Attic Chronicles)</h1>
+    </header>
+
+    <main>
+        <div id="admin-auth-status">Verifying admin access...</div>
+
+        <div class="admin-container" id="prompt-management-content" style="display:none;">
+            <section id="story-prompt-form-section">
+                <h3>Add / Edit Story Prompt</h3>
+                <form id="addStoryPromptForm">
+                    <div class="form-group">
+                        <label for="promptId">Prompt ID (Unique, e.g., year1_final_reflection):</label>
+                        <input type="text" id="promptId" required pattern="^[a-zA-Z0-9_]+$">
+                        <small>Use only letters, numbers, and underscores. Cannot be changed after adding if creating new.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="promptTitle">Prompt Title (Students will see this):</label>
+                        <input type="text" id="promptTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="promptDescription">Prompt Description/Story Text:</label>
+                        <textarea id="promptDescription" rows="6" required placeholder="Set the scene, ask questions, provide the story starter..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="promptType">Prompt Type:</label>
+                        <select id="promptType">
+                            <option value="generic_prompt">Generic/Optional Prompt</option>
+                            <option value="yearly_reflection">Yearly Reflection</option>
+                            <option value="milestone_reflection">Milestone Reflection</option>
+                            <option value="course_completion_reflection">Course Completion Reflection</option>
+                            <option value="event_related">Event Related</option>
+                            <option value="gateway_impression">Gateway: First Impression</option>
+                            <option value="gateway_story">Gateway: Attic Story</option>
+                            <option value="orientation_reflection">Orientation: Reflection</option>
+                        </select>
+                    </div>
+                     <div class="form-group">
+                        <label for="promptOrder">Display Order (Optional, number for sorting):</label>
+                        <input type="number" id="promptOrder" placeholder="e.g., 10, 20, 100">
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="promptIsActive" checked>
+                        <label for="promptIsActive" style="display: inline; font-weight: normal;">Is Active (Visible to eligible students)?</label>
+                    </div>
+
+                    <fieldset>
+                        <legend>Optional Trigger (For Automatic Prompts)</legend>
+                        <div class="form-group">
+                            <label for="promptTriggerCondition">Trigger Condition:</label>
+                            <select id="promptTriggerCondition">
+                                <option value="none">None (Manual/Optional Prompt)</option>
+                                <option value="year_complete">Year Completion</option>
+                                <option value="course_complete">Course Completion</option>
+                                </select>
+                        </div>
+                        <div class="form-group" id="triggerYearGroup" style="display:none;">
+                            <label for="promptTriggerYear">Trigger Year (e.g., 1 for after Year 1):</label>
+                            <input type="number" id="promptTriggerYear" min="1">
+                        </div>
+                        <div class="form-group" id="triggerCourseGroup" style="display:none;">
+                            <label for="promptTriggerCourseId">Trigger Course ID:</label>
+                            <input type="text" id="promptTriggerCourseId" placeholder="e.g., Y1CORE_Read">
+                        </div>
+                    </fieldset>
+                    
+                    <button type="submit" class="button" style="margin-top:15px;">Add Story Prompt</button>
+                    <button type="button" onclick="resetStoryPromptForm()" class="button" style="margin-left: 15px; background-color: #aaa;">Clear Form / New</button>
+                </form>
+            </section>
+
+            <hr style="margin: 30px 0;">
+
+            <section>
+                <h3>Existing Story Prompts</h3>
+                <div id="existing-story-prompts-list">
+                    <p>Loading existing story prompts...</p>
+                </div>
+            </section>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+            <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+            <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        // --- Initialize Firebase ---
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            } else if (typeof firebase !== 'undefined') {
+                firebase.app();
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase SDKs not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on manage_story_prompts.html:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                const authStatus = document.getElementById('admin-auth-status');
+                if (authStatus) {
+                    authStatus.innerHTML = "<p class='status-error'>Critical Error: Site services couldn't start.</p>";
+                }
+            });
+        }
+
+        // --- Element References ---
+        const adminAuthStatusDiv = document.getElementById('admin-auth-status');
+        const promptManagementContentDiv = document.getElementById('prompt-management-content');
+        const addStoryPromptForm = document.getElementById('addStoryPromptForm');
+        const existingStoryPromptsList = document.getElementById('existing-story-prompts-list');
+        const promptTriggerConditionSelect = document.getElementById('promptTriggerCondition');
+        const triggerYearGroup = document.getElementById('triggerYearGroup');
+        const triggerCourseGroup = document.getElementById('triggerCourseGroup');
+        
+        let editingStoryPromptId = null;
+        let currentUser = null; // Store current admin user
+
+        // --- Helper: Escape HTML ---
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        
+        // --- Admin Authentication Check ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth) {
+                adminAuthStatusDiv.innerHTML = "<p class='status-error'>Error: Authentication service not available.</p>";
+                return;
+            }
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    firebase.database().ref('users/' + user.uid + '/profile').once('value')
+                        .then(snapshot => {
+                            if (snapshot.exists() && snapshot.val().role === 'admin') {
+                                adminAuthStatusDiv.textContent = `Logged in as Admin: ${escapeHtml(snapshot.val().displayName || user.email)}`;
+                                adminAuthStatusDiv.className = 'status-success'; // Use a class for styling
+                                promptManagementContentDiv.style.display = 'block';
+                                resetStoryPromptForm();
+                                loadExistingStoryPrompts();
+                            } else {
+                                adminAuthStatusDiv.innerHTML = '<p class="status-error">Access Denied. You must be an Admin to manage story prompts.</p>';
+                                promptManagementContentDiv.style.display = 'none';
+                            }
+                        }).catch(err => {
+                            adminAuthStatusDiv.innerHTML = "<p class='status-error'>Error verifying admin status.</p>";
+                            promptManagementContentDiv.style.display = 'none';
+                        });
+                } else {
+                    currentUser = null;
+                    adminAuthStatusDiv.innerHTML = '<p class="status-error">You must be <a href="login.html?redirect=manage_story_prompts.html">logged in</a> as an Admin.</p>';
+                    promptManagementContentDiv.style.display = 'none';
+                }
+            });
+
+            // Event listener for trigger condition dropdown
+            if (promptTriggerConditionSelect) {
+                promptTriggerConditionSelect.addEventListener('change', function() {
+                    if(triggerYearGroup) triggerYearGroup.style.display = this.value === 'year_complete' ? 'block' : 'none';
+                    if(triggerCourseGroup) triggerCourseGroup.style.display = this.value === 'course_complete' ? 'block' : 'none';
+                });
+            }
+
+            // Attach form submit listener
+            if (addStoryPromptForm) {
+                addStoryPromptForm.addEventListener('submit', handleStoryPromptSubmit);
+            }
+        });
+
+
+        function resetStoryPromptForm() {
+            if (addStoryPromptForm) addStoryPromptForm.reset();
+            editingStoryPromptId = null;
+            const idInput = document.getElementById('promptId');
+            if (idInput) idInput.readOnly = false;
+            const submitButton = addStoryPromptForm ? addStoryPromptForm.querySelector('button[type="submit"]') : null;
+            if (submitButton) submitButton.textContent = 'Add Story Prompt';
+            if (promptTriggerConditionSelect) {
+                promptTriggerConditionSelect.value = 'none'; // Reset to default
+                promptTriggerConditionSelect.dispatchEvent(new Event('change')); // Trigger change to hide/show fields
+            }
+            console.log("Story Prompt Form reset.");
+        }
+
+        function loadExistingStoryPrompts() {
+            if (!existingStoryPromptsList || !firebase?.database) return;
+            const promptsRef = firebase.database().ref('storyPrompts');
+            existingStoryPromptsList.innerHTML = '<p>Fetching story prompts...</p>';
+
+            promptsRef.orderByChild('order').on('value', (snapshot) => {
+                if (!existingStoryPromptsList) return; // Check if element still exists
+                existingStoryPromptsList.innerHTML = '';
+                if (snapshot.exists()) {
+                    const prompts = snapshot.val();
+                    const ul = document.createElement('ul');
+                    
+                    const promptIds = Object.keys(prompts).sort((a,b) => (prompts[a].order || Number.MAX_SAFE_INTEGER) - (prompts[b].order || Number.MAX_SAFE_INTEGER));
+
+                    promptIds.forEach(id => {
+                        const p = prompts[id];
+                        if (!p) return; // Skip if prompt data is malformed
+
+                        const li = document.createElement('li');
+                        const safeTitle = escapeHtml(p.title) || 'N/A';
+                        const safeDescSnippet = p.descriptionOrPromptText ? escapeHtml(p.descriptionOrPromptText.substring(0, 100)) + (p.descriptionOrPromptText.length > 100 ? '...' : '') : 'N/A';
+                        const safeType = escapeHtml(p.type) || 'N/A';
+                        const status = p.isActive ? '<span style="color:green; font-weight:bold;">Active</span>' : '<span style="color:red; font-weight:bold;">Inactive</span>';
+                        
+                        let triggerInfo = 'None';
+                        if (p.trigger && p.trigger.condition !== 'none') {
+                            triggerInfo = `Condition: ${escapeHtml(p.trigger.condition)}`;
+                            if (p.trigger.year) triggerInfo += `, Year: ${escapeHtml(p.trigger.year.toString())}`;
+                            if (p.trigger.courseId) triggerInfo += `, CourseID: ${escapeHtml(p.trigger.courseId)}`;
+                        }
+
+                        li.innerHTML = `
+                            <div><strong>ID:</strong> ${escapeHtml(id)} (${status})</div>
+                            <div><strong>Title:</strong> ${safeTitle}</div>
+                            <div><strong>Type:</strong> ${safeType} | <strong>Order:</strong> ${p.order === undefined || p.order === null ? 'N/A' : escapeHtml(p.order.toString())}</div>
+                            <div><strong>Desc (snippet):</strong> ${safeDescSnippet}</div>
+                            <div><strong>Trigger:</strong> ${triggerInfo}</div>
+                            <div style="margin-top: 8px;">
+                                <button type="button" onclick="editStoryPrompt('${escapeHtml(id)}')" class="button" style="background-color: #ffc107; color: #212529; margin-right:5px;">Edit</button>
+                                <button type="button" onclick="deleteStoryPrompt('${escapeHtml(id)}')" class="button" style="background-color: #dc3545;">Delete</button>
+                            </div>`;
+                        ul.appendChild(li);
+                    });
+                    existingStoryPromptsList.appendChild(ul);
+                } else {
+                    existingStoryPromptsList.innerHTML = '<p>No story prompts found in the database. Add one using the form above!</p>';
+                }
+            }, (error) => {
+                console.error("Error listening for story prompt updates:", error);
+                if (existingStoryPromptsList) existingStoryPromptsList.innerHTML = '<p class="status-error">Error loading story prompts.</p>';
+            });
+        }
+
+        function handleStoryPromptSubmit(event) {
+            event.preventDefault();
+            if (!firebase?.database) { alert("Database connection error."); return; }
+            if (!currentUser) { alert("Admin not authenticated."); return; }
+
+            const id = document.getElementById('promptId').value.trim();
+            const title = document.getElementById('promptTitle').value.trim();
+            const description = document.getElementById('promptDescription').value.trim();
+            const type = document.getElementById('promptType').value;
+            const orderInput = document.getElementById('promptOrder').value;
+            const order = orderInput === '' ? null : parseInt(orderInput); // Store as number or null
+            const isActive = document.getElementById('promptIsActive').checked;
+
+            const triggerCondition = document.getElementById('promptTriggerCondition').value;
+            const triggerDetails = { condition: triggerCondition };
+
+            if (triggerCondition === 'year_complete') {
+                const yearVal = document.getElementById('promptTriggerYear').value;
+                triggerDetails.year = yearVal ? parseInt(yearVal) : null;
+            } else if (triggerCondition === 'course_complete') {
+                triggerDetails.courseId = document.getElementById('promptTriggerCourseId').value.trim() || null;
+            }
+            
+            if (!id || !title || !description) { alert("Please fill out Prompt ID, Title, and Description."); return; }
+            if (!/^[a-zA-Z0-9_]+$/.test(id)) { alert("Prompt ID can only contain letters, numbers, and underscores."); return; }
+
+            const promptData = {
+                title: title,
+                descriptionOrPromptText: description,
+                type: type,
+                isActive: isActive,
+                // Only include order if it has a value, to avoid storing "0" when blank
+                ...(order !== null && !isNaN(order) && { order: order }), 
+                trigger: triggerDetails.condition === 'none' ? { condition: 'none' } : triggerDetails
+            };
+
+            let actionPromise;
+            const currentPromptIdForSave = editingStoryPromptId || id;
+            const promptRef = firebase.database().ref('storyPrompts/' + currentPromptIdForSave);
+
+            if (editingStoryPromptId) { // UPDATE
+                actionPromise = promptRef.update(promptData)
+                    .then(() => `Story Prompt "${title}" (ID: ${editingStoryPromptId}) updated.`);
+            } else { // ADD
+                actionPromise = promptRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) throw new Error(`Story Prompt ID "${id}" already exists. Choose a unique ID.`);
+                    return promptRef.set(promptData);
+                }).then(() => `Story Prompt "${title}" (ID: ${id}) added successfully.`);
+            }
+
+            actionPromise.then((successMessage) => {
+                alert(successMessage);
+                resetStoryPromptForm(); 
+                // The .on() listener for loadExistingStoryPrompts will refresh the list automatically
+            }).catch((error) => {
+                console.error("Error saving story prompt:", error);
+                alert(`Error: ${error.message}`);
+            });
+        }
+
+        window.editStoryPrompt = function(promptId) { // Make it global for onclick
+            if (!firebase?.database) { alert("Database error."); return; }
+            if (!addStoryPromptForm) return;
+
+            firebase.database().ref('storyPrompts/' + promptId).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const p = snapshot.val();
+                    document.getElementById('promptId').value = promptId;
+                    document.getElementById('promptId').readOnly = true;
+                    document.getElementById('promptTitle').value = p.title || '';
+                    document.getElementById('promptDescription').value = p.descriptionOrPromptText || '';
+                    document.getElementById('promptType').value = p.type || 'generic_prompt';
+                    document.getElementById('promptOrder').value = (p.order === undefined || p.order === null) ? '' : p.order;
+                    document.getElementById('promptIsActive').checked = p.isActive === true;
+
+                    if (p.trigger) {
+                        document.getElementById('promptTriggerCondition').value = p.trigger.condition || 'none';
+                        if (p.trigger.condition === 'year_complete') {
+                            document.getElementById('promptTriggerYear').value = p.trigger.year || '';
+                        } else if (p.trigger.condition === 'course_complete') {
+                            document.getElementById('promptTriggerCourseId').value = p.trigger.courseId || '';
+                        } else {
+                             document.getElementById('promptTriggerYear').value = '';
+                             document.getElementById('promptTriggerCourseId').value = '';
+                        }
+                    } else {
+                        document.getElementById('promptTriggerCondition').value = 'none';
+                    }
+                    promptTriggerConditionSelect.dispatchEvent(new Event('change')); // Update visibility
+
+                    editingStoryPromptId = promptId;
+                    const submitButton = addStoryPromptForm.querySelector('button[type="submit"]');
+                    if (submitButton) submitButton.textContent = 'Update Story Prompt';
+                    addStoryPromptForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    alert("Story prompt data not found.");
+                    resetStoryPromptForm();
+                }
+            }).catch(e => {
+                console.error("Error loading story prompt for edit:", e);
+                alert(`Error: ${e.message}`);
+                resetStoryPromptForm();
+            });
+        }
+
+        window.deleteStoryPrompt = function(promptId) { // Make it global for onclick
+            if (!confirm(`Are you sure you want to DELETE Story Prompt ID: ${promptId}? This cannot be undone.`)) return;
+            if (!firebase?.database) { alert("Database error."); return; }
+
+            firebase.database().ref('storyPrompts/' + promptId).remove().then(() => {
+                alert(`Story Prompt ${promptId} deleted.`);
+                if (editingStoryPromptId === promptId) resetStoryPromptForm();
+            }).catch(e => {
+                console.error("Error deleting story prompt:", e);
+                alert(`Error: ${e.message}`);
+            });
+        }
+    </script>
+</body>
+</html>

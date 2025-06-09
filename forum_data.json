@@ -1,0 +1,277 @@
+{
+    "courses": {
+      "Y1CORE_Read": {
+        "description": "Read it up!",
+        "title": "Reading",
+        "type": "Core",
+        "weeks": [
+          null,
+          {
+            "assignment": "test",
+            "summary": "test",
+            "topic": "test"
+          },
+          {
+            "assignment": "test",
+            "summary": "TEST",
+            "topic": "test"
+          },
+          {
+            "assignment": "yep",
+            "summary": "aaagain",
+            "topic": "test again"
+          }
+        ],
+        "year": "1"
+      }
+    },
+    "forumData": {
+      "categories": {
+        "events": {
+          "description": "Forums for school events and activities.",
+          "name": "Events",
+          "order": 4
+        },
+        "general": {
+          "description": "General discussion for all members.",
+          "name": "General",
+          "order": 1
+        },
+        "magnet_programs": {
+          "description": "Forums for specific Magnet Programs.",
+          "name": "Magnet Programs",
+          "order": 2
+        },
+        "private": {
+          "description": "Private forums for specific groups.",
+          "name": "Private Forums",
+          "order": 3
+        },
+        "test_cat": {
+          "description": "Testing purposes",
+          "name": "Test Category",
+          "order": 5
+        }
+      },
+      "forums": {
+        "creative_expressionists": {
+          "accessGroup": "creative",
+          "categoryId": "magnet_programs",
+          "description": "Celebrating artistic and creative talents.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Creative Expressionists"
+        },
+        "eco_explorers": {
+          "accessGroup": "eco",
+          "categoryId": "magnet_programs",
+          "description": "For those passionate about the environment.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Eco-Explorers"
+        },
+        "esl_support": {
+          "accessGroup": "esl",
+          "categoryId": "private",
+          "description": "Support for English as a Second Language learners.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "ESL Support"
+        },
+        "general_discussion": {
+          "categoryId": "general",
+          "description": "Talk about anything related to the school.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "General Discussion"
+        },
+        "kind_world_builders": {
+          "accessGroup": "kind",
+          "categoryId": "magnet_programs",
+          "description": "Dedicated to helping others and building community.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Kind World Builders"
+        },
+        "movers": {
+          "accessGroup": "mover",
+          "categoryId": "magnet_programs",
+          "description": "Emphasizing physical activity and hands-on creation.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Movers"
+        },
+        "neurodiverse_support": {
+          "accessGroup": "neurodiverse",
+          "categoryId": "private",
+          "description": "Support for neurodiverse students.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Neurodiverse Support"
+        },
+        "parent_support": {
+          "accessGroup": "parents",
+          "categoryId": "private",
+          "description": "Support for student parents.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Parent Support"
+        },
+        "school_events": {
+          "categoryId": "events",
+          "description": "Forums for school dances, games, and other events.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "School Events"
+        },
+        "test_forum_public": {
+          "categoryId": "test_cat",
+          "description": "Anyone logged in should see this.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "My First Public Forum"
+        },
+        "thinkers": {
+          "accessGroup": "thinker",
+          "categoryId": "magnet_programs",
+          "description": "Focused on problem-solving and logical thinking.",
+          "postCount": 0,
+          "threadCount": 0,
+          "title": "Thinkers"
+        }
+      }
+    },
+    "submissionsByCourseWeek": {
+      "Y1CORE_Read_2": {
+        "-OPhWh6wmBOVJ7UmlZl-": {
+          "courseId": "Y1CORE_Read",
+          "feedback": "test",
+          "grade": "Sprout",
+          "gradedAt": 1746686755301,
+          "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "gradedByName": "Admin User",
+          "status": "graded",
+          "studentDisplayName": "Sadina Star",
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submissionPushId": "-OPhWh6wmBOVJ7UmlZl-",
+          "submittedAt": 1746668016250,
+          "submittedText": "hooo",
+          "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_Read_2",
+          "weekNum": 2
+        }
+      },
+      "Y1CORE_Read_3": {
+        "-OPiutUlvTATqlvjWJTI": {
+          "courseId": "Y1CORE_Read",
+          "feedback": ":( tesstt",
+          "grade": "Seedling",
+          "gradedAt": 1746691979219,
+          "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "gradedByName": "Admin User",
+          "status": "graded",
+          "studentDisplayName": "Sadina Star",
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submissionPushId": "-OPiutUlvTATqlvjWJTI",
+          "submittedAt": 1746691398626,
+          "submittedText": "test",
+          "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_Read_3",
+          "weekNum": 3
+        },
+        "-OPix9SGuOChjFcLZaa1": {
+          "courseId": "Y1CORE_Read",
+          "feedback": "test FAIL",
+          "flaggedAt": 1746692041379,
+          "flaggedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "flaggedByName": "Admin User",
+          "grade": "Needs Review",
+          "gradedAt": 1746692014168,
+          "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "gradedByName": "Admin User",
+          "isAdminFlagged": true,
+          "status": "graded",
+          "studentExplanation": "we were testing :)",
+          "studentExplanationAt": 1746692026278,
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submissionPushId": "-OPix9SGuOChjFcLZaa1",
+          "submittedAt": 1746691991432,
+          "submittedText": "try again :!",
+          "userSubmissionPath": "userSubmissions/VwCWD9F25ecOzQ377NVv3Lo4HbA2/Y1CORE_Read_3",
+          "weekNum": 3
+        }
+      }
+    },
+    "userSubmissions": {
+      "VwCWD9F25ecOzQ377NVv3Lo4HbA2": {
+        "Y1CORE_Read_1": {
+          "courseId": "Y1CORE_Read",
+          "status": "submitted",
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submittedAt": 1746665256334,
+          "submittedText": "test",
+          "weekNum": 1
+        },
+        "Y1CORE_Read_2": {
+          "courseId": "Y1CORE_Read",
+          "feedback": "test",
+          "grade": "Sprout",
+          "gradedAt": 1746686755301,
+          "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "gradedByName": "Admin User",
+          "status": "graded",
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submissionPushId": "-OPhWh6wmBOVJ7UmlZl-",
+          "submittedAt": 1746668016250,
+          "submittedText": "hooo",
+          "weekNum": 2
+        },
+        "Y1CORE_Read_3": {
+          "courseId": "Y1CORE_Read",
+          "feedback": "test FAIL",
+          "flaggedAt": 1746692041379,
+          "flaggedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "flaggedByName": "Admin User",
+          "grade": "Needs Review",
+          "gradedAt": 1746692014168,
+          "gradedBy": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "gradedByName": "Admin User",
+          "isAdminFlagged": true,
+          "status": "graded",
+          "studentExplanation": "we were testing :)",
+          "studentExplanationAt": 1746692026278,
+          "studentUid": "VwCWD9F25ecOzQ377NVv3Lo4HbA2",
+          "submissionPushId": "-OPix9SGuOChjFcLZaa1",
+          "submittedAt": 1746691991432,
+          "submittedText": "try again :!",
+          "weekNum": 3
+        }
+      }
+    },
+    "users": {
+      "VwCWD9F25ecOzQ377NVv3Lo4HbA2": {
+        "profile": {
+          "answers": {
+            "q1": "kind",
+            "q2": "kind",
+            "q3": "creative",
+            "q4": "kind",
+            "q5": "kind"
+          },
+          "applicationDate": "2025-05-08T09:03:23.473Z",
+          "atticNickname": "Sadina Star",
+          "createdAt": 0,
+          "displayName": "Admin User",
+          "email": "learningpod123@gmail.com",
+          "firstDayReflection": "I love this new place!",
+          "firstImpression": "it's cold and damp but nice.",
+          "gatewayComplete": true,
+          "magnetProgram": "kind",
+          "orientationComplete": true,
+          "quizAnswers": {
+            "q5": "kind"
+          },
+          "role": "admin",
+          "yourAtticStory": "I found it when I was lost in a storm. Lost in life..."
+        }
+      }
+    }
+  }

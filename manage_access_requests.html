@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Access Requests - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container { padding: 20px; margin: 20px auto; max-width: 900px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .request-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .request-item h4 { margin-top: 0; margin-bottom: 5px; color: #556b2f; }
+        .request-item p { margin: 5px 0; font-size: 0.9em; }
+        .request-item .user-info { color: #333; }
+        .request-item .request-details { color: #555; }
+        .request-item .actions button { margin-right: 10px; padding: 6px 12px; font-size: 0.9em; cursor: pointer; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; font-weight: bold; text-align: center; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db;}
+        #filter-controls { margin-bottom: 20px; padding:15px; background-color:#f0f8f0; border-radius:5px; border: 1px solid #d4e9d4;}
+        #filter-controls label { margin-right: 10px; font-weight:bold; }
+        #filter-controls select, #filter-controls input { padding: 8px; border-radius:4px; border:1px solid #ccc; margin-right:15px;}
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on manage_access_requests.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase SDKs not loaded!");
+            }
+        } catch (e) { 
+            console.error("Firebase init error on manage_access_requests.html", e); 
+            document.addEventListener('DOMContentLoaded', () => {
+                const body = document.querySelector('body');
+                if(body) body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start.</p>";
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Manage Forum Access Requests</h1>
+    </header>
+    <main>
+        <div class="admin-container">
+            <div id="admin-auth-status" style="text-align:center; margin-bottom:20px;">Verifying access...</div>
+            
+            <div id="admin-controls" style="display:none;">
+                <div id="filter-controls">
+                    <label for="statusFilter">Filter Status:</label>
+                    <select id="statusFilter">
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                        <option value="all">Show All</option>
+                    </select>
+                    </div>
+                <h3 id="current-filter-heading" style="margin-top:20px;">Pending Requests</h3>
+                <div id="requests-list">Loading requests...</div>
+            </div>
+            <div id="page-process-status" class="status-message"></div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; margin-bottom:20px;">
+             <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+             <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+    <footer> <p>&copy; 2025 The Attic - Alternative Academy</p> </footer>
+
+    <script>
+        const adminAuthStatusDiv = document.getElementById('admin-auth-status');
+        const adminControlsDiv = document.getElementById('admin-controls');
+        const requestsListDiv = document.getElementById('requests-list');
+        const pageProcessStatusDiv = document.getElementById('page-process-status');
+        const statusFilterSelect = document.getElementById('statusFilter');
+        const currentFilterHeading = document.getElementById('current-filter-heading');
+
+        let currentAdminUser = null;
+        let currentAdminProfile = null;
+        let requestDataListener = null; // To store the listener and detach later
+
+        function showPageProcessStatus(message, type = 'error') {
+            pageProcessStatusDiv.textContent = message;
+            pageProcessStatusDiv.className = `status-message status-${type}`;
+            pageProcessStatusDiv.style.display = 'block';
+            setTimeout(() => { if (pageProcessStatusDiv.textContent === message) pageProcessStatusDiv.style.display = 'none'; }, 4000);
+        }
+
+        function loadRequests(filterStatus = "pending") {
+            requestsListDiv.innerHTML = '<p>Fetching requests...</p>';
+            currentFilterHeading.textContent = `${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)} Requests`;
+            if (filterStatus === "all") currentFilterHeading.textContent = "All Requests";
+
+            let requestsRef = firebase.database().ref('accessRequests');
+            
+            // Detach previous listener if it exists
+            if (requestDataListener) {
+                requestsRef.off('value', requestDataListener);
+            }
+
+            if (filterStatus && filterStatus !== "all") {
+                // For filtering by status on a single field `status`
+                requestDataListener = requestsRef.orderByChild('status').equalTo(filterStatus).on('value', handleSnapshot, handleError);
+            } else {
+                // For "all", order by timestamp or another relevant field
+                requestDataListener = requestsRef.orderByChild('requestTimestamp').on('value', handleSnapshot, handleError);
+            }
+        }
+        
+        function handleSnapshot(snapshot) {
+            requestsListDiv.innerHTML = ''; 
+            const filterStatus = statusFilterSelect.value;
+            if (!snapshot.exists()) {
+                requestsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} requests found.</p>`;
+                return;
+            }
+            let hasItems = false;
+            // Firebase returns an object, iterate over its keys
+            const requests = [];
+            snapshot.forEach(childSnapshot => {
+                requests.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+
+            // Sort by timestamp descending for "all" and "pending" to see newest first
+            if (filterStatus === "all" || filterStatus === "pending") {
+                requests.sort((a, b) => (b.requestTimestamp || 0) - (a.requestTimestamp || 0));
+            }
+
+
+            requests.forEach(requestDataWithId => {
+                renderRequestItem(requestDataWithId.id, requestDataWithId);
+                hasItems = true;
+            });
+
+            if (!hasItems) {
+                 requestsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} requests found.</p>`;
+            }
+        }
+
+        function handleError(error) {
+            console.error("Error loading requests:", error);
+            requestsListDiv.innerHTML = '<p style="color:red;">Error loading requests. Check console for details.</p>';
+        }
+
+
+        function renderRequestItem(requestId, data) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'request-item';
+            itemDiv.id = `req-${requestId}`;
+
+            const reqTimestamp = data.requestTimestamp ? new Date(data.requestTimestamp).toLocaleString() : 'N/A';
+            let actionsHTML = '';
+            let reviewInfoHTML = '';
+
+            if (data.status === 'pending') {
+                actionsHTML = `
+                    <div class="actions" style="margin-top:10px;">
+                        <button class="button" style="background-color:green; color:white;" onclick="processRequest('${requestId}', true, '${data.userId}', '${data.requestedGroupKey}')">Approve</button>
+                        <button class="button" style="background-color:red; color:white;" onclick="processRequest('${requestId}', false, '${data.userId}', '${data.requestedGroupKey}')">Deny</button>
+                    </div>`;
+            } else {
+                 reviewInfoHTML = `<p class="request-details">Status: <strong>${data.status}</strong>`;
+                 if(data.reviewedByName) reviewInfoHTML += ` by ${data.reviewedByName}`;
+                 if(data.reviewTimestamp) reviewInfoHTML += ` on ${new Date(data.reviewTimestamp).toLocaleString()}`;
+                 reviewInfoHTML += `</p>`;
+                 if(data.reviewNotes) reviewInfoHTML += `<p class="request-details"><small>Notes: ${data.reviewNotes}</small></p>`;
+            }
+
+            itemDiv.innerHTML = `
+                <h4>${data.requestedGroupName || 'Unknown Group'} (<code>${data.requestedGroupKey || 'N/A'}</code>)</h4>
+                <p class="user-info">User: <strong>${data.userDisplayName || data.userId}</strong> (${data.userEmail || 'No email'})</p>
+                <p class="request-details">Requested: ${reqTimestamp}</p>
+                ${reviewInfoHTML}
+                ${actionsHTML}
+            `;
+            requestsListDiv.appendChild(itemDiv);
+        }
+
+        window.processRequest = function(requestId, approve, targetUserId, targetGroupKey) {
+            if (!currentAdminUser || !currentAdminProfile) {
+                showPageProcessStatus("Admin/TA not properly authenticated.", "error");
+                return;
+            }
+            const actionText = approve ? "Approving" : "Denying";
+            showPageProcessStatus(`${actionText} request ID: ${requestId}...`, "info");
+
+            const requestRef = firebase.database().ref(`accessRequests/${requestId}`);
+            
+            requestRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    showPageProcessStatus("Request not found in database. It might have been deleted or processed by another admin/TA.", "error");
+                    loadRequests(statusFilterSelect.value); // Refresh list
+                    return;
+                }
+                const requestDataOriginal = snapshot.val();
+                if (requestDataOriginal.status !== 'pending') {
+                    showPageProcessStatus("This request has already been processed.", "info");
+                    loadRequests(statusFilterSelect.value); // Refresh list
+                    return;
+                }
+
+                const updates = {};
+                const reviewTimestampValue = firebase.database.ServerValue.TIMESTAMP;
+                
+                updates[`/accessRequests/${requestId}/status`] = approve ? "approved" : "denied";
+                updates[`/accessRequests/${requestId}/reviewedByUid`] = currentAdminUser.uid;
+                updates[`/accessRequests/${requestId}/reviewedByName`] = currentAdminProfile.displayName || currentAdminUser.email;
+                updates[`/accessRequests/${requestId}/reviewTimestamp`] = reviewTimestampValue;
+                updates[`/accessRequests/${requestId}/userId_groupKey_status`] = null; // Clear the query key
+
+                if (approve) {
+                    if (!targetUserId || !targetGroupKey) {
+                         showPageProcessStatus("Error: Missing target user ID or group key in the request data. Cannot update user profile.", "error");
+                         return Promise.reject(new Error("Missing target info in request."));
+                    }
+                    updates[`/users/${targetUserId}/profile/specialAccessGroups/${targetGroupKey}`] = true;
+                } else {
+                    // If denying, and you want to ensure the group is not set for the user:
+                     if (targetUserId && targetGroupKey) {
+                        updates[`/users/${targetUserId}/profile/specialAccessGroups/${targetGroupKey}`] = null; // Explicitly remove or set to false
+                     }
+                    // const reason = prompt("Reason for denial (optional, will be stored):");
+                    // if (reason) updates[`/accessRequests/${requestId}/reviewNotes`] = reason;
+                }
+                return firebase.database().ref().update(updates);
+            })
+            .then(() => {
+                showPageProcessStatus(`Request ${approve ? "approved" : "denied"} successfully.`, "success");
+                // The real-time listener on loadRequests should auto-update the UI.
+                // If not, explicitly call: loadRequests(statusFilterSelect.value);
+            })
+            .catch(error => {
+                console.error("Error processing request:", error);
+                showPageProcessStatus(`Error processing request: ${error.message}`, "error");
+            });
+        }
+
+        statusFilterSelect.addEventListener('change', (e) => {
+            loadRequests(e.target.value);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth || !firebase?.database) {
+                adminAuthStatusDiv.textContent = "Error: Firebase services unavailable."; 
+                adminAuthStatusDiv.style.color = "red";
+                return;
+            }
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentAdminUser = user;
+                    firebase.database().ref('users/' + user.uid + '/profile').once('value')
+                        .then(snapshot => {
+                            if (snapshot.exists() && (snapshot.val().role === 'admin' || snapshot.val().role === 'ta')) {
+                                currentAdminProfile = snapshot.val();
+                                adminAuthStatusDiv.textContent = `Logged in as ${currentAdminProfile.displayName || currentAdminUser.email} (Role: ${currentAdminProfile.role}).`;
+                                adminAuthStatusDiv.style.color = "green";
+                                adminControlsDiv.style.display = 'block';
+                                loadRequests(statusFilterSelect.value); 
+                            } else {
+                                adminAuthStatusDiv.innerHTML = '<p style="color:red;">Access Denied. You do not have Admin or TA privileges for this page.</p>';
+                                adminControlsDiv.style.display = 'none';
+                            }
+                        }).catch(err => {
+                            console.error("Error fetching admin/ta profile:", err);
+                            adminAuthStatusDiv.textContent = "Error verifying your admin/TA status.";
+                            adminAuthStatusDiv.style.color = "red";
+                            adminControlsDiv.style.display = 'none';
+                        });
+                } else {
+                    adminAuthStatusDiv.innerHTML = 'You must be <a href="login.html?redirect=manage_access_requests.html">logged in</a> with Admin or TA rights to view this page.';
+                    adminAuthStatusDiv.style.color = "red";
+                    adminControlsDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

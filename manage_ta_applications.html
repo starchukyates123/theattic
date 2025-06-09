@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage TA Applications - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container { padding: 20px; margin: 20px auto; max-width: 900px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .application-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .application-item h4 { margin-top: 0; margin-bottom: 5px; color: #556b2f; }
+        .application-item p { margin: 5px 0; font-size: 0.9em; }
+        .application-item pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; }
+        .application-item .actions button { margin-right: 10px; padding: 6px 12px; font-size: 0.9em; cursor: pointer; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; font-weight: bold; text-align: center;}
+        .status-success { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+        #filter-controls { margin-bottom: 20px; padding:15px; background-color:#f0f8f0; border-radius:5px; border: 1px solid #d4e9d4; }
+        #filter-controls label { margin-right: 10px; font-weight: bold; }
+        #filter-controls select { padding: 8px; border-radius:4px; border:1px solid #ccc;}
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration --- (Same as other pages)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+        } catch (e) { console.error("Firebase init error", e); }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Manage TA Applications</h1>
+    </header>
+    <main>
+        <div class="admin-container">
+            <div id="admin-auth-status" style="text-align:center; margin-bottom:20px;">Verifying admin access...</div>
+            
+            <div id="admin-controls" style="display:none;">
+                <div id="filter-controls">
+                    <label for="taAppStatusFilter">Filter by status:</label>
+                    <select id="taAppStatusFilter">
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                        <option value="all">Show All</option>
+                    </select>
+                </div>
+                <h3 id="current-ta-filter-heading" style="margin-top:20px;">Pending TA Applications</h3>
+                <div id="ta-applications-list">Loading TA applications...</div>
+            </div>
+            <div id="ta-app-process-status" class="status-message"></div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; margin-bottom:20px;">
+             <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+        </div>
+    </main>
+    <footer> <p>&copy; 2025 The Attic - Alternative Academy</p> </footer>
+
+    <script>
+        const adminAuthStatusDiv = document.getElementById('admin-auth-status');
+        const adminControlsDiv = document.getElementById('admin-controls');
+        const taApplicationsListDiv = document.getElementById('ta-applications-list');
+        const taAppProcessStatusDiv = document.getElementById('ta-app-process-status');
+        const taAppStatusFilterSelect = document.getElementById('taAppStatusFilter');
+        const currentTaFilterHeading = document.getElementById('current-ta-filter-heading');
+
+        let currentAdminUser = null; // For the admin viewing this page
+        let currentAdminProfile = null;
+        let taAppListener = null;
+
+        function showTaAppProcessStatus(message, type = 'error') {
+            taAppProcessStatusDiv.textContent = message;
+            taAppProcessStatusDiv.className = `status-message status-${type}`;
+            taAppProcessStatusDiv.style.display = 'block';
+            setTimeout(() => { if (taAppProcessStatusDiv.textContent === message) taAppProcessStatusDiv.style.display = 'none'; }, 4000);
+        }
+
+        function loadTaApplications(filterStatus = "pending") {
+            taApplicationsListDiv.innerHTML = '<p>Fetching TA applications...</p>';
+            currentTaFilterHeading.textContent = `${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)} TA Applications`;
+             if (filterStatus === "all") currentTaFilterHeading.textContent = "All TA Applications";
+
+
+            let taAppsRef = firebase.database().ref('taApplications');
+            if (taAppListener) {
+                taAppsRef.off('value', taAppListener); // Detach previous listener
+            }
+
+            if (filterStatus && filterStatus !== "all") {
+                taAppListener = taAppsRef.orderByChild('status').equalTo(filterStatus).on('value', handleTaAppSnapshot, handleTaAppError);
+            } else {
+                taAppListener = taAppsRef.orderByChild('applicationTimestamp').on('value', handleTaAppSnapshot, handleTaAppError);
+            }
+        }
+
+        function handleTaAppSnapshot(snapshot) {
+            taApplicationsListDiv.innerHTML = '';
+            const filterStatus = taAppStatusFilterSelect.value;
+            if (!snapshot.exists()) {
+                taApplicationsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} TA applications found.</p>`;
+                return;
+            }
+            
+            const applications = [];
+            snapshot.forEach(childSnapshot => {
+                applications.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+
+            if (filterStatus === "all" || filterStatus === "pending") {
+                applications.sort((a, b) => (b.applicationTimestamp || 0) - (a.applicationTimestamp || 0));
+            }
+
+            applications.forEach(appDataWithId => {
+                renderTaApplicationItem(appDataWithId.id, appDataWithId);
+            });
+             if (applications.length === 0) { // Double check after potential client-side sort
+                taApplicationsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} TA applications found.</p>`;
+            }
+        }
+        
+        function handleTaAppError(error) {
+            console.error("Error loading TA applications:", error);
+            taApplicationsListDiv.innerHTML = '<p style="color:red;">Error loading TA applications.</p>';
+        }
+
+
+        function renderTaApplicationItem(appId, data) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'application-item';
+            itemDiv.id = `ta-app-${appId}`;
+
+            const appTimestamp = data.applicationTimestamp ? new Date(data.applicationTimestamp).toLocaleString() : 'N/A';
+            let actionsHTML = '';
+            let reviewInfoHTML = '';
+
+            if (data.status === 'pending') {
+                actionsHTML = `
+                    <div class="actions" style="margin-top:15px;">
+                        <button class="button" style="background-color:green; color:white;" onclick="processTaApplication('${appId}', true, '${data.userId}')">Approve as TA</button>
+                        <button class="button" style="background-color:red; color:white;" onclick="processTaApplication('${appId}', false, '${data.userId}')">Deny Application</button>
+                    </div>`;
+            } else {
+                reviewInfoHTML = `<p>Status: <strong>${data.status}</strong>`;
+                if(data.reviewedByName) reviewInfoHTML += ` by ${data.reviewedByName}`;
+                if(data.reviewTimestamp) reviewInfoHTML += ` on ${new Date(data.reviewTimestamp).toLocaleString()}`;
+                reviewInfoHTML += `</p>`;
+                if(data.reviewNotes) reviewInfoHTML += `<p><small>Notes: ${data.reviewNotes}</small></p>`;
+            }
+            
+            // Sanitize reason before putting into <pre>
+            const reasonText = data.applicationReason || "No reason provided.";
+            const sanitizedReason = reasonText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+
+            itemDiv.innerHTML = `
+                <h4>Applicant: ${data.userDisplayName || data.userId}</h4>
+                <p>Email: ${data.userEmail || 'N/A'}</p>
+                <p>Submitted on: ${appTimestamp}</p>
+                <div><strong>Reason for Applying:</strong><pre>${sanitizedReason}</pre></div>
+                ${reviewInfoHTML}
+                ${actionsHTML}
+            `;
+            taApplicationsListDiv.appendChild(itemDiv);
+        }
+
+        window.processTaApplication = function(appId, approve, applicantUserId) {
+            if (!currentAdminUser || !currentAdminProfile || currentAdminProfile.role !== 'admin') { // Only allow Admins for TA role changes
+                showTaAppProcessStatus("Only Admins can process TA applications.", "error");
+                return;
+            }
+            const actionText = approve ? "Approving" : "Denying";
+            showTaAppProcessStatus(`${actionText} TA application for ${applicantUserId}...`, "info");
+
+            const appRef = firebase.database().ref(`taApplications/${appId}`);
+            
+            appRef.once('value').then(snapshot => {
+                 if (!snapshot.exists()) {
+                    showTaAppProcessStatus("TA Application not found.", "error");
+                    loadTaApplications(taAppStatusFilterSelect.value);
+                    return;
+                }
+                const appDataOriginal = snapshot.val();
+                if (appDataOriginal.status !== 'pending') {
+                    showTaAppProcessStatus("This TA application has already been processed.", "info");
+                    loadTaApplications(taAppStatusFilterSelect.value);
+                    return;
+                }
+
+                const updates = {};
+                const reviewTimestampValue = firebase.database.ServerValue.TIMESTAMP;
+
+                updates[`/taApplications/${appId}/status`] = approve ? "approved" : "denied";
+                updates[`/taApplications/${appId}/reviewedByUid`] = currentAdminUser.uid;
+                updates[`/taApplications/${appId}/reviewedByName`] = currentAdminProfile.displayName || currentAdminUser.email;
+                updates[`/taApplications/${appId}/reviewTimestamp`] = reviewTimestampValue;
+
+                if (approve) {
+                    // CRITICAL: Update the user's role to 'ta'
+                    updates[`/users/${applicantUserId}/profile/role`] = "ta";
+                } else {
+                    // const reason = prompt("Reason for denial (optional, will be stored with the application):");
+                    // if (reason) updates[`/taApplications/${appId}/reviewNotes`] = reason;
+                    // If denying, and the user's role was student, it remains student.
+                    // If they somehow had 'ta' and are being denied (e.g. re-evaluation), this logic might need adjustment.
+                    // For a new applicant, their role is likely 'student', so no change needed on denial.
+                }
+                return firebase.database().ref().update(updates);
+            })
+            .then(() => {
+                showTaAppProcessStatus(`TA Application ${approve ? "approved" : "denied"} successfully. User role ${approve ? "updated to TA." : "remains unchanged."}`, "success");
+            })
+            .catch(error => {
+                console.error("Error processing TA application:", error);
+                showTaAppProcessStatus(`Error processing TA application: ${error.message}`, "error");
+            });
+        }
+
+        taAppStatusFilterSelect.addEventListener('change', (e) => {
+            loadTaApplications(e.target.value);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth || !firebase?.database) {
+                adminAuthStatusDiv.textContent = "Error: Firebase services unavailable."; return;
+            }
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentAdminUser = user;
+                    firebase.database().ref('users/' + user.uid + '/profile').once('value')
+                        .then(snapshot => {
+                            // For managing TA applications, strictly require 'admin' role.
+                            // TAs themselves shouldn't approve other TAs unless you design that hierarchy.
+                            if (snapshot.exists() && snapshot.val().role === 'admin') {
+                                currentAdminProfile = snapshot.val();
+                                adminAuthStatusDiv.textContent = `Logged in as Admin: ${currentAdminProfile.displayName || currentAdminUser.email}.`;
+                                adminAuthStatusDiv.style.color = "green";
+                                adminControlsDiv.style.display = 'block';
+                                loadTaApplications(taAppStatusFilterSelect.value); 
+                            } else {
+                                adminAuthStatusDiv.innerHTML = '<p style="color:red;">Access Denied. You must be an Admin to manage TA applications.</p>';
+                                adminControlsDiv.style.display = 'none';
+                            }
+                        }).catch(err => {
+                            adminAuthStatusDiv.textContent = "Error verifying your admin status.";
+                            adminControlsDiv.style.display = 'none';
+                        });
+                } else {
+                    adminAuthStatusDiv.innerHTML = 'You must be <a href="login.html?redirect=manage_ta_applications.html">logged in</a> as an Admin.';
+                    adminControlsDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

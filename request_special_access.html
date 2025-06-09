@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Special Forum Access - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .request-access-container { padding: 20px; margin: 20px auto; max-width: 700px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .access-group-option { margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 5px; background-color: #f9f9f9; }
+        .access-group-option .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .access-group-option .group-header label { font-weight: bold; color: #556b2f; margin-bottom: 0; }
+        .access-group-option p.group-description { font-size: 0.9em; color: #555; margin-top: 0; margin-bottom: 10px;}
+        .access-group-option .group-status-display { margin-top: 8px; font-weight: bold; }
+        .access-group-option .action-button { font-size: 0.9em; padding: 6px 12px; cursor: pointer; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; font-weight: bold; text-align: center; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .already-member { color: green; }
+        .pending-approval { color: orange; }
+        .request-denied { color: red; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on request_special_access.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase SDKs not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on request_special_access.html:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                const body = document.querySelector('body');
+                if(body) body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start.</p>";
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Request Special Forum Access</h1>
+        <p>Join specific support or interest groups.</p>
+    </header>
+
+    <main>
+        <div class="request-access-container">
+            <div id="auth-status-message" style="text-align:center; margin-bottom:20px;">Loading...</div>
+            <div id="access-options-list">
+                </div>
+            <div id="page-status" class="status-message" style="margin-top: 20px;"></div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+            <button onclick="window.location.href='forums.html'" class="button">Back to Forums</button>
+            <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        const authStatusMessageDiv = document.getElementById('auth-status-message');
+        const accessOptionsListDiv = document.getElementById('access-options-list');
+        const pageStatusDiv = document.getElementById('page-status');
+        let currentUser = null;
+        let currentUserProfile = null;
+
+        const AVAILABLE_SPECIAL_GROUPS = {
+            "esl": { name: "ESL Support Group", description: "A group for students who are English as a Second Language learners to connect and find support." },
+            "neurodiverse": { name: "Neurodiverse Support Group", description: "A supportive space for neurodiverse students to share experiences and resources." },
+            "parents": { name: "Parent Support Group", description: "A community for students who are also parents to connect and support each other." }
+        };
+
+        function showPageStatus(message, type = 'error') {
+            pageStatusDiv.textContent = message;
+            pageStatusDiv.className = `status-message status-${type}`;
+            pageStatusDiv.style.display = 'block';
+            if (type === 'success' || type === 'processing' || type === 'info') {
+                setTimeout(() => {
+                    if (pageStatusDiv.textContent === message) pageStatusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Fetches the LATEST request for a user and group, returning its status if any.
+        function getLatestRequestInfo(groupKey, callback) {
+            if (!currentUser) return callback(null);
+
+            const requestsRef = firebase.database().ref('accessRequests')
+                .orderByChild('userId') // First, narrow down by userId (if you add an index for this)
+                .equalTo(currentUser.uid);
+
+            requestsRef.once('value', snapshot => {
+                let latestRequest = null;
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const request = childSnapshot.val();
+                        if (request.requestedGroupKey === groupKey) {
+                            if (!latestRequest || request.requestTimestamp > latestRequest.requestTimestamp) {
+                                latestRequest = request;
+                            }
+                        }
+                    });
+                }
+                callback(latestRequest); // Returns the whole latest request object or null
+            }).catch(error => {
+                console.error(`Error checking request history for ${groupKey}:`, error);
+                callback(null);
+            });
+        }
+
+        async function renderAccessOptions() {
+            accessOptionsListDiv.innerHTML = '<p>Loading group options...</p>';
+            if (!currentUserProfile) {
+                accessOptionsListDiv.innerHTML = "<p style='color:red;'>Could not load your profile to check current access status.</p>";
+                return;
+            }
+
+            const userSpecialAccess = currentUserProfile.specialAccessGroups || {};
+            
+            // Clear previous options before re-rendering
+            while (accessOptionsListDiv.firstChild) {
+                accessOptionsListDiv.removeChild(accessOptionsListDiv.firstChild);
+            }
+
+            for (const groupKey in AVAILABLE_SPECIAL_GROUPS) {
+                const groupInfo = AVAILABLE_SPECIAL_GROUPS[groupKey];
+                
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'access-group-option';
+                optionDiv.id = `group-option-${groupKey}`;
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'group-header';
+
+                const label = document.createElement('label');
+                label.textContent = groupInfo.name;
+                headerDiv.appendChild(label);
+
+                const descriptionP = document.createElement('p');
+                descriptionP.className = 'group-description';
+                descriptionP.textContent = groupInfo.description;
+
+                const statusDisplayDiv = document.createElement('div');
+                statusDisplayDiv.className = 'group-status-display';
+
+                optionDiv.appendChild(headerDiv);
+                optionDiv.appendChild(descriptionP);
+                optionDiv.appendChild(statusDisplayDiv);
+
+                const isMember = userSpecialAccess[groupKey] === true;
+
+                // Use a Promise to handle the async nature of getLatestRequestInfo
+                const latestRequest = await new Promise(resolve => getLatestRequestInfo(groupKey, resolve));
+
+                if (isMember) {
+                    const memberSpan = document.createElement('span');
+                    memberSpan.className = 'already-member';
+                    memberSpan.textContent = "You are a member of this group.";
+                    statusDisplayDiv.appendChild(memberSpan);
+                    // Option to leave (can be a direct action or another request type)
+                    // const leaveButton = document.createElement('button');
+                    // leaveButton.className = 'button button-secondary action-button';
+                    // leaveButton.textContent = 'Leave Group';
+                    // leaveButton.onclick = () => handleLeaveGroup(groupKey); // Implement handleLeaveGroup
+                    // statusDisplayDiv.appendChild(leaveButton);
+                } else if (latestRequest && latestRequest.status === "pending") {
+                    const pendingSpan = document.createElement('span');
+                    pendingSpan.className = 'pending-approval';
+                    pendingSpan.textContent = "Your request to join is pending approval.";
+                    statusDisplayDiv.appendChild(pendingSpan);
+                } else if (latestRequest && latestRequest.status === "denied") {
+                    const deniedSpan = document.createElement('span');
+                    deniedSpan.className = 'request-denied';
+                    deniedSpan.textContent = "Your previous request to join was denied. ";
+                    statusDisplayDiv.appendChild(deniedSpan);
+
+                    const reapplyButton = document.createElement('button');
+                    reapplyButton.className = 'button action-button';
+                    reapplyButton.textContent = 'Re-apply to Join';
+                    reapplyButton.onclick = () => handleJoinGroupRequest(groupKey);
+                    statusDisplayDiv.appendChild(reapplyButton);
+                } else { // Not a member, no pending/denied request, or old denied request they can re-apply for
+                    const joinButton = document.createElement('button');
+                    joinButton.className = 'button action-button';
+                    joinButton.textContent = 'Request to Join';
+                    joinButton.onclick = () => handleJoinGroupRequest(groupKey);
+                    statusDisplayDiv.appendChild(joinButton);
+                }
+                accessOptionsListDiv.appendChild(optionDiv);
+            }
+             if (accessOptionsListDiv.children.length === 0) {
+                 accessOptionsListDiv.innerHTML = "<p>No special access groups are currently configured for application.</p>";
+             }
+        }
+
+        window.handleJoinGroupRequest = function(groupKey) {
+            if (!currentUser || !currentUserProfile) {
+                showPageStatus("You must be logged in and profile loaded to make a request.", "error");
+                return;
+            }
+            const groupInfo = AVAILABLE_SPECIAL_GROUPS[groupKey];
+            if (!groupInfo) {
+                showPageStatus("Invalid group selected for request.", "error");
+                return;
+            }
+
+            // Disable button to prevent multiple clicks
+            const button = document.querySelector(`#group-option-${groupKey} .action-button`);
+            if(button) button.disabled = true;
+
+            showPageStatus(`Submitting request to join ${groupInfo.name}...`, "processing");
+
+            const requestsRef = firebase.database().ref('accessRequests');
+            const newRequestRef = requestsRef.push();
+            const requestData = {
+                userId: currentUser.uid,
+                userDisplayName: currentUserProfile.displayName || currentUser.displayName || currentUser.email,
+                userEmail: currentUser.email,
+                requestedGroupKey: groupKey,
+                requestedGroupName: groupInfo.name,
+                requestTimestamp: firebase.database.ServerValue.TIMESTAMP,
+                status: "pending",
+                // This combined key is useful for admins if they want to quickly see if a specific user already has a PENDING request for a group
+                userId_groupKey_status: `${currentUser.uid}_${groupKey}_pending` 
+            };
+
+            newRequestRef.set(requestData)
+                .then(() => {
+                    showPageStatus(`Request to join ${groupInfo.name} submitted!`, "success");
+                    renderAccessOptions(); // Re-render to update the status for this group
+                })
+                .catch(error => {
+                    console.error("Error submitting join request:", error);
+                    showPageStatus(`Failed to submit request: ${error.message}`, "error");
+                    if(button) button.disabled = false; // Re-enable on error
+                });
+        };
+        
+        function fetchUserProfile(userId) {
+            return firebase.database().ref(`users/${userId}/profile`).once('value')
+                .then(snapshot => snapshot.val())
+                .catch(error => {
+                    console.error("Error fetching user profile:", error);
+                    showPageStatus("Error loading your profile information.", "error");
+                    return null; 
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth || !firebase?.database) {
+                authStatusMessageDiv.textContent = "Error: Essential site services are not available.";
+                authStatusMessageDiv.style.color = "red";
+                return;
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    authStatusMessageDiv.textContent = `Welcome, ${currentUser.displayName || currentUser.email}!`;
+                    authStatusMessageDiv.style.color = "inherit";
+                    
+                    fetchUserProfile(currentUser.uid).then(profile => {
+                        if (profile) {
+                            currentUserProfile = profile;
+                        } else {
+                            currentUserProfile = {}; 
+                            showPageStatus("Could not load your full profile details. Some functions might be limited.", "info");
+                        }
+                        renderAccessOptions(); 
+                    });
+                } else {
+                    currentUser = null;
+                    currentUserProfile = null;
+                    authStatusMessageDiv.innerHTML = 'You need to be <a href="login.html?redirect=request_special_access.html">logged in</a> to request special group access.';
+                    authStatusMessageDiv.style.color = "red";
+                    accessOptionsListDiv.innerHTML = ''; 
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attic Chronicle Opportunities - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .page-container {
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 900px;
+        }
+        .prompt-item {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #8fbc8f; /* Muted green accent */
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .prompt-item h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #556b2f; /* Dark olive green */
+            font-family: 'Merriweather', serif;
+        }
+        .prompt-item .prompt-type {
+            font-size: 0.85em;
+            color: #777;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+            font-style: italic;
+        }
+        .prompt-item .prompt-description-snippet {
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .prompt-item .respond-button {
+            background-color: #8fbc8f;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.95em;
+            transition: background-color 0.2s ease;
+            display: inline-block;
+        }
+        .prompt-item .respond-button:hover {
+            background-color: #79a079;
+        }
+        .prompt-item .already-responded {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+            padding: 8px 0;
+        }
+        #auth-status, #loading-status, #no-prompts-message {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+        .status-error { color: red; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        // --- Initialize Firebase ---
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            } else if (typeof firebase !== 'undefined') {
+                firebase.app();
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase SDKs not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on chronicle_opportunities.html:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                const container = document.getElementById('page-container');
+                if(container) container.innerHTML = "<p class='status-error'>Critical Error: Site services couldn't start.</p>";
+                else try { document.body.innerHTML = "<p class='status-error' style='padding:20px;'>Critical Error: Site services couldn't start.</p>"; } catch(e){}
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Attic Chronicle - New Chapters Await</h1>
+        <p>Explore available storyline prompts and reflection opportunities to add to your personal chronicle.</p>
+    </header>
+
+    <main>
+        <div class="page-container" id="page-container">
+            <div id="auth-status">Authenticating...</div>
+            <div id="loading-status" style="display:none;">Loading available prompts...</div>
+            <div id="available-prompts-list">
+                </div>
+            <div id="no-prompts-message" style="display:none;">No new chronicle opportunities available for you at this time. Check back later!</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+            <button onclick="window.location.href='my_story.html'" class="button">View My Chronicle</button>
+            <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        const authStatusDiv = document.getElementById('auth-status');
+        const loadingStatusDiv = document.getElementById('loading-status');
+        const availablePromptsListDiv = document.getElementById('available-prompts-list');
+        const noPromptsMessageDiv = document.getElementById('no-prompts-message');
+
+        let currentUser = null;
+        let userProfileData = null; // To store user's magnet program, year, etc. for filtering
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth) {
+                authStatusDiv.innerHTML = "<p class='status-error'>Error: Authentication service unavailable.</p>";
+                return;
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    authStatusDiv.style.display = 'none';
+                    loadingStatusDiv.style.display = 'block';
+                    fetchUserDataAndPrompts();
+                } else {
+                    currentUser = null;
+                    userProfileData = null;
+                    loadingStatusDiv.style.display = 'none';
+                    availablePromptsListDiv.innerHTML = '';
+                    noPromptsMessageDiv.style.display = 'none';
+                    authStatusDiv.innerHTML = '<p class="status-error">You must be <a href="login.html?redirect=chronicle_opportunities.html">logged in</a> to see chronicle opportunities.</p>';
+                    authStatusDiv.style.display = 'block';
+                }
+            });
+        });
+
+        async function fetchUserDataAndPrompts() {
+            if (!currentUser || !firebase?.database) return;
+
+            try {
+                // Fetch user profile (for potential filtering later)
+                const userProfileSnapshot = await firebase.database().ref(`users/${currentUser.uid}/profile`).once('value');
+                userProfileData = userProfileSnapshot.val() || {};
+
+                // Fetch user's existing chronicle entries to know what they've already done
+                const userChronicleEntriesSnapshot = await firebase.database().ref(`users/${currentUser.uid}/profile/chronicleEntries`).once('value');
+                const respondedPromptIds = new Set();
+                if (userChronicleEntriesSnapshot.exists()) {
+                    const entries = userChronicleEntriesSnapshot.val();
+                    Object.values(entries).forEach(entry => {
+                        if (entry && entry.promptIdRef) {
+                            respondedPromptIds.add(entry.promptIdRef);
+                        }
+                    });
+                }
+
+                // Fetch all active story prompts
+                const storyPromptsSnapshot = await firebase.database().ref('storyPrompts').orderByChild('isActive').equalTo(true).once('value');
+                
+                loadingStatusDiv.style.display = 'none';
+                availablePromptsListDiv.innerHTML = ''; // Clear previous
+
+                if (storyPromptsSnapshot.exists()) {
+                    const allActivePrompts = storyPromptsSnapshot.val();
+                    let displayedPromptsCount = 0;
+
+                    // Sort prompts by order, then by title if order is the same or undefined
+                    const sortedPromptKeys = Object.keys(allActivePrompts).sort((a, b) => {
+                        const orderA = allActivePrompts[a].order === undefined || allActivePrompts[a].order === null ? Number.MAX_SAFE_INTEGER : allActivePrompts[a].order;
+                        const orderB = allActivePrompts[b].order === undefined || allActivePrompts[b].order === null ? Number.MAX_SAFE_INTEGER : allActivePrompts[b].order;
+                        if (orderA !== orderB) {
+                            return orderA - orderB;
+                        }
+                        return (allActivePrompts[a].title || '').localeCompare(allActivePrompts[b].title || '');
+                    });
+
+                    sortedPromptKeys.forEach(promptId => {
+                        const prompt = allActivePrompts[promptId];
+                        if (!prompt) return;
+
+                        // --- Basic Filtering: Check if already responded ---
+                        if (respondedPromptIds.has(promptId)) {
+                            return; // Skip this prompt, user has already responded
+                        }
+                        
+                        // --- Advanced Filtering (Placeholder - to be implemented more robustly) ---
+                        // 1. Trigger condition checks (e.g., year_complete, course_complete)
+                        let meetsTrigger = true; // Assume meets trigger unless proven otherwise
+                        if (prompt.trigger && prompt.trigger.condition && prompt.trigger.condition !== 'none') {
+                            meetsTrigger = false; // Requires specific condition to be met
+                            if (prompt.trigger.condition === 'year_complete' && userProfileData.currentYear) { // Assuming currentYear is stored
+                                // This logic is simplified. You'd check userProgress for actual year completion status.
+                                // For example, if userProgress.year1.summary.yearStatus === 'complete' and prompt.trigger.year === 1
+                                if (userProfileData.currentYear > prompt.trigger.year) { // Example: if prompt is for Y1 completion, and user is in Y2
+                                   // meetsTrigger = true; 
+                                   // This needs to be tied to the userProgress.yearX.summary.yearStatus = 'complete'
+                                }
+                                // For now, let's just say if a year trigger exists, we might hide it unless explicitly met
+                                // This part needs proper userProgress data. For simplicity, let's keep it basic.
+                                console.log(`Prompt ${promptId} has year_complete trigger for year ${prompt.trigger.year}. User current year: ${userProfileData.currentYear}. Needs userProgress.yearX.summary check.`);
+
+                            } else if (prompt.trigger.condition === 'course_complete' && prompt.trigger.courseId && userProfileData.year1?.courses) {
+                               // const courseProgress = userProfileData.year1.courses[prompt.trigger.courseId];
+                               // if (courseProgress && courseProgress.status === 'completed') {
+                               //     meetsTrigger = true;
+                               // }
+                               console.log(`Prompt ${promptId} has course_complete trigger for ${prompt.trigger.courseId}. Needs userProgress.yearX.courses.COURSEID.status check.`);
+                            }
+                            // For now, if a trigger exists and we don't have the specific logic yet, we might not show it
+                            // Or, for testing, let's assume all triggers are met if they exist, unless explicitly not.
+                            // This simplified logic will show most triggered prompts if they are not yet tied to userProgress.
+                             meetsTrigger = true; // TEMPORARY: Assume triggers are met for display for now
+                        }
+
+
+                        // 2. Target audience checks (e.g., magnetProgram)
+                        let meetsAudience = true;
+                        if (prompt.targetAudience && prompt.targetAudience !== 'all' && userProfileData.magnetProgram) {
+                            if (prompt.targetAudience.toLowerCase() !== userProfileData.magnetProgram.toLowerCase()) {
+                                meetsAudience = false;
+                            }
+                        }
+                        
+                        // --- End Advanced Filtering Placeholder ---
+
+                        if (meetsTrigger && meetsAudience) {
+                            const promptDiv = document.createElement('div');
+                            promptDiv.className = 'prompt-item';
+
+                            const titleH3 = document.createElement('h3');
+                            titleH3.textContent = escapeHtml(prompt.title) || "Untitled Prompt";
+                            promptDiv.appendChild(titleH3);
+
+                            if (prompt.type) {
+                                const typeP = document.createElement('p');
+                                typeP.className = 'prompt-type';
+                                typeP.textContent = `Type: ${escapeHtml(prompt.type.replace(/_/g, " "))}`;
+                                promptDiv.appendChild(typeP);
+                            }
+
+                            const descriptionP = document.createElement('p');
+                            descriptionP.className = 'prompt-description-snippet';
+                            const snippet = prompt.descriptionOrPromptText ? 
+                                (prompt.descriptionOrPromptText.length > 200 ? prompt.descriptionOrPromptText.substring(0, 200) + "..." : prompt.descriptionOrPromptText)
+                                : "No description.";
+                            descriptionP.textContent = escapeHtml(snippet);
+                            promptDiv.appendChild(descriptionP);
+
+                            const respondLink = document.createElement('a');
+                            respondLink.href = `add_chronicle_entry.html?promptId=${encodeURIComponent(promptId)}`;
+                            respondLink.className = 'button respond-button'; // Use button class from styles.css if it fits
+                            respondLink.textContent = "Write this Chapter";
+                            promptDiv.appendChild(respondLink);
+                            
+                            availablePromptsListDiv.appendChild(promptDiv);
+                            displayedPromptsCount++;
+                        }
+                    });
+
+                    if (displayedPromptsCount === 0) {
+                        noPromptsMessageDiv.style.display = 'block';
+                    } else {
+                        noPromptsMessageDiv.style.display = 'none';
+                    }
+
+                } else { // No active prompts in /storyPrompts
+                    noPromptsMessageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error fetching data for chronicle opportunities:", error);
+                loadingStatusDiv.style.display = 'none';
+                availablePromptsListDiv.innerHTML = "<p class='status-error'>Could not load chronicle opportunities. Please try again.</p>";
+            }
+        }
+
+    </script>
+</body>
+</html>

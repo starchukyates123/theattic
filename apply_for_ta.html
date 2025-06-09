@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply to be a TA - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .application-container { padding: 20px; margin: 20px auto; max-width: 700px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #556b2f; }
+        .form-group textarea { width: calc(100% - 22px); min-height: 120px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; resize: vertical; }
+        .form-group input[type="text"] { width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+        .status-message { margin-top: 20px; padding: 10px; border-radius: 5px; display: none; font-weight: bold; text-align: center; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on apply_for_ta.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase SDKs not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on apply_for_ta.html:", initError);
+            // Critical error handling
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>TA Application</h1>
+        <p>Interested in becoming a Teacher Assistant at The Attic?</p>
+    </header>
+
+    <main>
+        <div class="application-container">
+            <div id="auth-status-message" style="text-align:center; margin-bottom:20px;">Loading...</div>
+            
+            <form id="taApplicationForm" style="display:none;">
+                <div class="form-group">
+                    <label for="taReason">Why do you want to be a TA? (Briefly describe your motivation and any relevant skills or interests)</label>
+                    <textarea id="taReason" name="taReason" rows="8" required placeholder="Explain your interest in the TA role..."></textarea>
+                </div>
+                
+                <button type="submit" class="button" id="submitTaApplicationButton">Submit Application</button>
+                <div id="application-status" class="status-message" style="margin-top: 20px;"></div>
+            </form>
+            <div id="existing-application-status" style="margin-top:20px;"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+            <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        const authStatusMessageDiv = document.getElementById('auth-status-message');
+        const taApplicationForm = document.getElementById('taApplicationForm');
+        const submitTaApplicationButton = document.getElementById('submitTaApplicationButton');
+        const applicationStatusDiv = document.getElementById('application-status');
+        const existingApplicationStatusDiv = document.getElementById('existing-application-status');
+        
+        let currentUser = null;
+        let currentUserProfile = null;
+
+        function showAppStatus(message, type = 'error') {
+            applicationStatusDiv.textContent = message;
+            applicationStatusDiv.className = `status-message status-${type}`;
+            applicationStatusDiv.style.display = 'block';
+            if (type === 'success' || type === 'processing' || type === 'info') {
+                setTimeout(() => {
+                    if (applicationStatusDiv.textContent === message) applicationStatusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function checkExistingTAApplication() {
+            if (!currentUser) return;
+            existingApplicationStatusDiv.innerHTML = '<p>Checking application status...</p>';
+
+            // Check if user is already a TA or Admin
+            if (currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'ta') {
+                taApplicationForm.style.display = 'none';
+                existingApplicationStatusDiv.innerHTML = `<p style="color:green; font-weight:bold;">You are already an ${currentUserProfile.role}.</p>`;
+                authStatusMessageDiv.textContent = `Your current role: ${currentUserProfile.role}.`;
+                return;
+            }
+
+            const applicationsRef = firebase.database().ref('taApplications').orderByChild('userId').equalTo(currentUser.uid);
+            applicationsRef.once('value', snapshot => {
+                if (snapshot.exists()) {
+                    let latestStatus = '';
+                    let latestTimestamp = 0;
+                    snapshot.forEach(appSnapshot => {
+                        const appData = appSnapshot.val();
+                        if (appData.applicationTimestamp > latestTimestamp) {
+                            latestTimestamp = appData.applicationTimestamp;
+                            latestStatus = appData.status;
+                        }
+                    });
+
+                    if (latestStatus === 'pending') {
+                        taApplicationForm.style.display = 'none';
+                        existingApplicationStatusDiv.innerHTML = `<p style="color:orange; font-weight:bold;">You have a TA application pending review.</p>`;
+                    } else if (latestStatus === 'approved') {
+                        taApplicationForm.style.display = 'none';
+                        existingApplicationStatusDiv.innerHTML = `<p style="color:green; font-weight:bold;">Your TA application was approved! Your role should be updated.</p>`;
+                         // It's good practice for an admin to also update the user's main role field.
+                    } else if (latestStatus === 'denied') {
+                         existingApplicationStatusDiv.innerHTML = `<p style="color:red;">Your previous TA application was not approved. You may reapply if circumstances have changed or contact an admin for feedback.</p>`;
+                         taApplicationForm.style.display = 'block'; // Allow re-application
+                    } else {
+                        existingApplicationStatusDiv.innerHTML = ''; // No active or relevant past application
+                        taApplicationForm.style.display = 'block';
+                    }
+                } else {
+                    existingApplicationStatusDiv.innerHTML = ''; // No previous applications
+                    taApplicationForm.style.display = 'block';
+                }
+            }).catch(error => {
+                console.error("Error checking existing TA applications:", error);
+                existingApplicationStatusDiv.innerHTML = '<p style="color:red;">Could not check application status.</p>';
+                taApplicationForm.style.display = 'block'; // Allow application on error
+            });
+        }
+
+
+        taApplicationForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!currentUser || !currentUserProfile) {
+                showAppStatus("You must be logged in to apply.", "error");
+                return;
+            }
+
+            const reason = document.getElementById('taReason').value.trim();
+            // const experience = document.getElementById('taExperience')?.value.trim() || ""; // If you add this field
+
+            if (!reason) {
+                showAppStatus("Please explain why you want to be a TA.", "error");
+                return;
+            }
+
+            submitTaApplicationButton.disabled = true;
+            showAppStatus("Submitting your TA application...", "processing");
+
+            const taApplicationsRef = firebase.database().ref('taApplications');
+            const newApplicationRef = taApplicationsRef.push();
+            const applicationData = {
+                userId: currentUser.uid,
+                userDisplayName: currentUserProfile.displayName || currentUser.displayName || currentUser.email,
+                userEmail: currentUser.email,
+                applicationReason: reason,
+                // applicationExperience: experience, // If you add this field
+                applicationTimestamp: firebase.database.ServerValue.TIMESTAMP,
+                status: "pending" // Initial status
+            };
+
+            newApplicationRef.set(applicationData)
+                .then(() => {
+                    showAppStatus("TA Application submitted successfully! It will be reviewed by an Admin.", "success");
+                    taApplicationForm.reset();
+                    taApplicationForm.style.display = 'none';
+                    checkExistingTAApplication(); // Refresh status display
+                })
+                .catch(error => {
+                    console.error("Error submitting TA application:", error);
+                    showAppStatus(`Application submission failed: ${error.message}`, "error");
+                    submitTaApplicationButton.disabled = false;
+                });
+        });
+        
+        function fetchUserProfile(userId) {
+            return firebase.database().ref(`users/${userId}/profile`).once('value')
+                .then(snapshot => snapshot.val())
+                .catch(error => {
+                    console.error("Error fetching user profile:", error);
+                    return null; 
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth || !firebase?.database) {
+                authStatusMessageDiv.textContent = "Error: Site services unavailable.";
+                return;
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                     fetchUserProfile(currentUser.uid).then(profile => {
+                        if (profile) {
+                            currentUserProfile = profile;
+                        } else {
+                            currentUserProfile = {}; // Ensure it's an object
+                            showAppStatus("Could not load your full profile. Some checks might be affected.", "info");
+                        }
+                        authStatusMessageDiv.textContent = `Applying as: ${currentUserProfile.displayName || currentUser.displayName || currentUser.email}`;
+                        checkExistingTAApplication(); // Now check for existing apps
+                    });
+                } else {
+                    currentUser = null;
+                    currentUserProfile = null;
+                    authStatusMessageDiv.innerHTML = 'You need to be <a href="login.html?redirect=apply_for_ta.html">logged in</a> to apply for a TA position.';
+                    taApplicationForm.style.display = 'none';
+                    existingApplicationStatusDiv.innerHTML = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

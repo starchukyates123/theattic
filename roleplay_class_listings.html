@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleplay Class Listings - The Attic</title>
+    <link rel="stylesheet" href="styles.css"> <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        /* Add some basic styling for the listings if not in styles.css */
+        .class-listings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .class-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .class-card h3 {
+            margin-top: 0;
+            color: #556b2f;
+        }
+        .class-card p {
+            font-size: 0.9em;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .class-card .meta-info {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .class-card .status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom:10px;
+        }
+        .status.enrollment_open { background-color: #28a745; color: white; }
+        .status.upcoming { background-color: #ffc107; color: #333; }
+        .status.active_lesson_1, .status.enrollment_closed { background-color: #dc3545; color: white; }
+        .status.default { background-color: #6c757d; color: white;}
+
+        .class-card a.details-link {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #556b2f;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .class-card a.details-link:hover {
+            background-color: #6B8E23;
+        }
+        #loading-message, #no-classes-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Available Roleplay Classes</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            </nav>
+    </header>
+
+    <main>
+        <div id="loading-message">
+            <p>Loading available classes...</p>
+        </div>
+        <div id="no-classes-message" style="display: none;">
+            <p>No roleplay classes are currently available or open for enrollment. Please check back later!</p>
+        </div>
+        <div class="class-listings-container" id="classListingsContainer">
+            </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+  authDomain: "attic-4ae31.firebaseapp.com",
+  databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+  projectId: "attic-4ae31",
+  storageBucket: "attic-4ae31.firebasestorage.app",
+  messagingSenderId: "259372678655",
+  appId: "1:259372678655:web:df9c03e07e022392837bca",
+  measurementId: "G-2WWH3YVXT5"
+};
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // DOM Elements
+        const listingsContainer = document.getElementById('classListingsContainer');
+        const loadingMessage = document.getElementById('loading-message');
+        const noClassesMessage = document.getElementById('no-classes-message');
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function displayClasses(classesData) {
+            listingsContainer.innerHTML = ''; // Clear previous listings
+            
+            if (Object.keys(classesData).length === 0) {
+                noClassesMessage.style.display = 'block';
+                loadingMessage.style.display = 'none';
+                return;
+            }
+            noClassesMessage.style.display = 'none';
+            loadingMessage.style.display = 'none';
+
+            for (const classId in classesData) {
+                const classInfo = classesData[classId];
+
+                // Filter: Only display workshops of type 'roleplaying_class'
+                // And only those that are upcoming or open for enrollment
+                if (classInfo.type === 'roleplaying_class' && 
+                    (classInfo.status === 'enrollment_open' || classInfo.status === 'upcoming' || (classInfo.currentTerm && (classInfo.currentTerm.status === 'enrollment_open' || classInfo.currentTerm.status === 'upcoming')))) {
+                    
+                    const card = document.createElement('div');
+                    card.className = 'class-card';
+
+                    const title = escapeHtml(classInfo.title || 'Untitled Class');
+                    const description = escapeHtml(classInfo.description ? classInfo.description.substring(0, 150) + (classInfo.description.length > 150 ? '...' : '') : 'No description available.');
+                    const professor = escapeHtml(classInfo.professorName || 'N/A');
+                    
+                    // Determine status from overall or currentTerm
+                    let displayStatus = classInfo.status || (classInfo.currentTerm ? classInfo.currentTerm.status : 'N/A');
+                    let statusClass = displayStatus.replace(/\s+/g, '_').toLowerCase(); // e.g., enrollment_open
+                    if (!['enrollment_open', 'upcoming', 'active_lesson_1', 'enrollment_closed'].includes(statusClass)) {
+                        statusClass = 'default'; // Fallback class for unknown statuses
+                    }
+
+
+                    const termDisplay = escapeHtml(classInfo.currentTerm?.termName || classInfo.term || 'Term details not specified');
+
+                    card.innerHTML = `
+                        <h3>${title}</h3>
+                        <p class="status ${statusClass}">${displayStatus.replace(/_/g, ' ')}</p>
+                        <p class="meta-info">
+                            <strong>Professor:</strong> ${professor}<br>
+                            <strong>Term:</strong> ${termDisplay}
+                        </p>
+                        <p>${description}</p>
+                        <a href="roleplay_class_info.html?id=${classId}" class="details-link">View Details & Enroll</a>
+                    `;
+                    listingsContainer.appendChild(card);
+                }
+            }
+            if (listingsContainer.children.length === 0){ // If after filtering, no classes are shown
+                 noClassesMessage.style.display = 'block';
+            }
+        }
+
+        function fetchAndDisplayRoleplayClasses() {
+            // CHANGED: Fetch from '/workshops' instead of '/roleplayClasses'
+            const classesRef = db.ref('workshops'); 
+            
+            loadingMessage.style.display = 'block';
+            noClassesMessage.style.display = 'none';
+            listingsContainer.innerHTML = '';
+
+
+            classesRef.orderByChild("status") // You might order by creation date or status
+                      .once('value')
+                      .then(snapshot => {
+                if (snapshot.exists()) {
+                    displayClasses(snapshot.val());
+                } else {
+                    noClassesMessage.style.display = 'block';
+                    loadingMessage.style.display = 'none';
+                }
+            }).catch(error => {
+                console.error("Error fetching roleplay classes:", error); // This is where your original error was logged
+                loadingMessage.style.display = 'none';
+                listingsContainer.innerHTML = '<p style="color:red; text-align:center;">Could not load class listings due to an error. Please try again later.</p>';
+            });
+        }
+
+        // Handle Auth State
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in, fetch classes.
+                // You could potentially personalize listings if needed, but for now, all logged-in users see the same.
+                console.log("User logged in, fetching classes.");
+                fetchAndDisplayRoleplayClasses();
+            } else {
+                // User is signed out. 
+                // Decide if you want to show listings to logged-out users.
+                // If so, call fetchAndDisplayRoleplayClasses() here too.
+                // For now, let's assume listings are for logged-in users.
+                console.log("User not logged in. Displaying message or redirecting.");
+                loadingMessage.style.display = 'none';
+                noClassesMessage.innerHTML = '<p>Please <a href="login.html?redirect=roleplay_class_listings.html">log in</a> or <a href="register.html">register</a> to view available roleplay classes.</p>';
+                noClassesMessage.style.display = 'block';
+                listingsContainer.innerHTML = '';
+            }
+        });
+
+    </script>
+</body>
+</html>

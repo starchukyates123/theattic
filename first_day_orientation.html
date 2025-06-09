@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orientation Day - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { font-family: 'Open Sans', sans-serif; line-height: 1.6; background-color: #f8f8f8; color: #444; margin: 0; padding: 0; }
+        header { background-color: #556b2f; color: #f5f5dc; padding: 20px 20px; text-align: center; }
+        header h1 { font-family: 'Merriweather', serif; margin-bottom: 5px; font-size: 2.2em; }
+        main { padding: 0 10px; }
+        .orientation-container { padding: 20px; margin: 20px auto; max-width: 800px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .orientation-section { margin-bottom: 30px; padding: 20px; background-color: #f0f8f0; border-radius: 5px; border-left: 5px solid #8fbc8f; }
+        .orientation-section h2 { color: #556b2f; margin-top: 0; border-bottom: 1px solid #a9c9a9; padding-bottom: 10px; font-size: 1.6em; }
+        .orientation-section h3 { color: #6a8250; margin-top: 20px; font-size: 1.3em; }
+        .orientation-section p, .orientation-section ul { line-height: 1.7; color: #333; margin-bottom: 15px; }
+        .orientation-section ul { padding-left: 25px; list-style-type: disc; }
+        .orientation-section li { margin-bottom: 8px; }
+        .highlight { color: #556b2f; font-weight: bold; }
+        
+        .form-group { margin-top: 20px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #556b2f; }
+        .form-group textarea {
+            width: 97%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; min-height: 120px; resize: vertical; box-sizing: border-box;
+        }
+        
+        #completeOrientationButton {
+            display: block; width: 100%; background-color: #8fbc8f; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.2em; margin-top:20px;
+            transition: background-color 0.3s ease;
+        }
+        #completeOrientationButton:hover { background-color: #79a079; }
+        #completeOrientationButton:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #status-message { margin-top: 20px; padding: 12px; border-radius: 5px; display: none; font-weight: bold; text-align: center; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        footer { background-color: #556b2f; color: #f5f5dc; text-align: center; padding: 15px; font-size: 0.9em; margin-top: 30px; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // Your actual API key
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on first_day_orientation.html");
+            }
+            if (!firebase?.auth || !firebase?.database) {
+                throw new Error("Firebase Auth or Database SDK not loaded!");
+            }
+        } catch (initError) {
+            console.error("Firebase init error on first_day_orientation.html:", initError);
+            document.addEventListener('DOMContentLoaded', () => {
+                const body = document.querySelector('body');
+                if(body) body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start. Please refresh or try again later.</p>";
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Orientation Day at The Attic</h1>
+    </header>
+
+    <main>
+        <div class="orientation-container">
+            <div id="orientationMainContent">
+                <p style="text-align:center; padding: 20px;">Loading your orientation materials...</p>
+            </div>
+            <div id="status-message"></div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        const orientationMainContentDiv = document.getElementById('orientationMainContent');
+        const statusMessageDiv = document.getElementById('status-message');
+        let currentUserProfileData = null;
+
+        function showStatus(message, type = 'info') {
+            statusMessageDiv.textContent = message;
+            statusMessageDiv.className = `status-${type}`;
+            statusMessageDiv.style.display = 'block';
+             statusMessageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (type === 'success' || type === 'processing' || type === 'info') {
+                setTimeout(() => {
+                    if (statusMessageDiv.textContent === message) {
+                        statusMessageDiv.style.display = 'none';
+                    }
+                }, 4000);
+            }
+        }
+        
+        function getMagnetProgramIntro(magnetProgram) {
+            const intros = {
+                eco: "As an <span class='highlight'>Eco-Explorer</span>, you're joining a group passionate about the environment and sustainability. You'll often find discussions about nature, conservation projects, and ecological wonders in your dedicated forum.",
+                thinker: "Welcome, <span class='highlight'>Thinker</span>! This path is for those who love problem-solving, logical puzzles, and deep discussions. Your Magnet Program forum is a great place to share ideas and tackle intellectual challenges.",
+                mover: "<span class='highlight'>Movers</span> like you thrive on action, physical activity, and hands-on creation! Expect to connect with others who love to build, experiment, and get things done in your program's space.",
+                creative: "The Attic celebrates your spark, <span class='highlight'>Creative Expressionist</span>! Your program is a haven for artists, writers, musicians, and anyone who loves to bring new ideas to life through creativity. Your forum will be buzzing with inspiration.",
+                kind: "Kindness and community are at the heart of your program, <span class='highlight'>Kind World Builder</span>. You're joining those dedicated to helping others, fostering support, and making The Attic a welcoming place for all."
+            };
+            return intros[magnetProgram] || "Your unique Magnet Program will offer many exciting opportunities!";
+        }
+
+        function renderOrientationContent(profile) {
+            currentUserProfileData = profile;
+            const nickname = profile.atticNickname || profile.displayName || "New Student";
+            const magnetProgramKey = profile.magnetProgram || "unknown";
+            const magnetProgramName = magnetProgramKey.charAt(0).toUpperCase() + magnetProgramKey.slice(1); // Capitalize first letter for display
+
+            orientationMainContentDiv.innerHTML = `
+                <div class="orientation-section">
+                    <h2>Welcome, ${nickname}!</h2>
+                    <p>Your journey through the Attic Gateway is complete! We're thrilled to officially welcome you to your <strong>Orientation Day</strong> at The Attic Alternative Academy. Your connection to the <span class="highlight">${magnetProgramName}s</span> is noted!</p>
+                    <p>Today is all about getting you acquainted with the heart of our academy.</p>
+                </div>
+
+                <div class="orientation-section">
+                    <h2>Attic 101: Understanding Your New School</h2>
+                    
+                    <h3>The Attic Philosophy</h3>
+                    <p>The Attic is an alternative learning space designed for teens and adults (13+). It's a place where community, engagement, and flexible learning come together. You can be yourself or explore through a character – just remember our community guidelines: always be respectful, and don't share personal identifying information like last names or specific locations.</p>
+
+                    <h3>Navigating Your Studies</h3>
+                    <p>Our courses are structured with weekly lessons. In each, you'll typically find a <span class="highlight">Core Track</span> which includes a 'Topic,' a 'Summary,' and an 'Assignment'. This forms the main path of learning.</p>
+                    <p>Many lessons may also feature optional <span class="highlight">'Deep Dive' opportunities</span>. These could be extra challenges, creative extensions, or further reflection prompts if you're eager to explore a subject more thoroughly. These are always your choice to pursue!</p>
+                    <p>You'll discover courses for various <span class="highlight">Year Levels</span> (from Year 1 up to Adult learning), covering both Core subjects and fascinating Electives.</p>
+                    
+                    <h3>Your Magnet Program: The ${magnetProgramName}s</h3>
+                    <p>${getMagnetProgramIntro(magnetProgramKey)}</p>
+
+                    <h3>Connecting with Your Community</h3>
+                    <p>The Attic is also a vibrant community! We have Forums for general discussion, and importantly, dedicated (and locked) forums for each Magnet Program – including your <span class="highlight">${magnetProgramName}</span> space! These are great places to connect with students who share your program's focus.</p>
+                    <p>Sometimes, we might host <span class="highlight">Event Forums</span> for special school activities. We also encourage <span class="highlight">'Lounge Forums'</span> for each class, providing a casual space to chat about coursework, share ideas, and support each other. Keep an eye out for these as courses develop!</p>
+                </div>
+
+                <div class="orientation-section">
+                    <h2>Your First Day Reflection</h2>
+                    <form id="reflectionForm">
+                        <p>Your Orientation Day tour is concluding. As you stand ready to explore on your own, what's one thought, exciting idea, or perhaps a question that's sparking in your mind right now? This is for your private student journal.</p>
+                        <div class="form-group">
+                            <label for="firstDayReflection">My First Day Reflection (Optional):</label>
+                            <textarea id="firstDayReflection" name="firstDayReflection" rows="6" maxlength="1000" placeholder="Jot down your initial thoughts, hopes, or curiosities..."></textarea>
+                        </div>
+                        <button type="submit" id="completeOrientationButton">Complete Orientation & Proceed to Dashboard</button>
+                    </form>
+                </div>
+            `;
+            
+            // Add event listener to the newly created form
+            const reflectionForm = document.getElementById('reflectionForm');
+            if (reflectionForm) {
+                reflectionForm.addEventListener('submit', handleOrientationComplete);
+            }
+        }
+
+        function handleOrientationComplete(event) {
+            event.preventDefault();
+            const reflectionTextInput = document.getElementById('firstDayReflection'); // Ensure this ID matches your textarea
+            const completeButton = document.getElementById('completeOrientationButton'); // Ensure this ID matches your button
+
+            if (!reflectionTextInput || !completeButton) {
+                showStatus("Error: Page elements are missing. Cannot complete orientation.", "error");
+                console.error("Orientation form elements missing.");
+                return;
+            }
+
+            const reflectionText = reflectionTextInput.value.trim();
+
+            if (!firebase.auth().currentUser) {
+                showStatus("Error: You appear to be logged out. Please log in again.", "error");
+                if(completeButton) completeButton.disabled = false;
+                return;
+            }
+            
+            if(completeButton) completeButton.disabled = true;
+            showStatus("Finalizing your orientation...", "processing");
+
+            const user = firebase.auth().currentUser;
+            const db = firebase.database();
+            const userProfileRef = db.ref('users/' + user.uid + '/profile');
+            const userChronicleEntriesRef = db.ref('users/' + user.uid + '/profile/chronicleEntries');
+            
+            const serverTimestamp = firebase.database.ServerValue.TIMESTAMP;
+
+            // Data for direct profile update
+            const profileUpdates = {
+                orientationComplete: true
+            };
+
+            // Prepare chronicle entry if reflection text exists
+            let reflectionEntryPromise = Promise.resolve(); // Default to a resolved promise
+
+            if (reflectionText) {
+                const chronicleEntryData = {
+                    promptIdRef: "prompt_orientation_reflection",
+                    promptTitleSnapshot: "First Day Reflections", // Should match title in your storyPrompts
+                    studentResponse: reflectionText,
+                    timestamp: serverTimestamp,
+                    type: "orientation_reflection" // Should match type in your storyPrompts
+                };
+                // Add the push operation to the promise chain
+                reflectionEntryPromise = userChronicleEntriesRef.push(chronicleEntryData)
+                    .then(ref => console.log("Orientation reflection chronicle entry saved:", ref.key))
+                    .catch(e => {
+                        console.error("Error saving orientation reflection chronicle entry:", e);
+                        // Decide if this error should prevent orientation completion
+                        // For now, we'll let orientationComplete be set, but log the error
+                        showStatus("Note: Reflection could not be saved to chronicle, but orientation will be marked complete.", "info"); 
+                    });
+            } else {
+                console.log("No first day reflection text to save to chronicle.");
+            }
+
+            // First, save the chronicle entry (if any)
+            reflectionEntryPromise.then(() => {
+                // Then, update the main profile (e.g., orientationComplete flag)
+                return userProfileRef.update(profileUpdates);
+            })
+            .then(() => {
+                console.log("Orientation marked complete and reflection (if any) processed.");
+                showStatus("Orientation complete! Your adventure in The Attic begins now...", "success");
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000); // Increased timeout slightly to ensure user sees message
+            })
+            .catch(error => {
+                // This catch will handle errors from userProfileRef.update AND unhandled rejections from reflectionEntryPromise
+                console.error("Error saving orientation data:", error);
+                showStatus("Error finalizing orientation: " + error.message, "error");
+                if(completeButton) completeButton.disabled = false;
+            });
+        }
+
+
+        // Initial Page Load Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase.auth || !firebase.database) {
+                orientationMainContentDiv.innerHTML = "<p style='color:red; text-align:center;'>Critical Error: Essential site services are unavailable.</p>";
+                return;
+            }
+
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    const userProfileRef = firebase.database().ref('users/' + user.uid + '/profile');
+                    userProfileRef.once('value').then(snapshot => {
+                        if (snapshot.exists()) {
+                            const profile = snapshot.val();
+                            if (profile.orientationComplete === true) {
+                                showStatus('You have already completed orientation. Redirecting to dashboard...', 'info');
+                                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+                            } else if (profile.gatewayComplete === true) {
+                                // User has completed gateway, so show orientation content
+                                renderOrientationContent(profile);
+                            } else {
+                                // User hasn't completed the gateway, redirect them there
+                                showStatus('Please complete the Attic Gateway first. Redirecting...', 'info');
+                                setTimeout(() => { window.location.href = 'attic_gateway.html'; }, 2000);
+                            }
+                        } else {
+                            // Profile doesn't exist, something went wrong in registration or gateway
+                            showStatus('Error: Your student profile is incomplete. Redirecting to enrollment gateway...', 'error');
+                            setTimeout(() => { window.location.href = 'attic_gateway.html'; }, 2500);
+                        }
+                    }).catch(error => {
+                        console.error("Error fetching profile for orientation:", error);
+                        orientationMainContentDiv.innerHTML = "<p style='color:red; text-align:center;'>Error loading your orientation data. Please refresh.</p>";
+                    });
+                } else {
+                    // Not logged in
+                    orientationMainContentDiv.innerHTML = "<p style='color:red; text-align:center;'>You must be logged in for orientation. Redirecting to login...</p>";
+                    setTimeout(() => { window.location.href = 'login.html?redirect=first_day_orientation.html'; }, 2500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

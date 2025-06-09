@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Details</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* --- Existing Styles (from your file) --- */
+        #weekly-content-panels { /* Renamed from #weekly-content */
+            margin-top: 0px; /* Tabs will sit directly above */
+            padding-top: 0px;
+        }
+        .student-week-panel {
+            background-color: #f0f8f0; border: 1px solid #ccc; /* Match tab nav border */
+            border-top: none; /* Critical for tabbed appearance */
+            border-radius: 0 0 8px 8px; 
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative; 
+            z-index: 1;
+        }
+        .student-week-panel h4 { /* For Topic */
+            margin-top: 0; margin-bottom: 10px;
+            border-bottom: 1px solid #a9c9a9; padding-bottom: 5px;
+            color: #556b2f; font-size: 1.3em;
+        }
+        .student-week-panel h5 { /* For Summary, Assignment, Storyline, Quiz titles */
+            margin-top: 15px; margin-bottom: 5px;
+            color: #333; font-weight: bold; font-size: 1.1em;
+        }
+        .student-week-panel p,
+        .student-week-panel .summary-content,
+        .student-week-panel .assignment-instructions,
+        .storyline-prompt-display p {
+            margin-top: 0; margin-bottom: 10px; padding-left: 0px;
+            white-space: pre-wrap; word-wrap: break-word; color: #444; line-height: 1.6;
+        }
+        .no-content-message { color: #777; font-style: italic; }
+
+        /* Submission Section Styling */
+        .submission-section { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #c0dcc0; }
+        .submission-section h5 { color: #556b2f; margin-bottom: 10px; font-size:1.1em; }
+        .submission-form textarea { width: calc(100% - 16px); min-height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; display: block; box-sizing: border-box; }
+        .submission-form input[type="file"] { margin-bottom: 10px; display: block; }
+        .submission-status, .quiz-status { /* Combined common styles */
+             font-size: 0.9em; margin-top: 10px; padding: 8px; border-radius: 4px; display: none; 
+        }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        .submitted-work-display { background-color: #e9ecef; border: 1px solid #ced4da; padding: 10px; border-radius: 4px; font-size: 0.95em; margin-bottom: 10px; }
+        .submitted-work-display pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; max-height: 150px; overflow-y: auto; }
+        .submitted-work-display a { color: #007bff; text-decoration: none; }
+        .submitted-work-display a:hover { text-decoration: underline; }
+        .grade-display { margin-top: 8px; font-size: 0.9em; border-top: 1px solid #ced4da; padding-top: 8px; }
+        .grade-display strong { color: #556b2f; }
+        .grade-display em { color: #555; }
+        .resubmit-message { font-weight: bold; margin-top: 10px; font-size: 0.9em; padding: 5px 8px; border-radius:3px; display: inline-block;}
+        .resubmit-allowed { background-color: #cfe2ff; color: #004085;}
+        .resubmit-not-allowed { background-color: #f8d7da; color: #721c24;}
+        .form-container-resubmit { margin-top: 15px; }
+        .student-explanation-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #c0dcc0; }
+        .student-explanation-section h5 { color: #0056b3; }
+        .student-explanation-section pre { white-space: pre-wrap; word-wrap: break-word; margin: 5px 0; padding: 8px; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9em;}
+        .student-explanation-section small { font-size: 0.8em; color: #555; }
+        .student-explanation-section label { display:block; margin-bottom: 5px; font-weight: bold; }
+        .student-explanation-section textarea { width: calc(100% - 16px); min-height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; display: block; box-sizing: border-box; }
+
+        /* Student Tabs Styles */
+        #student-week-tabs-nav {
+            margin-bottom: 0px; border-bottom: 1px solid #ccc; padding-bottom: 0px;
+            overflow-x: auto; white-space: nowrap; position: relative;
+        }
+        #student-week-tabs-nav .student-week-tab-button {
+            display: inline-block; padding: 10px 15px; cursor: pointer;
+            border: 1px solid #ccc; border-bottom: none; background-color: #e9ecef;
+            margin-right: 2px; margin-bottom: -1px; border-radius: 5px 5px 0 0;
+            outline: none; font-size: 0.95em; position: relative;
+        }
+        #student-week-tabs-nav .student-week-tab-button.active {
+            background-color: #f0f8f0; border-bottom: 1px solid #f0f8f0;
+            font-weight: bold; color: #556b2f; z-index: 2;
+        }
+        #student-week-tabs-nav .student-week-tab-button.locked {
+            opacity: 0.65; cursor: not-allowed; background-color: #f8f9fa; color: #6c757d;
+        }
+        .student-week-panel { display: none; }
+        .student-week-panel.active { display: block; }
+
+        .locked-content-message {
+            padding: 30px 20px; background-color: #f8f9fa; border: 1px dashed #ced4da;
+            border-radius: 5px; text-align: center; font-style: italic; color: #6c757d; font-size: 1.1em;
+        }
+        .storyline-prompt-display {
+            background-color: #e7f3fe; padding: 15px; margin-bottom: 20px;
+            border-radius: 5px; border-left: 5px solid #007bff;
+        }
+        .storyline-prompt-display h5 { margin-top: 0; margin-bottom: 8px; color: #0056b3; font-weight: bold; font-size: 1.1em;}
+        .storyline-prompt-display p { white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; color: #1c3d5a; margin-bottom: 0; }
+
+        /* Quiz Display Styles */
+        .quiz-display-section {
+            margin-top: 25px; padding: 20px; border-top: 2px solid #b8d9b8; /* Lighter green top border */
+            background-color: #f9fff9; /* Very light green background */
+            border: 1px solid #d4e9d4; /* Soft border */
+            border-radius: 5px;
+        }
+        .quiz-display-section h5 { 
+            color: #4a7c4a; margin-top: 0; margin-bottom: 10px; font-size: 1.2em;
+        }
+        .quiz-display-section .quiz-main-title { 
+            font-style: italic; color: #555; margin-bottom: 15px; font-size: 1.1em;
+        }
+        .quiz-question-display { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #d4e9d4;}
+        .quiz-question-display:last-child { border-bottom: none; }
+        .quiz-question-display p.question-text { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .quiz-option-label { display: block; margin-bottom: 8px; font-weight: normal; cursor: pointer; padding: 5px; border-radius: 3px; }
+        .quiz-option-label:hover { background-color: #eef; }
+        .quiz-option-label input[type="radio"] { margin-right: 8px; vertical-align: middle; }
+        #submit-quiz-button { margin-top: 20px; background-color: #007bff; } /* Keep a distinct submit color */
+        .quiz-results-display { margin-top:15px; padding:10px; border:1px solid #b8daff; border-radius:4px; background-color: #e7f3ff; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1 id="course-title">Loading Course Name...</h1>
+    </header>
+
+    <main>
+       <section class="course-info">
+    <h2>About This Course</h2>
+    <p id="course-description" style="font-style: italic;">Loading course details...</p>
+</section>
+
+<section class="course-forum-link" style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
+    <h3>Class Lounge</h3>
+    <p>Have questions, want to discuss topics, or share insights about this course with fellow students?</p>
+    <button id="go-to-course-forum-btn" class="button" style="background-color: #5cb85c; color: white;">Go to Course Lounge</button>
+</section>
+<section class="course-content">
+    <h2>Weekly Lessons</h2>
+    <div id="student-week-tabs-nav">
+        <p><em>Loading navigation...</em></p>
+    </div>
+    <div id="weekly-content-panels">
+        <p><em>Loading lessons...</em></p>
+    </div>
+</section>
+        
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+             <button onclick="window.location.href='courses.html'" class="button">Back to Course List</button>
+             <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+   <script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+        authDomain: "attic-4ae31.firebaseapp.com",
+        projectId: "attic-4ae31",
+        storageBucket: "attic-4ae31.firebasestorage.app",
+        messagingSenderId: "259372678655",
+        appId: "1:259372678655:web:df9c03e07e022392837bca",
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+    };
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        } else if (typeof firebase !== 'undefined' && firebase.apps.length) {
+            firebase.app();
+        }
+        if (!firebase.auth || !firebase.database || !firebase.storage) {
+            throw new Error("One or more Firebase SDKs are missing!");
+        }
+        console.log("[CourseDetail] Firebase Initialized/Checked.");
+    } catch (initError) {
+        console.error("[CourseDetail] Firebase initialization error:", initError);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start.</p>";
+        });
+    }
+
+    // --- DOM Element References ---
+    let courseTitleElement, courseDescriptionElement, weeklyContentPanelsElement, studentWeekTabsNavElement;
+    let goToCourseForumBtn; // Reference for the forum button
+
+    // --- State Variables ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('id');
+    let currentUser = null;
+    const EXAM_WEEK_NUMBER_DETAIL = '13';
+    const REGULAR_ASSIGNMENT_WEEKS = 12;
+
+    let courseStructureData = null;
+    let userAssignmentStatuses = {};
+    let userSubmissionDetails = {};
+    let userQuizAttempts = {};
+
+
+    // --- Helper Functions ---
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // CORRECTED: goToCourseForum function moved out of showStatus
+    function goToCourseForum() {
+        if (courseId) {
+            const courseForumId = `forum_${courseId}`;
+            window.location.href = `forum_view.html?id=${courseForumId}`;
+        } else {
+            console.error("Course ID not found. Cannot navigate to forum.");
+            alert("Could not determine the course for the forum. Please try again.");
+        }
+    }
+
+    function showStatus(message, type = 'info', weekNum, context = 'submission') {
+        const statusDivId = context === 'explanation' ? `student-explanation-status-${weekNum}` : (context === 'quiz' ? `quiz-status-${weekNum}` : `submission-status-${weekNum}`);
+        const activePanel = document.querySelector(`.student-week-panel.active`);
+        let statusDiv = activePanel ? activePanel.querySelector(`#${statusDivId}`) : null;
+
+        if (!statusDiv) {
+            const panelForWeek = document.getElementById(`student-week-content-${weekNum}`);
+            if (panelForWeek) {
+                statusDiv = panelForWeek.querySelector(`#${statusDivId}`);
+                 if (!statusDiv) {
+                    let targetSection;
+                    if (context === 'explanation') targetSection = panelForWeek.querySelector(`#student-explanation-section-${weekNum}`);
+                    else if (context === 'quiz') targetSection = panelForWeek.querySelector(`#quiz-display-section-${weekNum}`);
+                    else targetSection = panelForWeek.querySelector(`#submission-section-${weekNum}`);
+
+                    if (targetSection) {
+                        statusDiv = targetSection.querySelector('.submission-status, .quiz-status');
+                        if(!statusDiv){
+                            statusDiv = document.createElement('div');
+                            statusDiv.id = statusDivId;
+                            targetSection.appendChild(statusDiv);
+                        }
+                    }
+                }
+            }
+             if (!statusDiv) {
+                statusDiv = document.getElementById(statusDivId);
+            }
+        }
+
+        if (!statusDiv) {
+             console.warn("Status div not found for ID:", statusDivId, "Week:", weekNum, "Context:", context, "Msg:", message);
+             return;
+        }
+
+        statusDiv.textContent = message;
+        statusDiv.className = `submission-status status-${type}`;
+        if (context === 'quiz') statusDiv.classList.add('quiz-status');
+        statusDiv.style.display = 'block';
+
+        if (type === 'success' || type === 'info' || type === 'processing') {
+            setTimeout(() => {
+                if (statusDiv && statusDiv.textContent === message) {
+                    statusDiv.style.display = 'none'; statusDiv.textContent = '';
+                }
+            }, (type === 'processing' ? 7000 : 5000));
+        }
+    }
+    function showStudentExplanationStatus(message, type = 'info', weekNum) { showStatus(message, type, weekNum, 'explanation'); }
+    function showQuizStatus(message, type = 'info', weekNum) { showStatus(message, type, weekNum, 'quiz'); }
+
+    function handleLoadError(title, description) {
+        if (courseTitleElement) courseTitleElement.textContent = title;
+        if (courseDescriptionElement) courseDescriptionElement.textContent = description;
+        if (weeklyContentPanelsElement) weeklyContentPanelsElement.innerHTML = `<p class="no-content-message" style="color:red;">${escapeHtml(description)}</p>`;
+        if (studentWeekTabsNavElement) studentWeekTabsNavElement.innerHTML = '';
+        console.error("[CourseDetail] Load Error:", title, description);
+        if (goToCourseForumBtn) goToCourseForumBtn.disabled = true; // Disable forum button on error
+    }
+
+    // --- Main Logic ---
+    function loadCourseDetails() {
+        courseTitleElement = document.getElementById('course-title');
+        courseDescriptionElement = document.getElementById('course-description');
+        weeklyContentPanelsElement = document.getElementById('weekly-content-panels');
+        studentWeekTabsNavElement = document.getElementById('student-week-tabs-nav');
+        goToCourseForumBtn = document.getElementById('go-to-course-forum-btn'); // Get the forum button
+
+        if (goToCourseForumBtn) { // Attach event listener for forum button
+            goToCourseForumBtn.onclick = goToCourseForum;
+        } else {
+            console.warn("Forum button not found on initial load.");
+        }
+
+        if (!courseId) {
+            handleLoadError("No Course Selected", "Course ID missing.");
+            return;
+        }
+        if (!firebase?.auth) {
+            handleLoadError("Service Error", "Auth service unavailable.");
+            return;
+        }
+        if (!courseTitleElement || !courseDescriptionElement || !weeklyContentPanelsElement || !studentWeekTabsNavElement) {
+            document.body.innerHTML = "<p style='color:red;padding:20px;'>Page structure error. Contact support.</p>";
+            return;
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                const courseBaseRef = firebase.database().ref(`courses/${courseId}`);
+                courseBaseRef.child('title').once('value').then(s => { if(s.exists() && courseTitleElement) courseTitleElement.textContent = escapeHtml(s.val()); document.title = escapeHtml(s.val()) || "Course Details"; });
+                courseBaseRef.child('description').once('value').then(s => { if(s.exists() && courseDescriptionElement) courseDescriptionElement.textContent = escapeHtml(s.val()); });
+                initializeCourseView(); // Call the async function
+            } else {
+                currentUser = null;
+                handleLoadError("Access Denied", "You must be logged in.");
+                if (studentWeekTabsNavElement) studentWeekTabsNavElement.innerHTML = '';
+                if (weeklyContentPanelsElement) weeklyContentPanelsElement.innerHTML = `<p class="no-content-message"><a href="login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}">Please log in</a>.</p>`;
+                 if (goToCourseForumBtn) goToCourseForumBtn.disabled = true;
+            }
+        });
+    }
+
+    // CORRECTED: initializeCourseView is now properly structured
+    async function initializeCourseView() {
+        if (!currentUser || !courseId) {
+            if (goToCourseForumBtn) goToCourseForumBtn.disabled = true;
+            return;
+        }
+
+        // Ensure forum button is correctly set up
+        if (goToCourseForumBtn) {
+            goToCourseForumBtn.disabled = false; // Enable it if user and courseId exist
+            if (!goToCourseForumBtn.onclick) { // Re-attach if needed
+                goToCourseForumBtn.onclick = goToCourseForum;
+            }
+        } else {
+             console.warn("Forum button not found during initializeCourseView.");
+        }
+
+        if (studentWeekTabsNavElement) studentWeekTabsNavElement.innerHTML = '<p><em>Loading navigation...</em></p>';
+        if (weeklyContentPanelsElement) weeklyContentPanelsElement.innerHTML = '<p><em>Loading lessons...</em></p>';
+
+        try {
+            const coursePath = `courses/${courseId}`;
+            const progressPath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/assignments`;
+            const submissionsBasePath = `userSubmissions/${currentUser.uid}`;
+            const quizAttemptsBasePath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/quizAttempts`;
+
+            // This is where the await was causing an error due to the function not being async anymore
+            const [courseSnapshot, progressSnapshot, allSubmissionsSnapshot, quizAttemptsSnapshot] = await Promise.all([
+                firebase.database().ref(coursePath).once('value'),
+                firebase.database().ref(progressPath).once('value'),
+                firebase.database().ref(submissionsBasePath).orderByKey().startAt(`${courseId}_1`).endAt(`${courseId}_${EXAM_WEEK_NUMBER_DETAIL}\uf8ff`).once('value'),
+                firebase.database().ref(quizAttemptsBasePath).once('value')
+            ]);
+
+            if (!courseSnapshot.exists()) {
+                handleLoadError("Course Data Not Found", `Structure for course ID "${escapeHtml(courseId)}" is missing.`);
+                return;
+            }
+            const fullCourseData = courseSnapshot.val();
+            courseStructureData = fullCourseData.weeks || {};
+            console.log("[CourseDetail] Fetched courseStructureData (weeks):", JSON.parse(JSON.stringify(courseStructureData)));
+
+            userAssignmentStatuses = progressSnapshot.val() || {};
+
+            userSubmissionDetails = {};
+            if (allSubmissionsSnapshot.exists()) {
+                allSubmissionsSnapshot.forEach(subSnap => {
+                    const keyParts = subSnap.key.split('_');
+                    if (keyParts.length > 1) {
+                        userSubmissionDetails[keyParts.pop()] = subSnap.val();
+                    }
+                });
+            }
+            userQuizAttempts = quizAttemptsSnapshot.val() || {};
+
+            renderCourseInterfaceWithTabs(userQuizAttempts);
+
+        } catch (error) {
+            console.error("[CourseDetail] Error in initializeCourseView fetching data:", error);
+            handleLoadError("Error Loading Data", `Could not fetch all data: ${error.message}`);
+        }
+    } // End of async function initializeCourseView
+
+    function renderCourseInterfaceWithTabs(localUserQuizAttempts) {
+        if (!studentWeekTabsNavElement || !weeklyContentPanelsElement || !courseStructureData) return;
+        studentWeekTabsNavElement.innerHTML = '';
+        weeklyContentPanelsElement.innerHTML = '';
+        let firstAvailableAndUnlockedWeek = null;
+
+        for (let i = 1; i <= REGULAR_ASSIGNMENT_WEEKS; i++) {
+            const weekNumStr = i.toString();
+            if (courseStructureData[weekNumStr]) {
+                let isLocked = false;
+                let lockMessage = '';
+                if (i > 1) {
+                    const prevWeekNumStr = (i - 1).toString();
+                    const prevWeekStatus = userAssignmentStatuses[prevWeekNumStr];
+                    if (!(prevWeekStatus === 'submitted' || prevWeekStatus === 'graded')) {
+                        isLocked = true;
+                        lockMessage = `Please submit Week ${prevWeekNumStr} assignment to unlock.`;
+                    }
+                }
+                createStudentWeekTab(weekNumStr, `Week ${weekNumStr}`, isLocked);
+                createStudentWeekPanel(weekNumStr, isLocked, lockMessage, localUserQuizAttempts[weekNumStr]);
+                if (!isLocked && !firstAvailableAndUnlockedWeek) {
+                    firstAvailableAndUnlockedWeek = weekNumStr;
+                }
+            }
+        }
+
+        if (courseStructureData[EXAM_WEEK_NUMBER_DETAIL]) {
+            const examActuallyUnlocked = isExamUnlocked(userSubmissionDetails, REGULAR_ASSIGNMENT_WEEKS);
+            let examLockMessage = `Exam unlocks when Weeks 1-${REGULAR_ASSIGNMENT_WEEKS} assignments are graded "Sapling" or higher.`;
+
+            createStudentWeekTab(EXAM_WEEK_NUMBER_DETAIL, `Final Exam`, !examActuallyUnlocked);
+            createStudentWeekPanel(EXAM_WEEK_NUMBER_DETAIL, !examActuallyUnlocked, examLockMessage, localUserQuizAttempts[EXAM_WEEK_NUMBER_DETAIL]);
+            if (examActuallyUnlocked && !firstAvailableAndUnlockedWeek) {
+                firstAvailableAndUnlockedWeek = EXAM_WEEK_NUMBER_DETAIL;
+            }
+        }
+
+        if (firstAvailableAndUnlockedWeek) {
+            showStudentWeekTab(firstAvailableAndUnlockedWeek);
+        } else if (courseStructureData['1']) {
+            showStudentWeekTab('1');
+        } else {
+             weeklyContentPanelsElement.innerHTML = "<p class='no-content-message'>No lessons available or accessible.</p>";
+        }
+    }
+
+    function createStudentWeekTab(weekNum, tabText, isEffectivelyLocked) {
+        const tabButton = document.createElement('button');
+        tabButton.textContent = tabText;
+        tabButton.className = 'student-week-tab-button';
+        tabButton.setAttribute('data-weeknum', weekNum);
+        if (isEffectivelyLocked && weekNum !== '1') {
+             tabButton.classList.add('locked');
+        }
+        tabButton.onclick = function() { showStudentWeekTab(weekNum); };
+        studentWeekTabsNavElement.appendChild(tabButton);
+    }
+
+    function createStudentWeekPanel(weekNum, isPanelLocked, lockMessageIfLocked, weekQuizAttempt) {
+        const panelDiv = document.createElement('div');
+        panelDiv.className = 'student-week-panel';
+        panelDiv.id = `student-week-content-${weekNum}`;
+
+        const weekCourseContent = courseStructureData[weekNum] || {};
+        const studentSubmissionForThisWeek = userSubmissionDetails[weekNum] || null;
+
+        if (isPanelLocked) {
+            panelDiv.innerHTML = `<div class="locked-content-message">${escapeHtml(lockMessageIfLocked)}</div>`;
+        } else {
+            let contentHTML = '';
+            if (weekCourseContent.storyline) {
+                contentHTML += `<div class="storyline-prompt-display"><h5>This Week's Story Beat:</h5><p>${escapeHtml(weekCourseContent.storyline).replace(/\n/g, '<br>')}</p></div>`;
+            }
+            if (weekCourseContent.topic) {
+                contentHTML += `<h4>Topic: ${escapeHtml(weekCourseContent.topic)}</h4>`;
+            }
+            if (weekCourseContent.summary) {
+                contentHTML += `<h5>Summary:</h5><div class="summary-content">${escapeHtml(weekCourseContent.summary).replace(/\n/g, '<br>')}</div>`;
+            }
+            panelDiv.innerHTML = contentHTML;
+
+            const quizData = weekCourseContent.quiz;
+            if (quizData && (quizData.status === 'optional' || quizData.status === 'mandatory') && quizData.questions && quizData.questions.length > 0) {
+                const quizHTML = renderQuizForWeek(weekNum, quizData, weekQuizAttempt);
+                panelDiv.insertAdjacentHTML('beforeend', quizHTML);
+            }
+
+            if (weekCourseContent.assignment) {
+                const assignmentInstructionsDiv = document.createElement('div');
+                assignmentInstructionsDiv.innerHTML = `<h5 style="margin-top:15px;">Assignment:</h5><div class="assignment-instructions">${escapeHtml(weekCourseContent.assignment).replace(/\n/g, '<br>')}</div>`;
+                panelDiv.appendChild(assignmentInstructionsDiv);
+
+                const submissionSectionDiv = document.createElement('div');
+                submissionSectionDiv.className = 'submission-section';
+                submissionSectionDiv.id = `submission-section-${weekNum}`;
+                panelDiv.appendChild(submissionSectionDiv);
+
+                if (studentSubmissionForThisWeek) {
+                    displaySubmittedWork(submissionSectionDiv, weekNum, studentSubmissionForThisWeek, userAssignmentStatuses[weekNum]);
+                } else {
+                    displaySubmissionForm(submissionSectionDiv, weekNum, false);
+                }
+            } else {
+                 const noAssignmentMsg = document.createElement('p');
+                 noAssignmentMsg.className = 'no-content-message';
+                 noAssignmentMsg.style.marginTop = '15px';
+                 noAssignmentMsg.innerHTML = '<em>No formal assignment for this week.</em>';
+                 panelDiv.appendChild(noAssignmentMsg);
+            }
+        }
+        weeklyContentPanelsElement.appendChild(panelDiv);
+    }
+
+    function renderQuizForWeek(weekNum, quizData, quizAttemptData) {
+        if (!quizData || (quizData.status !== 'optional' && quizData.status !== 'mandatory') || !quizData.questions || quizData.questions.length === 0) {
+            return '';
+        }
+        let quizHTML = `<div class="quiz-display-section" id="quiz-display-section-${weekNum}">`;
+        const quizTypeDisplay = quizData.status === 'mandatory' ? 'Mandatory Quiz' : 'Optional Quiz';
+        quizHTML += `<h5>${escapeHtml(quizTypeDisplay)}</h5>`;
+        if (quizData.title) {
+            quizHTML += `<p class="quiz-main-title">${escapeHtml(quizData.title)}</p>`;
+        }
+        if (quizAttemptData && quizAttemptData.score !== undefined) {
+            quizHTML += `<div class="quiz-results-display"><strong>Your Score: ${escapeHtml(quizAttemptData.score)}</strong> (Attempted on ${new Date(quizAttemptData.timestamp || Date.now()).toLocaleDateString()})</div>`;
+        } else {
+            quizHTML += `<form id="quiz-form-${weekNum}">`;
+            quizData.questions.forEach((question, index) => {
+                const questionElementIdRoot = `week-${weekNum}-q-${index}`;
+                quizHTML += `<div class="quiz-question-display"><p class="question-text">${escapeHtml(question.text)}</p>`;
+                if (question.type === "multiple-choice" && question.options) {
+                    question.options.forEach((option, optIndex) => {
+                        const optionId = `${questionElementIdRoot}-opt-${optIndex}`;
+                        quizHTML += `<label class="quiz-option-label" for="${optionId}"><input type="radio" name="${questionElementIdRoot}" id="${optionId}" value="${optIndex}"> ${escapeHtml(option.text)}</label>`;
+                    });
+                } else if (question.type === "true-false") {
+                     quizHTML += `<label class="quiz-option-label" for="${questionElementIdRoot}-true"><input type="radio" name="${questionElementIdRoot}" id="${questionElementIdRoot}-true" value="true"> True</label>`;
+                     quizHTML += `<label class="quiz-option-label" for="${questionElementIdRoot}-false"><input type="radio" name="${questionElementIdRoot}" id="${questionElementIdRoot}-false" value="false"> False</label>`;
+                }
+                quizHTML += `</div>`;
+            });
+            quizHTML += `<button type="button" class="button" id="submit-quiz-button-${weekNum}" onclick="handleSubmitQuiz('${weekNum}')">Submit Quiz</button></form>`;
+            quizHTML += `<div id="quiz-status-${weekNum}" class="quiz-status submission-status" style="margin-top:10px;"></div>`;
+        }
+        quizHTML += `</div>`;
+        return quizHTML;
+    }
+
+    window.handleSubmitQuiz = function(weekNum) {
+        if (!currentUser || !courseId || !courseStructureData || !courseStructureData[weekNum] || !courseStructureData[weekNum].quiz) {
+            showQuizStatus("Error: Quiz data not found. Cannot submit.", 'error', weekNum); return;
+        }
+        const quizData = courseStructureData[weekNum].quiz;
+        let score = 0;
+        let totalQuestions = quizData.questions.length;
+        let studentAnswers = {};
+        const quizForm = document.getElementById(`quiz-form-${weekNum}`);
+        if (!quizForm) { showQuizStatus("Error: Quiz form not found.", 'error', weekNum); return; }
+
+        quizData.questions.forEach((question, index) => {
+            const questionIdRoot = `week-${weekNum}-q-${index}`;
+            const selectedOption = quizForm.querySelector(`input[name="${questionIdRoot}"]:checked`);
+            if (selectedOption) {
+                if (question.type === "multiple-choice") {
+                    const selectedOptIndex = parseInt(selectedOption.value);
+                    studentAnswers[question.id || `q${index+1}`] = selectedOptIndex;
+                    if (question.options[selectedOptIndex] && question.options[selectedOptIndex].isCorrect) score++;
+                } else if (question.type === "true-false") {
+                    const studentAnswerBool = selectedOption.value === "true";
+                    studentAnswers[question.id || `q${index+1}`] = studentAnswerBool;
+                    if (studentAnswerBool === question.correctAnswer) score++;
+                }
+            } else { studentAnswers[question.id || `q${index+1}`] = null; }
+        });
+        const resultMessage = `You scored ${score} out of ${totalQuestions}.`;
+        showQuizStatus(resultMessage, 'success', weekNum);
+        const submitQuizButton = document.getElementById(`submit-quiz-button-${weekNum}`);
+        if(submitQuizButton) { submitQuizButton.disabled = true; submitQuizButton.textContent = 'Quiz Submitted'; }
+
+        const quizAttemptPath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/quizAttempts/${weekNum}`;
+        const attemptData = {
+            score: `${score}/${totalQuestions}`, timestamp: firebase.database.ServerValue.TIMESTAMP,
+            answers: studentAnswers, quizTitleSnapshot: quizData.title || '', quizStatusSnapshot: quizData.status
+        };
+        firebase.database().ref(quizAttemptPath).set(attemptData)
+            .then(() => {
+                userQuizAttempts[weekNum] = {...attemptData, timestamp: Date.now()};
+                if (quizData.status === 'mandatory') {
+                    const quizProgressFlagPath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/assignments/${weekNum}_quiz_completed`;
+                    firebase.database().ref(quizProgressFlagPath).set(true)
+                    .then(() => { userAssignmentStatuses[`${weekNum}_quiz_completed`] = true; renderCourseInterfaceWithTabs(userQuizAttempts); })
+                    .catch(err => console.error("Error saving mandatory quiz flag:", err));
+                } else {
+                    const panelDiv = document.getElementById(`student-week-content-${weekNum}`);
+                    if (panelDiv) {
+                        const quizSectionHtml = renderQuizForWeek(weekNum, quizData, userQuizAttempts[weekNum]);
+                        const existingQuizSection = panelDiv.querySelector(`#quiz-display-section-${weekNum}`);
+                        if(existingQuizSection) existingQuizSection.outerHTML = quizSectionHtml;
+                    }
+                }
+            })
+            .catch(error => {
+                showQuizStatus(`Error saving quiz result: ${error.message}`, 'error', weekNum);
+                if(submitQuizButton) submitQuizButton.disabled = false;
+            });
+    }
+
+    function showStudentWeekTab(weekNumToShow) {
+        if (!studentWeekTabsNavElement || !weeklyContentPanelsElement) return;
+        const weekPanels = weeklyContentPanelsElement.querySelectorAll('.student-week-panel');
+        weekPanels.forEach(panel => panel.classList.remove('active'));
+        const tabButtons = studentWeekTabsNavElement.querySelectorAll('.student-week-tab-button');
+        tabButtons.forEach(button => button.classList.remove('active'));
+        const activePanel = document.getElementById(`student-week-content-${weekNumToShow}`);
+        if (activePanel) activePanel.classList.add('active');
+        const activeButton = studentWeekTabsNavElement.querySelector(`.student-week-tab-button[data-weeknum="${weekNumToShow}"]`);
+        if (activeButton) activeButton.classList.add('active');
+    }
+
+    function isExamUnlocked(allUserSubmissions, totalRegAssignments) {
+         if (!allUserSubmissions) return false;
+        let satisfactoryGrades = 0;
+        for (let i = 1; i <= totalRegAssignments; i++) {
+            const submission = allUserSubmissions[i.toString()];
+            if (submission && submission.grade && ['Sapling', 'Sprout', 'Flourishing'].includes(submission.grade)) {
+                satisfactoryGrades++;
+            }
+        }
+        return satisfactoryGrades >= totalRegAssignments;
+    }
+
+    function displaySubmittedWork(container, weekNum, studentSubmissionData, currentAssignmentStatus) {
+        container.innerHTML = '';
+        let submittedWorkHTML = `<div class="submitted-work-container"><h5>Your Assignment Submission:</h5><div class="submitted-work-display">`;
+        if (studentSubmissionData.submittedText) {
+            submittedWorkHTML += `<pre>${escapeHtml(studentSubmissionData.submittedText)}</pre>`;
+        } else if (studentSubmissionData.fileName && studentSubmissionData.storagePath) {
+            submittedWorkHTML += `<p>File: <strong>${escapeHtml(studentSubmissionData.fileName)}</strong></p>`;
+            submittedWorkHTML += `<button type="button" class="button button-secondary view-file-btn" style="font-size: 0.9em; padding: 3px 8px;" data-storage-path="${escapeHtml(studentSubmissionData.storagePath)}">View File</button>`;
+        } else {
+            submittedWorkHTML += `<p style="font-style: italic;">(No assignment content found for this submission record)</p>`;
+        }
+        submittedWorkHTML += `</div></div>`;
+        container.innerHTML = submittedWorkHTML;
+
+        const viewFileBtns = container.querySelectorAll('.view-file-btn');
+        viewFileBtns.forEach(btn => { btn.onclick = function() { getViewableLink(this.dataset.storagePath, this); }; });
+
+        const infoAndActionsDiv = document.createElement('div');
+        infoAndActionsDiv.className = "submission-feedback-actions"; infoAndActionsDiv.style.marginTop = "10px";
+        let gradeInfoHTML = '', studentExplanationHTML = '', resubmitMessageHTML = '';
+        let allowResubmitForm = false, showExplanationForm = false;
+        let resubmitMessageText = "", resubmitMessageClass = "status-info";
+
+        if (studentSubmissionData.status === 'graded' && studentSubmissionData.grade) {
+            const grade = studentSubmissionData.grade;
+            gradeInfoHTML = `<div class="grade-display" style="padding-top:10px; border-top:1px dashed #ccc; margin-top:10px;"><p><strong>Grade:</strong> ${escapeHtml(grade)}</p>`;
+            if (studentSubmissionData.feedback) gradeInfoHTML += `<p><strong>Feedback:</strong> <em style="white-space:pre-wrap;">${escapeHtml(studentSubmissionData.feedback)}</em></p>`;
+            if (studentSubmissionData.gradedByName && studentSubmissionData.gradedAt) gradeInfoHTML += `<p><small>Graded by ${escapeHtml(studentSubmissionData.gradedByName)} on ${new Date(studentSubmissionData.gradedAt).toLocaleDateString()}</small></p>`;
+            gradeInfoHTML += `</div>`;
+            if (['Seedling', 'Sapling'].includes(grade)) { allowResubmitForm = true; resubmitMessageText = `Resubmission opportunity available.`; resubmitMessageClass = "resubmit-allowed"; }
+            else if (grade === 'Needs Review') { allowResubmitForm = true; showExplanationForm = true; resubmitMessageText = `Needs review. Provide explanation/resubmit.`; resubmitMessageClass = "status-error"; }
+            else if (['Sprout', 'Flourishing'].includes(grade)) { resubmitMessageText = `Great work! Complete.`; resubmitMessageClass = "status-success"; }
+        } else if (studentSubmissionData.status === 'submitted' || currentAssignmentStatus === 'submitted') {
+            resubmitMessageText = `Submitted on ${studentSubmissionData.submittedAt ? new Date(studentSubmissionData.submittedAt).toLocaleDateString() : 'N/A'}. Awaiting grade.`;
+            resubmitMessageClass = "status-processing";
+        } else { allowResubmitForm = true; }
+        if (resubmitMessageText) resubmitMessageHTML = `<p class="resubmit-message ${resubmitMessageClass}">${resubmitMessageText}</p>`;
+
+        if (showExplanationForm) {
+            const explanationSectionId = `student-explanation-section-${weekNum}`;
+            studentExplanationHTML += `<div class="student-explanation-section" id="${explanationSectionId}" style="margin-top:10px;">`;
+            if (studentSubmissionData.studentExplanation) {
+                let explainedAt = studentSubmissionData.studentExplanationAt ? new Date(studentSubmissionData.studentExplanationAt).toLocaleString() : 'recently';
+                studentExplanationHTML += `<h5 style="color: #0056b3;">Your Explanation</h5><small>(Submitted: ${explainedAt})</small><pre>${escapeHtml(studentSubmissionData.studentExplanation)}</pre>`;
+            } else {
+                studentExplanationHTML += `<h5 style="color: #0056b3;">Submit Explanation (Optional)</h5><label for="student-explanation-input-${weekNum}" style="margin-top:5px;">If flagged "Needs Review", explain:</label>`;
+                studentExplanationHTML += `<textarea id="student-explanation-input-${weekNum}" rows="3" placeholder="Explain context..."></textarea>`;
+                const adminSubmissionPushId = studentSubmissionData.submissionPushId; const userSubPathKey = `${courseId}_${weekNum}`;
+                if (adminSubmissionPushId) { studentExplanationHTML += `<button type="button" class="button button-info" style="font-size:0.9em; padding: 4px 8px; margin-top: 5px;" onclick="submitStudentExplanation('${weekNum}', '${courseId}', '${adminSubmissionPushId}', '${userSubPathKey}')">Submit Explanation</button>`; }
+                else { studentExplanationHTML += `<p style="color:red;font-size:0.8em;">Error: Cannot submit explanation (missing ID).</p>`; }
+                studentExplanationHTML += `<div id="student-explanation-status-${weekNum}" class="submission-status" style="margin-top:5px;"></div>`;
+            }
+            studentExplanationHTML += `</div>`;
+        }
+        infoAndActionsDiv.innerHTML = gradeInfoHTML + resubmitMessageHTML + studentExplanationHTML;
+        container.appendChild(infoAndActionsDiv);
+
+        if (allowResubmitForm) {
+            const formContainerResubmit = document.createElement('div');
+            formContainerResubmit.className = 'form-container-resubmit'; formContainerResubmit.style.marginTop = "15px";
+            displaySubmissionForm(formContainerResubmit, weekNum, true);
+            container.appendChild(formContainerResubmit);
+        }
+        const generalStatusDivId = `submission-status-${weekNum}`;
+        if (!container.querySelector(`#${generalStatusDivId}`) && !container.querySelector(`#student-explanation-status-${weekNum}`)) {
+            if (! (studentSubmissionData.status === 'graded' && ['Sprout', 'Flourishing'].includes(studentSubmissionData.grade)) ) {
+                const generalStatusDiv = document.createElement('div');
+                generalStatusDiv.id = generalStatusDivId; generalStatusDiv.className = 'submission-status'; generalStatusDiv.style.marginTop = '10px';
+                container.appendChild(generalStatusDiv);
+            }
+        }
+    }
+
+    function displaySubmissionForm(container, weekNum, isResubmitContext) {
+        container.innerHTML = '';
+        const formHeading = document.createElement('h5'); formHeading.style.marginTop = "0px";
+        formHeading.textContent = isResubmitContext ? 'Submit New Version / Add to Assignment:' : 'Submit Your Assignment:';
+        container.appendChild(formHeading);
+        const formDiv = document.createElement('div');
+        formDiv.className = `submission-form`; formDiv.id = `submission-form-div-${weekNum}`;
+        formDiv.innerHTML = `
+            <label for="submission-text-${weekNum}">Type response here:</label>
+            <textarea id="submission-text-${weekNum}" rows="5" placeholder="Enter assignment text..."></textarea>
+            <label for="submission-file-${weekNum}" style="margin-top: 15px;">Or upload a file:</label>
+            <input type="file" id="submission-file-${weekNum}">
+            <progress id="upload-progress-${weekNum}" value="0" max="100" style="width: 95%; display: none; margin-top: 5px; height: 10px;"></progress>
+            <button type="button" class="button" id="submit-assignment-btn-${weekNum}" onclick="handleSubmission('${weekNum}', event)">${isResubmitContext ? 'Resubmit Assignment' : 'Submit Assignment'}</button>
+            <div id="submission-status-${weekNum}" class="submission-status" style="margin-top:10px;"></div>`;
+        container.appendChild(formDiv);
+    }
+
+    function handleSubmission(weekNum, event) {
+        if (!currentUser) { alert("You must be logged in to submit."); return; }
+        if (!firebase?.storage || !firebase?.database) { alert("Error: Required services not ready."); return; }
+        const activePanel = document.getElementById(`student-week-content-${weekNum}`);
+        const scope = activePanel ? activePanel.querySelector(`#submission-form-div-${weekNum}`) : document;
+        const textInput = scope.querySelector(`#submission-text-${weekNum}`);
+        const fileInput = scope.querySelector(`#submission-file-${weekNum}`);
+        const progressBar = scope.querySelector(`#upload-progress-${weekNum}`);
+        const submitButton = event ? event.target : scope.querySelector(`#submit-assignment-btn-${weekNum}`);
+        if (!textInput || !fileInput || !progressBar || !submitButton) { showStatus("Error: Form elements missing.", 'error', weekNum); return; }
+        const textValue = textInput.value.trim();
+        const file = fileInput.files.length > 0 ? fileInput.files[0] : null;
+        if (!textValue && !file) { showStatus(`Please enter text or select a file for Week ${weekNum}.`, 'error', weekNum); return; }
+        if (textValue && file) { showStatus(`Submit either text OR a file for Week ${weekNum}, not both.`, 'error', weekNum); return; }
+        submitButton.disabled = true; progressBar.style.display = 'none';
+        showStatus(`Processing assignment for Week ${weekNum}...`, 'processing', weekNum);
+        if (file) {
+            progressBar.style.display = 'block'; progressBar.value = 0;
+            const storagePath = `submissions/${courseId}/${weekNum}/${currentUser.uid}/${Date.now()}_${file.name}`;
+            const storageRef = firebase.storage().ref(storagePath);
+            const uploadTask = storageRef.put(file);
+            uploadTask.on('state_changed',
+                (snapshot) => { const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100; progressBar.value = progress; showStatus(`Uploading: ${Math.round(progress)}%`, 'processing', weekNum); },
+                (error) => { showStatus(`Upload failed: ${error.code}. Try again.`, 'error', weekNum); submitButton.disabled = false; progressBar.style.display = 'none'; },
+                () => { showStatus(`File uploaded. Saving...`, 'processing', weekNum); progressBar.style.display = 'none'; saveSubmissionData(weekNum, null, file.name, storagePath, submitButton); }
+            );
+        } else { saveSubmissionData(weekNum, textValue, null, null, submitButton); }
+    }
+
+    function saveSubmissionData(weekNum, text, fileName, storagePath, buttonToReEnable) {
+        if (!currentUser || !courseId) { showStatus(`Error: User/Course ID missing.`, 'error', weekNum); if (buttonToReEnable) buttonToReEnable.disabled = false; return; }
+        const db = firebase.database();
+        const userSubmissionPathKey = `${courseId}_${weekNum}`;
+        const userSubmissionFullDbPath = `userSubmissions/${currentUser.uid}/${userSubmissionPathKey}`;
+        const adminQueueCourseWeekPath = `submissionsByCourseWeek/${courseId}_${weekNum}`;
+        const newAdminSubmissionRef = db.ref(adminQueueCourseWeekPath).push();
+        const newSubmissionPushId = newAdminSubmissionRef.key;
+        const timestamp = firebase.database.ServerValue.TIMESTAMP;
+        const existingExplanation = userSubmissionDetails[weekNum]?.studentExplanation || null;
+        const existingExplanationAt = userSubmissionDetails[weekNum]?.studentExplanationAt || null;
+        const studentSubmissionData = {
+            studentUid: currentUser.uid, courseId: courseId, weekNum: parseInt(weekNum),
+            submittedAt: timestamp, status: "submitted", submittedText: text || null,
+            fileName: fileName || null, storagePath: storagePath || null,
+            submissionPushId: newSubmissionPushId, grade: null, feedback: null,
+            gradedAt: null, gradedBy: null, gradedByName: null,
+            isAdminFlagged: null, studentExplanation: existingExplanation, studentExplanationAt: existingExplanationAt,
+            isArchived: false
+        };
+        const adminQueueData = {
+            studentUid: currentUser.uid, studentDisplayName: currentUser.displayName || currentUser.email || 'Unknown',
+            courseId: courseId, weekNum: parseInt(weekNum), submittedAt: timestamp, status: "submitted",
+            submittedText: text || null, fileName: fileName || null, storagePath: storagePath || null,
+            userSubmissionPath: userSubmissionFullDbPath
+        };
+        const updates = {};
+        updates[userSubmissionFullDbPath] = studentSubmissionData;
+        updates[`${adminQueueCourseWeekPath}/${newSubmissionPushId}`] = adminQueueData;
+        const userProgressAssignmentPath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/assignments/${weekNum}`;
+        updates[userProgressAssignmentPath] = "submitted";
+        const userProgressCourseStatusPath = `userProgress/${currentUser.uid}/year1/courses/${courseId}/status`;
+        db.ref(userProgressCourseStatusPath).once('value').then(statusSnap => {
+            const currentCourseStatus = statusSnap.val();
+            if (courseId.startsWith("Y1") && currentCourseStatus !== 'in_progress' && currentCourseStatus !== 'complete') {
+                updates[userProgressCourseStatusPath] = 'in_progress';
+            }
+            return db.ref().update(updates);
+        })
+        .then(() => {
+            userAssignmentStatuses[weekNum] = "submitted";
+            userSubmissionDetails[weekNum] = {...studentSubmissionData, submittedAt: Date.now()};
+            showStatus("Assignment submitted! Instructors will review it.", 'success', weekNum);
+            renderCourseInterfaceWithTabs(userQuizAttempts);
+        })
+        .catch(error => {
+            showStatus(`Error saving assignment: ${error.message}. Try again.`, 'error', weekNum);
+            if (buttonToReEnable) buttonToReEnable.disabled = false;
+        });
+    }
+
+    function getViewableLink(storagePath, buttonElement) {
+        if (!firebase?.storage) { alert("Storage service not available."); return; }
+        if (!storagePath || typeof storagePath !== 'string' || !storagePath.trim() || ["null", "undefined"].includes(storagePath) ) {
+             alert("Error: File path missing or invalid.");
+             if(buttonElement) {buttonElement.textContent = 'No Link'; buttonElement.disabled = true;} return;
+        }
+        if(buttonElement) { buttonElement.textContent = 'Loading...'; buttonElement.disabled = true; }
+        firebase.storage().ref(storagePath).getDownloadURL()
+            .then(url => { window.open(url, '_blank'); if(buttonElement) { buttonElement.textContent = 'View File'; buttonElement.disabled = false; }})
+            .catch(error => { console.error("Error getting download link for '"+storagePath+"':", error); alert(`Could not retrieve file: ${error.code}`); if(buttonElement) { buttonElement.textContent = 'Error'; setTimeout(() => { if (buttonElement) { buttonElement.textContent='View File'; buttonElement.disabled=false;} }, 3000);}});
+    }
+
+    function submitStudentExplanation(weekNum, courseIdForExplanation, adminSubmissionPushId, userSubmissionPathKey) {
+        if (!currentUser || !adminSubmissionPushId || !userSubmissionPathKey || !courseIdForExplanation) {
+             alert("Error: Missing data for explanation. Please refresh."); return;
+        }
+        const activePanel = document.getElementById(`student-week-content-${weekNum}`);
+        const explanationInput = activePanel ? activePanel.querySelector(`#student-explanation-input-${weekNum}`) : null;
+        const explanationButton = activePanel ? activePanel.querySelector(`button[onclick*="submitStudentExplanation"]`) : null;
+        if (!explanationInput) { alert("Error: Cannot find explanation text area."); return; }
+        const explanationText = explanationInput.value.trim();
+        if (!explanationText) { showStudentExplanationStatus(`Please enter your explanation.`, 'error', weekNum); return; }
+        if (explanationButton) explanationButton.disabled = true;
+        explanationInput.disabled = true;
+        showStudentExplanationStatus(`Submitting explanation...`, 'processing', weekNum);
+        const explanationData = { studentExplanation: explanationText, studentExplanationAt: firebase.database.ServerValue.TIMESTAMP };
+        const updates = {};
+        const adminPath = `/submissionsByCourseWeek/${courseIdForExplanation}_${weekNum}/${adminSubmissionPushId}`;
+        const studentPath = `/userSubmissions/${currentUser.uid}/${userSubmissionPathKey}`;
+        updates[`${adminPath}/studentExplanation`] = explanationData.studentExplanation;
+        updates[`${adminPath}/studentExplanationAt`] = explanationData.studentExplanationAt;
+        updates[`${studentPath}/studentExplanation`] = explanationData.studentExplanation;
+        updates[`${studentPath}/studentExplanationAt`] = explanationData.studentExplanationAt;
+        firebase.database().ref().update(updates)
+            .then(() => {
+                showStudentExplanationStatus("Explanation submitted successfully!", 'success', weekNum);
+                if (userSubmissionDetails[weekNum]) {
+                    userSubmissionDetails[weekNum].studentExplanation = explanationText;
+                    userSubmissionDetails[weekNum].studentExplanationAt = Date.now();
+                }
+                const submissionSectionDiv = activePanel ? activePanel.querySelector(`#submission-section-${weekNum}`) : null;
+                if (submissionSectionDiv && userSubmissionDetails[weekNum]) {
+                    displaySubmittedWork(submissionSectionDiv, weekNum, userSubmissionDetails[weekNum], userAssignmentStatuses[weekNum]);
+                } else {
+                    initializeCourseView();
+                }
+            })
+            .catch(error => {
+                showStudentExplanationStatus(`Error submitting explanation: ${error.message}`, 'error', weekNum);
+                if (explanationButton) explanationButton.disabled = false;
+                if (explanationInput) explanationInput.disabled = false;
+            });
+    }
+    // --- END OF YOUR SUBMISSION FUNCTIONS SECTION ---
+
+    // --- Initial Load Trigger ---
+    document.addEventListener('DOMContentLoaded', loadCourseDetails);
+   </script>
+</body>
+</html>

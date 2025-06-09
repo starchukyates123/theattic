@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 0; background-color: #f0f2f5; color: #333; }
+        header { background: #556b2f; color: #fff; padding: 1rem 0; text-align: center; }
+        header h1#page-main-header { margin: 0; font-size: 1.8em; }
+        nav.page-nav { text-align: center; padding: 10px; background-color: #e9ecef; border-bottom: 1px solid #dee2e6;}
+        nav.page-nav a { margin: 0 15px; text-decoration: none; color: #495057; font-weight: 500; }
+        nav.page-nav a:hover { color: #556b2f; }
+        main { max-width: 950px; margin: 25px auto; padding: 25px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+        .classroom-header { border-bottom: 2px solid #556b2f; padding-bottom: 15px; margin-bottom: 25px; }
+        .classroom-header h1#classroom-main-title { color: #556b2f; font-size: 2em; margin-bottom: 5px; }
+        .classroom-header .professor-name { font-size: 1.1em; color: #6B8E23; margin-bottom:15px; font-style: italic;}
+        .classroom-nav-links { margin-top:10px; padding-bottom: 5px; }
+        .classroom-nav-links a { font-size: 0.95em; color: #556b2f; text-decoration: none; display:inline-block; margin-right:20px; padding: 5px 0;}
+        .classroom-nav-links a:hover { text-decoration: underline; color: #6B8E23;}
+
+        .status-message {
+            padding: 12px; margin: 15px 0; border-radius: 5px;
+            text-align: center; font-weight: bold; display: none;
+        }
+        .status-error { background-color:#f8d7da; color:#721c24; border: 1px solid #f5c6cb; }
+        .status-loading { background-color:#e2e3e5; color:#383d41; border: 1px solid #d6d8db; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+
+        .form-section { margin-top: 25px; padding: 20px; border: 1px solid #d4e9d4; border-radius: 8px; background-color: #f0f8f0; }
+        .form-section h3 { margin-top:0; color: #556b2f; font-size: 1.3em; }
+        input[type="text"], textarea { width: calc(100% - 24px); padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size:1em; }
+        textarea { min-height: 120px; resize: vertical; }
+        button { background-color: #8fbc8f; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight:500; transition: background-color 0.2s ease; }
+        button:hover { background-color: #7aa87a; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .button-danger { background-color: #b0413e; }
+        .button-danger:hover { background-color: #90312e; }
+        .button-small { padding: 5px 10px; font-size: 0.85em;}
+
+        #lesson-posts-container { margin-top: 25px; }
+        .lesson-post-item { background-color: #fdfdfd; border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); position: relative; border-left: 5px solid #8fbc8f;}
+        .lesson-post-item .post-meta { font-size: 0.8em; color: #777; margin-bottom: 10px; }
+        .lesson-post-item .post-meta strong { color: #556b2f; }
+        .lesson-post-item .post-title { font-size: 1.4em; color: #4a7c4a; margin-top: 0; margin-bottom: 12px; }
+        .lesson-post-item .post-content { white-space: pre-wrap; line-height: 1.65; margin-bottom: 20px;}
+
+        .discussion-section { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .discussion-section h4 { font-size: 1.1em; color: #666; margin-bottom: 10px; }
+        .discussion-post-item { background-color: #ffffff; border: 1px solid #e8e8e8; padding: 12px; margin-bottom: 10px; border-radius: 5px; position: relative; border-left: 3px solid #b2d8b2;}
+        .discussion-post-item .post-meta { font-size: 0.75em; color: #888; margin-bottom: 5px; }
+        .discussion-post-item .post-content { font-size: 0.95em; white-space: pre-wrap; }
+
+        .delete-action-btn {
+            position: absolute; top: 10px; right: 10px;
+            background-color: #dc3545; color: white; border: none;
+            padding: 4px 8px; font-size: 0.75em; border-radius: 4px; cursor: pointer;
+        }
+        .delete-action-btn:hover { background-color: #c82333; }
+
+        footer { text-align: center; padding: 25px 0; margin-top: 35px; font-size: 0.9em; color: #6c757d; border-top: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="page-main-header">Classroom</h1>
+    </header>
+    <nav class="page-nav">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="roleplay_class_listings.html">All Classes</a>
+    </nav>
+
+    <main id="classroom-main-content">
+        <div class="classroom-header">
+            <h1 id="classroom-main-title">Loading Classroom...</h1>
+            <p class="professor-name" id="classroom-professor-name">Professor: Loading...</p>
+            <div class="classroom-nav-links" id="classroom-nav-links-container" style="display:none;">
+                <a id="link-to-class-info" href="#">&laquo; Class Syllabus & Info</a>
+                <a id="link-to-assignments" href="#">&laquo; Assignments</a>
+                <a id="link-to-ooc-forum" href="#">&laquo; OOC Forum</a>
+            </div>
+        </div>
+
+        <div id="status-message-main" class="status-message status-loading">Loading classroom content...</div>
+
+        <div id="new-lesson-post-section" class="form-section" style="display:none;">
+            <h3>Post a New Lesson / Update</h3>
+            <input type="text" id="new-lesson-title" placeholder="Lesson Title (e.g., Week 1: Introduction to Magic)">
+            <textarea id="new-lesson-content" placeholder="Enter the content for this lesson/update..."></textarea>
+            <button id="submitNewLessonBtn" onclick="submitNewLessonPost()">Post Lesson</button>
+            <div id="new-lesson-status" class="status-message" style="margin-top:10px;"></div>
+        </div>
+
+        <div id="lesson-posts-container">
+            </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+      authDomain: "attic-4ae31.firebaseapp.com",
+      databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+      projectId: "attic-4ae31",
+      storageBucket: "attic-4ae31.appspot.com", // Corrected
+      messagingSenderId: "259372678655",
+      appId: "1:259372678655:web:df9c03e07e022392837bca",
+      measurementId: "G-2WWH3YVXT5"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    // DOM Elements
+    const classroomMainTitleEl = document.getElementById('classroom-main-title');
+    const classroomProfessorNameEl = document.getElementById('classroom-professor-name');
+    const statusMessageMainEl = document.getElementById('status-message-main');
+    const newLessonPostSectionEl = document.getElementById('new-lesson-post-section');
+    const lessonPostsContainerEl = document.getElementById('lesson-posts-container');
+    const classroomNavLinksContainerEl = document.getElementById('classroom-nav-links-container');
+    const linkToClassInfoEl = document.getElementById('link-to-class-info');
+    const linkToAssignmentsEl = document.getElementById('link-to-assignments');
+    const linkToOocForumEl = document.getElementById('link-to-ooc-forum');
+
+
+    // Global State
+    let currentClassId = null;
+    let currentUser = null;
+    let classDataGlobal = null;
+    let userProfileGlobal = null;
+    let isProfessorOrAdmin = false;
+
+    let lessonPostsListener = null; // To store the listener function for detachment
+    let discussionListeners = {}; // To store listeners for discussions, keyed by lessonKey
+
+    // Utility Functions
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function displayStatus(message, type = 'info', element = statusMessageMainEl) {
+        if (!element) { console.warn("displayStatus: Target element is null for message:", message); return; }
+        element.innerHTML = message;
+        element.className = `status-message status-${type}`;
+        element.style.display = 'block';
+        if ((type === 'success' || type === 'info') && !message.toLowerCase().includes("access denied")) {
+            setTimeout(() => {
+                if (element.style.display !== 'none' && element.textContent === message) {
+                    element.style.display = 'none';
+                }
+            }, 4500);
+        }
+    }
+
+    async function loadUserProfile(userId) {
+        if (!userId) return null;
+        try {
+            const snapshot = await db.ref(`users/${userId}/profile`).once('value');
+            return snapshot.exists() ? snapshot.val() : null;
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            return null;
+        }
+    }
+
+    // Page Initialization and Data Loading
+    async function initializeClassroomPage() {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentClassId = urlParams.get('classId');
+
+        if (!currentClassId) {
+            displayStatus('Error: No Class ID specified in URL.', 'error');
+            if(classroomMainTitleEl) classroomMainTitleEl.textContent = "Error - No Class";
+            return;
+        }
+
+        displayStatus('Loading classroom...', 'loading');
+
+        if (!currentUser) {
+            displayStatus('Please log in to view the classroom. <a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '">Log in</a>', 'error');
+            return;
+        }
+
+        userProfileGlobal = await loadUserProfile(currentUser.uid);
+        if (!userProfileGlobal) {
+            displayStatus('Error loading your profile. Please refresh.', 'error');
+            return;
+        }
+
+        try {
+            const classSnapshot = await db.ref(`workshops/${currentClassId}`).once('value');
+            if (!classSnapshot.exists()) {
+                displayStatus(`Error: Class (ID: ${escapeHtml(currentClassId)}) not found.`, 'error');
+                if(classroomMainTitleEl) classroomMainTitleEl.textContent = "Class Not Found";
+                return;
+            }
+            classDataGlobal = classSnapshot.val();
+            classDataGlobal.id = currentClassId; // Store the ID within the object
+
+            if(classroomMainTitleEl) classroomMainTitleEl.textContent = escapeHtml(classDataGlobal.title || 'Unnamed Classroom');
+            if(classroomProfessorNameEl) classroomProfessorNameEl.textContent = `Professor: ${escapeHtml(classDataGlobal.professorName || 'N/A')}`;
+            document.title = `${escapeHtml(classDataGlobal.title || 'Classroom')} - The Attic`;
+            
+            setupClassroomNavigationAndPermissions();
+            listenForMainClassroomPostsAndDiscussions();
+
+        } catch (error) {
+            displayStatus(`Error loading classroom data: ${escapeHtml(error.message)}`, 'error');
+            console.error("Classroom data load error:", error);
+        }
+    }
+
+    function setupClassroomNavigationAndPermissions() {
+        if (!classDataGlobal || !currentUser || !userProfileGlobal) return;
+
+        const isProfessor = classDataGlobal.professorUid === currentUser.uid;
+        const isAdmin = userProfileGlobal.role === 'admin';
+        const isEnrolled = classDataGlobal.enrolledStudents && classDataGlobal.enrolledStudents[currentUser.uid];
+        isProfessorOrAdmin = isProfessor || isAdmin;
+
+        if (!isEnrolled && !isProfessor && !isAdmin) {
+            displayStatus('Access Denied. You are not enrolled in this class.', 'info');
+            if(lessonPostsContainerEl) lessonPostsContainerEl.innerHTML = '';
+            if(newLessonPostSectionEl) newLessonPostSectionEl.style.display = 'none';
+            if(classroomNavLinksContainerEl) classroomNavLinksContainerEl.style.display = 'none';
+            return;
+        }
+
+        statusMessageMainEl.style.display = 'none'; // Hide main loading/error
+
+        // Setup navigation links
+        if(linkToClassInfoEl) linkToClassInfoEl.href = `roleplay_class_info.html?id=${currentClassId}`;
+        if(linkToAssignmentsEl) linkToAssignmentsEl.href = `rp_class_assignments.html?classId=${currentClassId}`;
+        if(linkToOocForumEl && classDataGlobal.forumId) {
+            linkToOocForumEl.href = `rp_class_forum.html?classId=${currentClassId}`; // forumId will be derived from classId on that page
+            linkToOocForumEl.style.display = 'inline-block';
+        } else if (linkToOocForumEl) {
+            linkToOocForumEl.style.display = 'none';
+        }
+        if(classroomNavLinksContainerEl) classroomNavLinksContainerEl.style.display = 'block';
+        
+
+        if (isProfessorOrAdmin) {
+            if(newLessonPostSectionEl) newLessonPostSectionEl.style.display = 'block';
+        } else {
+            if(newLessonPostSectionEl) newLessonPostSectionEl.style.display = 'none';
+        }
+    }
+    
+    function detachAllListeners() {
+        if (lessonPostsListener && lessonPostsListener.ref && typeof lessonPostsListener.ref.off === 'function') {
+            try {
+                console.log("Detaching lesson posts listener.");
+                lessonPostsListener.ref.off('value', lessonPostsListener.callback);
+            } catch (e) { console.error("Error detaching lesson posts listener:", e); }
+        }
+        lessonPostsListener = null;
+
+        Object.keys(discussionListeners).forEach(lessonKey => {
+            const listenerInfo = discussionListeners[lessonKey];
+            if (listenerInfo && listenerInfo.ref && typeof listenerInfo.ref.off === 'function') {
+                try {
+                    console.log("Detaching discussion listener for lesson:", lessonKey);
+                    listenerInfo.ref.off('value', listenerInfo.callback);
+                } catch (e) { console.error("Error detaching discussion listener for " + lessonKey + ":", e); }
+            }
+        });
+        discussionListeners = {};
+    }
+
+
+    function listenForMainClassroomPostsAndDiscussions() {
+        if (!currentClassId || !lessonPostsContainerEl) return;
+        
+        detachAllListeners(); // Clear previous listeners before attaching new ones
+
+        const postsRef = db.ref(`workshops/${currentClassId}/mainClassroomPosts`).orderByChild('timestamp');
+        
+        const callback = snapshot => {
+            if (!document.body.contains(lessonPostsContainerEl)) {
+                postsRef.off('value', callback);
+                console.log("Lesson posts container detached, removing listener.");
+                return;
+            }
+            lessonPostsContainerEl.innerHTML = ''; // Clear old posts
+            if (!snapshot.exists()) {
+                lessonPostsContainerEl.innerHTML = '<p style="text-align:center; padding:20px; color:#6c757d;"><em>No lesson posts yet. The professor will post updates here.</em></p>';
+                return;
+            }
+            // Render in reverse chronological order (newest first)
+            const postsData = [];
+            snapshot.forEach(childSnapshot => {
+                postsData.push({ key: childSnapshot.key, ...childSnapshot.val() });
+            });
+            postsData.reverse().forEach(lessonDataWithKey => { // Reverse for newest first
+                renderSingleLessonPost(lessonDataWithKey.key, lessonDataWithKey);
+            });
+        };
+
+        lessonPostsListener = { ref: postsRef, callback: callback };
+        postsRef.on('value', callback, error => {
+            console.error("Error fetching lesson posts:", error);
+            if (document.body.contains(lessonPostsContainerEl)) {
+                lessonPostsContainerEl.innerHTML = `<p style="color:red;">Error loading lessons: ${escapeHtml(error.message)}</p>`;
+            }
+        });
+    }
+
+    function renderSingleLessonPost(lessonKey, lessonData) {
+        if (!lessonPostsContainerEl) return;
+
+        const lessonDivId = `lesson-${lessonKey}`;
+        let lessonDiv = document.getElementById(lessonDivId);
+        if (!lessonDiv) {
+            lessonDiv = document.createElement('div');
+            lessonDiv.className = 'lesson-post-item';
+            lessonDiv.id = lessonDivId;
+            lessonPostsContainerEl.appendChild(lessonDiv); // Append new, so order is maintained by listener
+        } else {
+            lessonDiv.innerHTML = ''; // Clear if re-rendering due to update
+        }
+        
+        const professorDisplayName = escapeHtml(classDataGlobal.professorName || 'The Professor');
+        let deleteLessonButtonHtml = '';
+        if (isProfessorOrAdmin) {
+            deleteLessonButtonHtml = `<button class="delete-action-btn button-danger button-small" onclick="confirmDeleteLessonPost('${lessonKey}', \`${escapeHtml((lessonData.title || "this lesson").replace(/'/g, "\\'"))}\`)">Delete Lesson</button>`;
+        }
+
+        lessonDiv.innerHTML = `
+            ${deleteLessonButtonHtml}
+            <p class="post-meta">Posted by <strong>${professorDisplayName}</strong> on ${new Date(lessonData.timestamp || Date.now()).toLocaleString()}</p>
+            <h3 class="post-title">${escapeHtml(lessonData.title || 'Untitled Post')}</h3>
+            <div class="post-content">${escapeHtml(lessonData.content || '')}</div>
+            <div class="discussion-section" id="discussion-for-${lessonKey}">
+                <h4>Discussion:</h4>
+                <div class="discussion-posts-list" id="discussion-posts-list-${lessonKey}"><p><em>Loading discussion...</em></p></div>
+                <div class="form-section reply-form-lesson" style="margin-top:15px; padding:15px; background-color:#f8f9fa;">
+                    <textarea id="reply-content-${lessonKey}" placeholder="Write your reply or question..." rows="3"></textarea>
+                    <button onclick="submitDiscussionReply('${lessonKey}')">Post Reply</button>
+                    <div id="reply-status-${lessonKey}" class="status-message" style="font-size:0.85em; margin-top:8px;"></div>
+                </div>
+            </div>
+        `;
+        listenForLessonDiscussions(lessonKey);
+    }
+
+    function listenForLessonDiscussions(lessonKey) {
+        const discussionListEl = document.getElementById(`discussion-posts-list-${lessonKey}`);
+        if (!discussionListEl) return;
+
+        const discussionRef = db.ref(`workshops/${currentClassId}/mainClassroomDiscussions/${lessonKey}`).orderByChild('timestamp');
+        
+        // Detach previous listener for this specific discussion if it exists
+        if (discussionListeners[lessonKey] && discussionListeners[lessonKey].ref) {
+            try {
+                discussionListeners[lessonKey].ref.off('value', discussionListeners[lessonKey].callback);
+                console.log("Detached old discussion listener for lesson:", lessonKey);
+            } catch(e){ console.error("Error detaching old discussion listener for " + lessonKey + ":", e); }
+        }
+
+        const callback = snapshot => {
+            if (!document.body.contains(discussionListEl)) { // Check if element is still in DOM
+                discussionRef.off('value', callback);
+                console.log("Discussion list for " + lessonKey + " detached, removing listener.");
+                delete discussionListeners[lessonKey];
+                return;
+            }
+            discussionListEl.innerHTML = ''; // Clear
+            if (!snapshot.exists()) {
+                discussionListEl.innerHTML = '<p><em>No discussion yet for this lesson.</em></p>';
+                return;
+            }
+            snapshot.forEach(childSnapshot => {
+                const discKey = childSnapshot.key;
+                const discData = childSnapshot.val();
+                const discPostDiv = document.createElement('div');
+                discPostDiv.className = 'discussion-post-item';
+                discPostDiv.id = `discussion-post-${discKey}`;
+                
+                let deleteReplyBtnHtml = '';
+                if (isProfessorOrAdmin || (currentUser && discData.authorUid === currentUser.uid)) {
+                    deleteReplyBtnHtml = `<button class="delete-action-btn button-small" onclick="confirmDeleteDiscussionReply('${lessonKey}', '${discKey}')">Delete</button>`;
+                }
+
+                discPostDiv.innerHTML = `
+                    ${deleteReplyBtnHtml}
+                    <p class="post-meta"><strong>${escapeHtml(discData.authorName || 'User')}</strong> (${new Date(discData.timestamp || Date.now()).toLocaleString()}):</p>
+                    <div class="post-content">${escapeHtml(discData.content || '')}</div>
+                `;
+                discussionListEl.appendChild(discPostDiv);
+            });
+        };
+        discussionListeners[lessonKey] = { ref: discussionRef, callback: callback };
+        discussionRef.on('value', callback, error => {
+            console.error(`Error fetching discussions for lesson ${lessonKey}:`, error);
+            if (document.body.contains(discussionListEl)) {
+                discussionListEl.innerHTML = `<p style="color:red;">Error loading discussion.</p>`;
+            }
+        });
+    }
+
+    // Actions: Post Lesson, Post Reply, Delete Lesson, Delete Reply
+    window.submitNewLessonPost = function() {
+        const titleInput = document.getElementById('new-lesson-title');
+        const contentInput = document.getElementById('new-lesson-content');
+        const statusEl = document.getElementById('new-lesson-status');
+        const submitBtn = document.getElementById('submitNewLessonBtn');
+
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+
+        if (!title || !content) {
+            displayStatus("Lesson title and content are required.", "error", statusEl);
+            return;
+        }
+        if (!isProfessorOrAdmin) {
+            displayStatus("You do not have permission to post lessons.", "error", statusEl);
+            return;
+        }
+        if(submitBtn) submitBtn.disabled = true;
+        displayStatus("Posting lesson...", "loading", statusEl);
+
+        const newLessonPostRef = db.ref(`workshops/${currentClassId}/mainClassroomPosts`).push();
+        const lessonPostData = {
+            title: title,
+            content: content,
+            professorUid: classDataGlobal.professorUid, // or currentUser.uid if admin can post as self
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        newLessonPostRef.set(lessonPostData)
+            .then(() => {
+                displayStatus("Lesson posted successfully!", "success", statusEl);
+                titleInput.value = '';
+                contentInput.value = '';
+            })
+            .catch(error => {
+                displayStatus(`Error posting lesson: ${error.message}`, "error", statusEl);
+            }).finally(() => {
+                if(submitBtn) submitBtn.disabled = false;
+            });
+    }
+
+    window.submitDiscussionReply = function(lessonKey) {
+        const replyTextarea = document.getElementById(`reply-content-${lessonKey}`);
+        const replyStatusEl = document.getElementById(`reply-status-${lessonKey}`);
+        const content = replyTextarea.value.trim();
+
+        if (!content) {
+            displayStatus("Reply cannot be empty.", "error", replyStatusEl);
+            return;
+        }
+        if (!currentUser || !userProfileGlobal) {
+            displayStatus("You must be logged in to reply.", "error", replyStatusEl);
+            return;
+        }
+        // Check enrollment again, just in case
+        const isEnrolled = classDataGlobal.enrolledStudents && classDataGlobal.enrolledStudents[currentUser.uid];
+        if (!isEnrolled && !isProfessorOrAdmin) {
+             displayStatus("You are not enrolled and cannot reply.", "error", replyStatusEl);
+             return;
+        }
+
+        displayStatus("Posting reply...", "loading", replyStatusEl);
+        const authorDisplayName = userProfileGlobal.displayName || userProfileGlobal.atticNickname || currentUser.email.split('@')[0] || "Participant";
+
+        const newReplyRef = db.ref(`workshops/${currentClassId}/mainClassroomDiscussions/${lessonKey}`).push();
+        const replyData = {
+            authorUid: currentUser.uid,
+            authorName: authorDisplayName,
+            content: content,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+        newReplyRef.set(replyData)
+            .then(() => {
+                displayStatus("Reply posted.", "success", replyStatusEl);
+                replyTextarea.value = '';
+            })
+            .catch(error => {
+                displayStatus(`Error posting reply: ${error.message}`, "error", replyStatusEl);
+            });
+    }
+
+    window.confirmDeleteLessonPost = function(lessonKey, lessonTitle) {
+        if (!isProfessorOrAdmin) {
+            alert("You do not have permission to delete lessons.");
+            return;
+        }
+        if (confirm(`ARE YOU SURE you want to delete the ENTIRE lesson "${lessonTitle}" and ALL its discussion posts? This cannot be undone.`)) {
+            deleteLessonPostAndAllDiscussions(lessonKey, lessonTitle);
+        }
+    }
+
+    function deleteLessonPostAndAllDiscussions(lessonKey, lessonTitle) {
+        displayStatus(`Deleting lesson "${lessonTitle}"...`, "loading", statusMessageMainEl);
+        const updates = {};
+        updates[`/workshops/${currentClassId}/mainClassroomPosts/${lessonKey}`] = null;
+        updates[`/workshops/${currentClassId}/mainClassroomDiscussions/${lessonKey}`] = null;
+
+        db.ref().update(updates)
+            .then(() => {
+                displayStatus(`Lesson "${lessonTitle}" and all associated discussions deleted.`, "success", statusMessageMainEl);
+                // The real-time listener for lessons will refresh the display.
+                // Or explicitly remove:
+                const lessonElement = document.getElementById(`lesson-${lessonKey}`);
+                if(lessonElement) lessonElement.remove();
+            })
+            .catch(error => {
+                console.error("Error deleting lesson and discussions:", error);
+                displayStatus(`Error deleting lesson: ${error.message}`, "error", statusMessageMainEl);
+            });
+    }
+
+    window.confirmDeleteDiscussionReply = function(lessonKey, discussionPostKey) {
+        // Permission check: Admin, Professor, or author of the post
+        const discussionPostRef = db.ref(`workshops/${currentClassId}/mainClassroomDiscussions/${lessonKey}/${discussionPostKey}`);
+        discussionPostRef.child('authorUid').once('value', snapshot => {
+            const authorUid = snapshot.val();
+            if (isProfessorOrAdmin || (currentUser && currentUser.uid === authorUid)) {
+                if (confirm("Are you sure you want to delete this reply? This cannot be undone.")) {
+                    deleteDiscussionReply(lessonKey, discussionPostKey);
+                }
+            } else {
+                alert("You do not have permission to delete this reply.");
+            }
+        }).catch(err => {
+            alert("Could not verify post ownership for deletion.");
+            console.error("Error verifying reply ownership:", err);
+        });
+    }
+    
+    function deleteDiscussionReply(lessonKey, discussionPostKey) {
+        const replyStatusEl = document.getElementById(`reply-status-${lessonKey}`) || statusMessageMainEl;
+        displayStatus("Deleting reply...", "loading", replyStatusEl);
+
+        const discussionPostRef = db.ref(`workshops/${currentClassId}/mainClassroomDiscussions/${lessonKey}/${discussionPostKey}`);
+        discussionPostRef.remove()
+            .then(() => {
+                displayStatus("Reply deleted.", "success", replyStatusEl);
+                // Real-time listener should handle UI update.
+                // Or explicitly remove:
+                const postElement = document.getElementById(`discussion-post-${discussionPostKey}`);
+                if(postElement) postElement.remove();
+            })
+            .catch(error => {
+                console.error("Error deleting discussion reply:", error);
+                displayStatus(`Error deleting reply: ${error.message}`, "error", replyStatusEl);
+            });
+    }
+
+
+    // Auth State Change Listener
+    auth.onAuthStateChanged(user => {
+        currentUser = user;
+        // Detach all listeners before re-initializing to prevent duplicates if auth state changes multiple times quickly
+        // or if user logs out and logs back in on the same page instance.
+        detachAllListeners(); 
+        if (document.readyState === "loading") {
+            document.addEventListener('DOMContentLoaded', initializeClassroomPage);
+        } else {
+            initializeClassroomPage();
+        }
+    });
+
+    // Cleanup listeners when the user navigates away
+    window.addEventListener('beforeunload', () => {
+        detachAllListeners();
+    });
+
+</script>
+</body>
+</html>

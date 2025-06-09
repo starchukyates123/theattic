@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Dashboard - The Attic Alternative Academy</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        /* Basic Tab Styling */
+        .tabs { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+        .tablink { background-color: #f1f1f1; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 17px; }
+        .tablink:hover { background-color: #ddd; }
+        .tablink.active { background-color: #ccc; }
+        .tabcontent { display: none; padding: 6px 12px; border-top: none; animation: fadeEffect 1s;}
+        @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+        fieldset { margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; }
+        legend { font-weight: bold; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="number"], input[type="url"], input[type="date"], textarea, select {
+            width: calc(100% - 22px); padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        button { padding: 10px 15px; background-color: #556b2f; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right:5px;}
+        button:hover { background-color: #6B8E23; }
+        #logoutBtn { background-color: #dc3545;}
+        .class-item { border: 1px solid #eee; padding: 10px; margin-bottom: 10px; background-color: #f9f9f9; border-radius: 5px;}
+        .class-item h4 { margin-top: 0;}
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Student Dashboard</a>
+            <button id="logoutBtn" style="float:right;">Logout</button>
+        </nav>
+        <h1>Professor Dashboard</h1>
+    </header>
+
+    <main>
+        <section id="login-prompt" style="text-align:center; padding: 20px;">
+            <p>Loading authentication status...</p>
+        </section>
+
+        <div id="professor-content" style="display:none;">
+            <section id="class-management-overview">
+                <h2>My Roleplay Classes</h2>
+                <button id="showCreateClassFormBtn">Create New Roleplay Class</button>
+                <div id="my-classes-list">
+                    <p>Loading your classes...</p>
+                </div>
+            </section>
+
+            <section id="create-edit-class-section" style="display:none;">
+                <h2 id="form-mode-title">Create Roleplay Class</h2>
+                <form id="classForm">
+                    <input type="hidden" id="classIdField" value="">
+                    <div><label for="classTitle">Class Title:</label><input type="text" id="classTitle" required></div>
+                    <div><label for="classDescription">Description:</label><textarea id="classDescription" rows="4" required></textarea></div>
+                    <div><label for="enrollmentLimit">Enrollment Limit:</label><input type="number" id="enrollmentLimit" value="30" min="1"></div>
+
+                    <fieldset>
+                        <legend>Term Details</legend>
+                        <div><label for="termName">Term Name (e.g., Fall 2024, The First Chapter):</label><input type="text" id="termName" placeholder="e.g., The Dragon's Tooth - Term 1" required></div>
+                        <div><label for="termDuration">Approx. Duration (e.g., 8 weeks, Ongoing):</label><input type="text" id="termDuration" placeholder="e.g., 12 Weeks (Sept-Nov)" required></div>
+                        <div><label for="updateFrequency">Expected Story Update Frequency (e.g., Weekly):</label><input type="text" id="updateFrequency" placeholder="e.g., Weekly on Fridays" required></div>
+                         <div><label for="termStatusField">Initial Term Status:</label>
+                            <select id="termStatusField">
+                                <option value="enrollment_open" selected>Enrollment Open</option>
+                                <option value="upcoming">Upcoming (Display Only, No Enrollment)</option>
+                                <option value="active_lesson_1">Active: Lesson 1 (Enrollment Closed)</option>
+                            </select>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Completion Badge (Optional)</legend>
+                        <div><label for="badgeName">Badge Name:</label><input type="text" id="badgeName" placeholder="e.g., Graduate of Dragon's Tooth"></div>
+                        <div><label for="badgeImageUrl">Badge Image URL (Optional):</label><input type="url" id="badgeImageUrl" placeholder="https://example.com/badge.png"></div>
+                    </fieldset>
+                    <br>
+                    <button type="submit" id="saveClassBtn">Save Class</button>
+                    <button type="button" id="cancelEditClassBtn">Cancel</button>
+                </form>
+            </section>
+
+            <section id="selected-class-dashboard" style="display:none;">
+                <h2 id="selectedClassNameHeading">Managing: [Class Name]</h2>
+                <button id="backToClassListBtn">&laquo; Back to My Classes</button>
+                <hr>
+
+                <div class="tabs">
+                    <button class="tablink active" onclick="openTab(event, 'tab-class-content')">Content</button>
+                    <button class="tablink" onclick="openTab(event, 'tab-enrollment')">Enrollment</button>
+                    <button class="tablink" onclick="openTab(event, 'tab-participation')">Participation & Badges</button>
+                    <button class="tablink" onclick="openTab(event, 'tab-moderation')">Moderation</button>
+                </div>
+
+                <div id="tab-class-content" class="tabcontent" style="display:block;">
+                    <h3>Main Classroom Content (`rp_classroom_main.html`)</h3>
+                    <div id="mainClassroomPostsList" style="max-height: 300px; overflow-y: auto; border:1px solid #ccc; padding:10px; margin-bottom:10px;">Loading posts...</div>
+                    <textarea id="newMainPostContent" placeholder="Enter new lesson content or roleplay prompt..." rows="5" style="width:calc(100% - 22px);"></textarea>
+                    <button id="publishMainPostBtn">Publish New Post to Main Classroom</button>
+
+                    <hr style="margin: 20px 0;">
+                    <h3>Assignments & Extra Credit (`rp_class_assignments.html`)</h3>
+                    <div id="classAssignmentsList" style="max-height: 300px; overflow-y: auto; border:1px solid #ccc; padding:10px; margin-bottom:10px;">Loading assignments...</div>
+                    <input type="text" id="newAssignmentTitle" placeholder="New Assignment Title">
+                    <textarea id="newAssignmentDescription" placeholder="Assignment details, instructions..." rows="4"></textarea>
+                    <label for="newAssignmentDueDate">Due Date (Optional):</label><input type="date" id="newAssignmentDueDate">
+                    <button id="publishAssignmentBtn">Publish New Assignment</button>
+                </div>
+
+                <div id="tab-enrollment" class="tabcontent">
+                    <h3>Enrollment Management</h3>
+                    <p>Overall Class Status: <strong id="classOverallStatusText">Loading...</strong></p>
+                    <p>Current Term Status: <strong id="enrollmentStatusText">Loading...</strong></p>
+                    <button id="toggleEnrollmentBtn">Toggle Current Term Enrollment (Open/Close)</button>
+                    <h4>Enrolled Students (<span id="enrolledStudentCount">0</span>)</h4>
+                    <ul id="enrolledStudentsList"></ul>
+                </div>
+
+                <div id="tab-participation" class="tabcontent">
+                    <h3>Participation Tracking & Badge Awards</h3>
+                    <p><em>(Functionality for tracking participation and awarding badges for this class will be developed here.)</em></p>
+                    <div id="studentSubmissionsOverview"></div>
+                    <button id="awardClassBadgesBtn" disabled>Award Completion Badges (Coming Soon)</button>
+                </div>
+                
+                <div id="tab-moderation" class="tabcontent">
+                    <h3>Class Moderation</h3>
+                    <p><em>(Content flagged by students in this class, or tools for professor to flag content/users for Admin review.)</em></p>
+                    <p><strong>Note:</strong> Direct deletion of forum messages is typically handled by Admins or through moderation tools on the forum page itself. Professors can flag content here for Admin review.</p>
+                    <div id="classFlagsList"></div>
+                    <h4>Flag a User or Post in this Class (for Admin Review)</h4>
+                    <textarea id="flagReasonText" placeholder="Reason for flagging... (will be sent to admins)" rows="3"></textarea>
+                    <input type="text" id="itemToFlagLink" placeholder="Link to post or User Profile ID to be flagged">
+                    <button id="submitFlagToAdminBtn">Submit Flag</button>
+                </div>
+            </div>
+        </section>
+    </div></main>
+
+    <footer>
+        <p>&copy; 2025 The Attic Alternative Academy</p>
+    </footer>
+
+    <script>
+        // Basic tab functionality (already in your HTML, kept for completeness)
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablink");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            if (evt && evt.currentTarget) {
+                 evt.currentTarget.className += " active";
+            } else { // Default to first tab if no event
+                const firstTabLink = document.querySelector(".tabs .tablink");
+                if(firstTabLink) firstTabLink.className += " active";
+            }
+        }
+    </script>
+    <script>
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+  authDomain: "attic-4ae31.firebaseapp.com",
+  databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+  projectId: "attic-4ae31",
+  storageBucket: "attic-4ae31.firebasestorage.app",
+  messagingSenderId: "259372678655",
+  appId: "1:259372678655:web:df9c03e07e022392837bca",
+  measurementId: "G-2WWH3YVXT5"
+};
+
+        // --- Initialize Firebase (using v8 syntax as per other pages) ---
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // --- DOM Elements ---
+        const loginPromptSection = document.getElementById('login-prompt');
+        const professorContentDiv = document.getElementById('professor-content');
+        const myClassesListDiv = document.getElementById('my-classes-list');
+        const showCreateClassFormBtn = document.getElementById('showCreateClassFormBtn');
+        const createEditClassSection = document.getElementById('create-edit-class-section');
+        const classManagementOverviewSection = document.getElementById('class-management-overview');
+        
+        const classForm = document.getElementById('classForm');
+        const formModeTitle = document.getElementById('form-mode-title');
+        const classIdField = document.getElementById('classIdField'); // Hidden field for editing
+        const classTitleField = document.getElementById('classTitle');
+        const classDescriptionField = document.getElementById('classDescription');
+        const enrollmentLimitField = document.getElementById('enrollmentLimit');
+        const termNameField = document.getElementById('termName');
+        const termDurationField = document.getElementById('termDuration');
+        const updateFrequencyField = document.getElementById('updateFrequency');
+        const termStatusField = document.getElementById('termStatusField');
+        const badgeNameField = document.getElementById('badgeName');
+        const badgeImageUrlField = document.getElementById('badgeImageUrl');
+        const saveClassBtn = document.getElementById('saveClassBtn');
+        const cancelEditClassBtn = document.getElementById('cancelEditClassBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Selected Class Dashboard Elements
+        const selectedClassDashboardSection = document.getElementById('selected-class-dashboard');
+        const selectedClassNameHeading = document.getElementById('selectedClassNameHeading');
+        const backToClassListBtn = document.getElementById('backToClassListBtn');
+        
+        const mainClassroomPostsListDiv = document.getElementById('mainClassroomPostsList');
+        const newMainPostContentField = document.getElementById('newMainPostContent');
+        const publishMainPostBtn = document.getElementById('publishMainPostBtn');
+
+        const classAssignmentsListDiv = document.getElementById('classAssignmentsList');
+        const newAssignmentTitleField = document.getElementById('newAssignmentTitle');
+        const newAssignmentDescriptionField = document.getElementById('newAssignmentDescription');
+        const newAssignmentDueDateField = document.getElementById('newAssignmentDueDate');
+        const publishAssignmentBtn = document.getElementById('publishAssignmentBtn');
+
+        const classOverallStatusText = document.getElementById('classOverallStatusText');
+        const enrollmentStatusText = document.getElementById('enrollmentStatusText');
+        const toggleEnrollmentBtn = document.getElementById('toggleEnrollmentBtn');
+        const enrolledStudentCountSpan = document.getElementById('enrolledStudentCount');
+        const enrolledStudentsListUl = document.getElementById('enrolledStudentsList');
+
+
+        // --- Global State ---
+        let currentUser = null;
+        let currentUserProfile = null;
+        let currentEditingClassId = null; // For editing existing class
+        let currentSelectedClassId = null; // For managing a selected class
+
+        // --- Utility Functions ---
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- Auth Handling ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                db.ref('users/' + user.uid + '/profile').once('value').then(snapshot => {
+                    currentUserProfile = snapshot.val();
+                    if (currentUserProfile && (currentUserProfile.role === 'professor' || currentUserProfile.role === 'admin')) {
+                        loginPromptSection.style.display = 'none';
+                        professorContentDiv.style.display = 'block';
+                        loadProfessorClasses();
+                        switchToClassListView(); // Default view
+                    } else {
+                        loginPromptSection.innerHTML = '<p>Access Denied. You must be a Professor or Admin to view this page. <a href="dashboard.html">Go to Dashboard</a></p>';
+                        loginPromptSection.style.display = 'block';
+                        professorContentDiv.style.display = 'none';
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user profile:", error);
+                    loginPromptSection.innerHTML = '<p>Error verifying your access. Please try again. <a href="login.html">Log In</a></p>';
+                });
+            } else {
+                currentUser = null;
+                currentUserProfile = null;
+                loginPromptSection.innerHTML = '<p>Please <a href="login.html?redirect=professor_dashboard.html">log in</a> to access the Professor Dashboard.</p>';
+                loginPromptSection.style.display = 'block';
+                professorContentDiv.style.display = 'none';
+                selectedClassDashboardSection.style.display = 'none';
+                createEditClassSection.style.display = 'none';
+            }
+        });
+
+        if(logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                auth.signOut().then(() => {
+                    window.location.href = 'index.html';
+                }).catch(error => console.error("Logout error:", error));
+            });
+        }
+
+        // --- UI Switching ---
+        function switchToClassListView() {
+            classManagementOverviewSection.style.display = 'block';
+            createEditClassSection.style.display = 'none';
+            selectedClassDashboardSection.style.display = 'none';
+            currentEditingClassId = null;
+            currentSelectedClassId = null;
+            formModeTitle.textContent = 'Create Roleplay Class';
+            classForm.reset();
+            classIdField.value = '';
+        }
+
+        function switchToCreateEditView(classDataToEdit = null) {
+            classManagementOverviewSection.style.display = 'none';
+            createEditClassSection.style.display = 'block';
+            selectedClassDashboardSection.style.display = 'none';
+            classForm.reset();
+
+            if (classDataToEdit && classDataToEdit.id) {
+                formModeTitle.textContent = 'Edit Roleplay Class';
+                currentEditingClassId = classDataToEdit.id;
+                classIdField.value = classDataToEdit.id; // Not directly visible, but for logic
+                classTitleField.value = classDataToEdit.title || '';
+                classDescriptionField.value = classDataToEdit.description || '';
+                enrollmentLimitField.value = classDataToEdit.enrollmentLimit || 30;
+                // Term details are nested under currentTerm for consistency with admin.html workshops
+                termNameField.value = classDataToEdit.currentTerm?.termName || '';
+                termDurationField.value = classDataToEdit.term // General term (duration) string from admin workshops
+                                        || classDataToEdit.currentTerm?.duration || ''; // Fallback
+                updateFrequencyField.value = classDataToEdit.currentTerm?.updateFrequency || '';
+                termStatusField.value = classDataToEdit.currentTerm?.status || 'enrollment_open';
+
+                badgeNameField.value = classDataToEdit.completionBadge?.name || '';
+                badgeImageUrlField.value = classDataToEdit.completionBadge?.imageUrl || '';
+                saveClassBtn.textContent = 'Update Class';
+            } else {
+                formModeTitle.textContent = 'Create Roleplay Class';
+                currentEditingClassId = null;
+                classIdField.value = '';
+                saveClassBtn.textContent = 'Save Class';
+            }
+        }
+        
+        function switchToSelectedClassDashboardView(classId, className) {
+            classManagementOverviewSection.style.display = 'none';
+            createEditClassSection.style.display = 'none';
+            selectedClassDashboardSection.style.display = 'block';
+            currentSelectedClassId = classId;
+            selectedClassNameHeading.textContent = `Managing: ${escapeHtml(className)}`;
+            
+            // Load data for the selected class
+            loadMainClassroomPosts(classId);
+            loadClassAssignments(classId);
+            loadEnrollmentData(classId);
+            // Reset to the first tab
+            openTab(null, 'tab-class-content');
+        }
+
+
+        // --- Class Management CRUD ---
+        function loadProfessorClasses() {
+            if (!currentUser || !myClassesListDiv) return;
+            myClassesListDiv.innerHTML = '<p>Loading your classes...</p>';
+            // Roleplay Classes are stored under 'workshops' node, as per admin.html
+            db.ref('workshops').orderByChild('professorUid').equalTo(currentUser.uid).on('value', snapshot => {
+                myClassesListDiv.innerHTML = '';
+                if (snapshot.exists()) {
+                    snapshot.forEach(classSnapshot => {
+                        const classData = classSnapshot.val();
+                        const classId = classSnapshot.key;
+                        if (classData.type === 'roleplaying_class') { // Only show roleplaying_class type
+                            const classDiv = document.createElement('div');
+                            classDiv.className = 'class-item';
+                            classDiv.innerHTML = `
+                                <h4>${escapeHtml(classData.title)}</h4>
+                                <p>Term: ${escapeHtml(classData.currentTerm?.termName || classData.term || 'N/A')}</p>
+                                <p>Status: ${escapeHtml(classData.status || classData.currentTerm?.status || 'N/A')}</p>
+                                <button onclick="editClass('${classId}')">Edit Details</button>
+                                <button onclick="manageSelectedClass('${classId}', '${escapeHtml(classData.title)}')">Manage Class Content</button>
+                                `;
+                            myClassesListDiv.appendChild(classDiv);
+                        }
+                    });
+                } else {
+                    myClassesListDiv.innerHTML = '<p>You have not created any roleplay classes yet.</p>';
+                }
+            }, error => {
+                console.error("Error loading professor's classes:", error);
+                myClassesListDiv.innerHTML = '<p style="color:red;">Error loading your classes.</p>';
+            });
+        }
+        
+        window.editClass = function(classId) { // Make global for onclick
+            db.ref('workshops/' + classId).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const classData = snapshot.val();
+                    classData.id = classId; // Add id to data object for easier handling
+                    switchToCreateEditView(classData);
+                } else {
+                    alert("Error: Class not found.");
+                }
+            });
+        };
+
+        window.manageSelectedClass = function(classId, className) { // Make global for onclick
+            switchToSelectedClassDashboardView(classId, className);
+        };
+
+        if (showCreateClassFormBtn) {
+            showCreateClassFormBtn.addEventListener('click', () => {
+                switchToCreateEditView();
+            });
+        }
+        if (cancelEditClassBtn) {
+            cancelEditClassBtn.addEventListener('click', switchToClassListView);
+        }
+        if (backToClassListBtn) {
+            backToClassListBtn.addEventListener('click', switchToClassListView);
+        }
+
+        if (classForm) {
+            classForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                if (!currentUser || !currentUserProfile) {
+                    alert("Error: User not properly authenticated.");
+                    return;
+                }
+
+                const title = classTitleField.value.trim();
+                const description = classDescriptionField.value.trim();
+                const limit = parseInt(enrollmentLimitField.value, 10);
+                const currentTermName = termNameField.value.trim();
+                const currentTermDuration = termDurationField.value.trim(); // This corresponds to admin's "Overall Term Display"
+                const currentUpdateFrequency = updateFrequencyField.value.trim();
+                const currentTermStatus = termStatusField.value;
+                
+                const complBadgeName = badgeNameField.value.trim();
+                const complBadgeImg = badgeImageUrlField.value.trim();
+
+                if (!title || !description || isNaN(limit) || !currentTermName || !currentTermDuration || !currentUpdateFrequency) {
+                    alert("Please fill all required fields: Title, Description, Limit, Term Name, Term Duration, and Update Frequency.");
+                    return;
+                }
+
+                const classDataObject = {
+                    title: title,
+                    description: description,
+                    enrollmentLimit: limit,
+                    professorUid: currentUser.uid,
+                    professorName: currentUserProfile.displayName || currentUserProfile.atticNickname || currentUser.email,
+                    type: 'roleplaying_class', // Hardcoded for this professor dashboard
+                    term: currentTermDuration, // General term display, maps to admin workshop 'term'
+                    targetAudience: "Students of The Attic", // Default or could be a field
+                    status: currentTermStatus, // Overall status mirrors current term's status
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+                    currentEnrollmentCount: 0,
+                    currentTerm: {
+                        termName: currentTermName,
+                        // duration: currentTermDuration, // Duration is now the main 'term' field for workshop
+                        updateFrequency: currentUpdateFrequency,
+                        status: currentTermStatus,
+                        startDate: null, // Can be added as fields if needed
+                        endDate: null,   // Can be added as fields if needed
+                        lessons: { /* Default lessons can be pre-filled like in admin.html */
+                            "1": { title: "Lesson 1: Welcome & Introduction", content: "Welcome to the class! Details for Lesson 1 will be posted soon.", postedAt: null},
+                            "2": { title: "Lesson 2: Core Concepts", content: "Details for Lesson 2 will be posted soon.", postedAt: null},
+                            "3": { title: "Lesson 3: First Steps", content: "Details for Lesson 3 will be posted soon.", postedAt: null}
+                        },
+                         professorWrapUp: { title: "Term Conclusion", content: "Congratulations on completing the term!", postedAt: null }
+                    },
+                    completionBadge: null
+                };
+                if (complBadgeName) {
+                    classDataObject.completionBadge = { name: complBadgeName, imageUrl: complBadgeImg || null };
+                }
+
+
+                let promise;
+                if (currentEditingClassId) { // Editing existing class
+                    classDataObject.createdAt = null; // Don't overwrite original creation timestamp
+                    // Preserve existing forumId and accessGroupKey if they exist
+                    db.ref('workshops/' + currentEditingClassId).once('value').then(snap => {
+                        const existingData = snap.val();
+                        if(existingData && existingData.forumId) classDataObject.forumId = existingData.forumId;
+                        if(existingData && existingData.accessGroupKey) classDataObject.accessGroupKey = existingData.accessGroupKey;
+                        if(existingData && typeof existingData.currentEnrollmentCount === 'number') classDataObject.currentEnrollmentCount = existingData.currentEnrollmentCount;
+
+
+                        promise = db.ref('workshops/' + currentEditingClassId).update(classDataObject);
+                        promise.then(() => {
+                            alert("Class updated successfully!");
+                            switchToClassListView();
+                            loadProfessorClasses();
+                        }).catch(error => {
+                            console.error("Error updating class:", error);
+                            alert("Error updating class: " + error.message);
+                        });
+                    });
+                } else { // Creating new class
+                    const newClassRef = db.ref('workshops').push();
+                    const newClassId = newClassRef.key;
+                    classDataObject.createdAt = firebase.database.ServerValue.TIMESTAMP; // Set for new
+                    
+                    // Create associated forum and access group key (similar to admin.html)
+                    const sanitizedTitleForId = title.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').substring(0, 20);
+                    const forumId = `rp_class_forum_${sanitizedTitleForId}_${newClassId.substring(newClassId.length - 4)}`;
+                    const accessGroupKey = `rpclass_${sanitizedTitleForId}_${newClassId.substring(newClassId.length - 4)}_access`;
+
+                    classDataObject.forumId = forumId;
+                    classDataObject.accessGroupKey = accessGroupKey;
+
+                    const newForumData = {
+                        title: `RP Classroom: ${title}`,
+                        description: `Forum for the roleplay class: ${description.substring(0,100)}...`,
+                        categoryId: "roleplay_classes", // Ensure this category exists or use a valid one
+                        accessGroup: accessGroupKey,
+                        isWorkshopForum: true, // Use this flag
+                        accessType: "rp_class_restricted",
+                        linkedWorkshopId: newClassId, 
+                        professorUid: currentUser.uid,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        postCount: 0,
+                        threadCount: 0
+                    };
+                    
+                    const updates = {};
+                    updates[`/workshops/${newClassId}`] = classDataObject;
+                    updates[`/forumData/forums/${forumId}`] = newForumData;
+                    // Also ensure 'roleplay_classes' category exists in /forumData/categories
+                    // For now, assuming it does or will be created manually.
+
+                    promise = db.ref().update(updates);
+                    promise.then(() => {
+                        alert("Class created successfully!");
+                        // Optionally, create default threads for the new class forum
+                        createDefaultClassForumThreads(newClassId, title, forumId, currentUser.uid, classDataObject.professorName);
+                        switchToClassListView();
+                        loadProfessorClasses();
+                    }).catch(error => {
+                        console.error("Error creating class:", error);
+                        alert("Error creating class: " + error.message);
+                    });
+                }
+            });
+        }
+        
+        function createDefaultClassForumThreads(classId, classTitle, forumId, profUid, profName) {
+            const now = firebase.database.ServerValue.TIMESTAMP;
+            const threads = [
+                { title: `Welcome & Announcements for ${classTitle}`, content: `This is the main announcement thread for "${classTitle}". Your Professor, ${profName}, will post important updates here.` },
+                { title: `Q&A for ${classTitle}`, content: `Have questions about "${classTitle}"? Ask them here!` },
+                { title: `General Discussion for ${classTitle}`, content: `General chat related to "${classTitle}".` }
+            ];
+            let updates = {};
+            let threadsCreatedCount = 0;
+            let postsCreatedCount = 0;
+            let lastPostInfoForForum = null;
+
+            threads.forEach(t => {
+                const threadRef = db.ref(`forumData/threads/${forumId}`).push();
+                const threadKey = threadRef.key;
+                const postRef = db.ref(`forumData/posts/${threadKey}`).push();
+                const postKey = postRef.key;
+
+                const threadData = {
+                    title: t.title,
+                    authorUid: profUid,
+                    authorName: profName,
+                    createdAt: now,
+                    forumId: forumId, // Link back to forum
+                    postCount: 1,
+                    lastPostInfo: { postId: postKey, authorUid: profUid, authorName: profName, timestamp: now },
+                    isPinned: true
+                };
+                const postData = {
+                    content: t.content,
+                    authorUid: profUid,
+                    authorName: profName,
+                    createdAt: now,
+                    threadId: threadKey, // Link back to thread
+                    forumId: forumId // Link back to forum
+                };
+                updates[`/forumData/threads/${forumId}/${threadKey}`] = threadData;
+                updates[`/forumData/posts/${threadKey}/${postKey}`] = postData;
+                threadsCreatedCount++;
+                postsCreatedCount++;
+                lastPostInfoForForum = { threadId: threadKey, threadTitle: t.title, postId: postKey, authorUid: profUid, authorName: profName, timestamp: now };
+            });
+            
+            updates[`/forumData/forums/${forumId}/threadCount`] = firebase.database.ServerValue.increment(threadsCreatedCount);
+            updates[`/forumData/forums/${forumId}/postCount`] = firebase.database.ServerValue.increment(postsCreatedCount);
+            if(lastPostInfoForForum) {
+                 updates[`/forumData/forums/${forumId}/lastPostInfo`] = lastPostInfoForForum;
+            }
+
+
+            db.ref().update(updates)
+                .then(() => console.log(`Default threads created for forum ${forumId} of class ${classId}`))
+                .catch(err => console.error("Error creating default threads:", err));
+        }
+
+
+        // --- Selected Class Dashboard Functions ---
+
+        // Content Tab
+        function loadMainClassroomPosts(classId) {
+            if (!classId) {
+                mainClassroomPostsListDiv.innerHTML = '<p>No class selected.</p>';
+                return;
+            }
+            mainClassroomPostsListDiv.innerHTML = '<p>Loading main classroom posts...</p>';
+            // Assuming main classroom posts are stored under /workshops/{classId}/mainClassroom/posts
+            // This is a simplified structure. Admin.html has more complex lesson structures.
+            // For this dashboard, we'll assume a simpler list of posts.
+            const postsRef = db.ref(`workshops/${classId}/mainClassroomPosts`); 
+            postsRef.orderByChild('timestamp').on('value', snapshot => {
+                mainClassroomPostsListDiv.innerHTML = '';
+                if (snapshot.exists()) {
+                    snapshot.forEach(postSnap => {
+                        const post = postSnap.val();
+                        const postEl = document.createElement('div');
+                        postEl.className = 'class-item'; // Reuse styling
+                        postEl.innerHTML = `
+                            <p>${escapeHtml(post.content)}</p>
+                            <small>Posted on: ${new Date(post.timestamp || Date.now()).toLocaleString()}</small>
+                        `;
+                        mainClassroomPostsListDiv.prepend(postEl); // Show newest first
+                    });
+                } else {
+                    mainClassroomPostsListDiv.innerHTML = '<p>No posts in the main classroom yet.</p>';
+                }
+            });
+        }
+
+        if (publishMainPostBtn) {
+            publishMainPostBtn.addEventListener('click', () => {
+                if (!currentSelectedClassId || !currentUser) return alert("No class selected or not logged in.");
+                const content = newMainPostContentField.value.trim();
+                if (!content) return alert("Post content cannot be empty.");
+
+                const newPost = {
+                    content: content,
+                    authorUid: currentUser.uid,
+                    authorName: currentUserProfile.displayName || currentUser.email,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                db.ref(`workshops/${currentSelectedClassId}/mainClassroomPosts`).push(newPost)
+                    .then(() => {
+                        newMainPostContentField.value = '';
+                        alert("Post published to main classroom!");
+                    })
+                    .catch(err => {
+                        console.error("Error publishing main post:", err);
+                        alert("Error: " + err.message);
+                    });
+            });
+        }
+
+        function loadClassAssignments(classId) {
+            if (!classId) {
+                classAssignmentsListDiv.innerHTML = '<p>No class selected.</p>';
+                return;
+            }
+            classAssignmentsListDiv.innerHTML = '<p>Loading assignments...</p>';
+            const assignmentsRef = db.ref(`workshops/${classId}/assignments`);
+            assignmentsRef.orderByChild('createdAt').on('value', snapshot => {
+                classAssignmentsListDiv.innerHTML = '';
+                if (snapshot.exists()) {
+                    snapshot.forEach(assignSnap => {
+                        const assignment = assignSnap.val();
+                        const assignEl = document.createElement('div');
+                        assignEl.className = 'class-item';
+                        assignEl.innerHTML = `
+                            <h4>${escapeHtml(assignment.title)}</h4>
+                            <p>${escapeHtml(assignment.description)}</p>
+                            <small>Due: ${assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'N/A'} | Created: ${new Date(assignment.createdAt || Date.now()).toLocaleString()}</small>
+                        `;
+                        classAssignmentsListDiv.prepend(assignEl); // Newest first
+                    });
+                } else {
+                    classAssignmentsListDiv.innerHTML = '<p>No assignments published yet.</p>';
+                }
+            });
+        }
+        
+        if (publishAssignmentBtn) {
+            publishAssignmentBtn.addEventListener('click', () => {
+                if (!currentSelectedClassId || !currentUser) return alert("No class selected or not logged in.");
+                const title = newAssignmentTitleField.value.trim();
+                const description = newAssignmentDescriptionField.value.trim();
+                const dueDate = newAssignmentDueDateField.value;
+
+                if (!title || !description) return alert("Assignment title and description cannot be empty.");
+
+                const newAssignment = {
+                    title: title,
+                    description: description,
+                    dueDate: dueDate || null,
+                    professorUid: currentUser.uid,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                db.ref(`workshops/${currentSelectedClassId}/assignments`).push(newAssignment)
+                    .then(() => {
+                        newAssignmentTitleField.value = '';
+                        newAssignmentDescriptionField.value = '';
+                        newAssignmentDueDateField.value = '';
+                        alert("Assignment published!");
+                    })
+                    .catch(err => {
+                        console.error("Error publishing assignment:", err);
+                        alert("Error: " + err.message);
+                    });
+            });
+        }
+
+        // Enrollment Tab
+        function loadEnrollmentData(classId) {
+             if (!classId) {
+                enrollmentStatusText.textContent = 'N/A';
+                classOverallStatusText.textContent = 'N/A';
+                enrolledStudentCountSpan.textContent = '0';
+                enrolledStudentsListUl.innerHTML = '';
+                return;
+            }
+            const classRef = db.ref(`workshops/${classId}`);
+            classRef.on('value', snapshot => {
+                if (snapshot.exists()) {
+                    const classData = snapshot.val();
+                    classOverallStatusText.textContent = escapeHtml(classData.status || 'N/A');
+                    enrollmentStatusText.textContent = escapeHtml(classData.currentTerm?.status || 'N/A');
+                    toggleEnrollmentBtn.textContent = (classData.currentTerm?.status === 'enrollment_open') ? 'Close Current Term Enrollment' : 'Open Current Term Enrollment';
+                    enrolledStudentCountSpan.textContent = classData.currentEnrollmentCount || 0;
+
+                    enrolledStudentsListUl.innerHTML = '';
+                    if (classData.enrolledStudents) {
+                        Object.keys(classData.enrolledStudents).forEach(studentUid => {
+                            const studentData = classData.enrolledStudents[studentUid];
+                            db.ref(`users/${studentUid}/profile`).once('value').then(profileSnap => {
+                                const studentProfile = profileSnap.val();
+                                const li = document.createElement('li');
+                                const displayName = studentProfile ? (studentProfile.displayName || studentProfile.atticNickname || studentUid) : studentUid;
+                                li.textContent = `${escapeHtml(displayName)} (Enrolled: ${new Date(studentData.enrolledAt).toLocaleDateString()})`;
+                                enrolledStudentsListUl.appendChild(li);
+                            });
+                        });
+                    } else {
+                        enrolledStudentsListUl.innerHTML = '<li>No students enrolled yet.</li>';
+                    }
+                } else {
+                    enrollmentStatusText.textContent = 'Error loading status.';
+                }
+            });
+        }
+
+        if (toggleEnrollmentBtn) {
+            toggleEnrollmentBtn.addEventListener('click', () => {
+                if (!currentSelectedClassId) return alert("No class selected.");
+                const classTermStatusRef = db.ref(`workshops/${currentSelectedClassId}/currentTerm/status`);
+                const classOverallStatusRef = db.ref(`workshops/${currentSelectedClassId}/status`);
+
+                classTermStatusRef.once('value').then(snapshot => {
+                    const currentStatus = snapshot.val();
+                    const newStatus = (currentStatus === 'enrollment_open') ? 'enrollment_closed' : 'enrollment_open';
+                    classTermStatusRef.set(newStatus);
+                    classOverallStatusRef.set(newStatus); // Mirror to overall status
+                    alert(`Term enrollment status changed to: ${newStatus.replace('_', ' ')}`);
+                }).catch(err => alert("Error changing status: " + err.message));
+            });
+        }
+
+
+        // --- Initial Load and Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Default to first tab if on selected class view (might be direct link later)
+            if (selectedClassDashboardSection.style.display === 'block') {
+                 openTab(null, 'tab-class-content');
+            }
+        });
+
+    </script>
+</body>
+</html>

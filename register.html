@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register for The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script> <script>
+       // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+  authDomain: "attic-4ae31.firebaseapp.com",
+  projectId: "attic-4ae31",
+  storageBucket: "attic-4ae31.firebasestorage.app",
+  messagingSenderId: "259372678655",
+  appId: "1:259372678655:web:df9c03e07e022392837bca",
+  measurementId: "G-2WWH3YVXT5"
+};
+
+        // Initialize Firebase
+        try {
+            if (typeof firebase !== 'undefined') {
+                 if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    console.log("Firebase initialized on register.html");
+                 } else {
+                    firebase.app();
+                     console.log("Firebase already initialized on register.html");
+                 }
+                 // Check for necessary services
+                 if (!firebase.auth) console.error("Firebase Auth SDK not loaded!");
+                 if (!firebase.database) console.error("Firebase Database SDK not loaded!");
+            } else {
+                 console.error("Firebase object is undefined! Check SDK script tags.");
+            }
+        } catch (initError) {
+             console.error("Error initializing Firebase on register.html:", initError);
+        }
+    </script>
+</head>
+
+<body>
+ <div class="registration-container">
+  <h2>Register for The Attic</h2>
+  <p class="free-site-info">It's free to join!</p>
+  <form id="registrationForm">
+   <div class="form-group">
+    <label for="username">Username:</label> <input type="text" id="username" name="username" required>
+   </div>
+   <div class="form-group">
+    <label for="email">Email Address:</label>
+    <input type="email" id="email" name="email" required>
+   </div>
+   <div class="form-group">
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+   </div>
+   <div class="form-group">
+    <label for="confirmPassword">Confirm Password:</label>
+    <input type="password" id="confirmPassword" name="confirmPassword" required>
+   </div>
+   <button type="submit">Register</button>
+  </form>
+  <div class="login-link">
+   Already have an account? <a href="login.html">Log in</a>
+  </div>
+ </div>
+
+ <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+   <button onclick="window.location.href='index.html'">Go to Home Page</button>
+ </div>
+ <footer>
+  <p>&copy; 2025 The Attic - Alternative Academy</p>
+ </footer>
+
+ <script>
+    // Get references to the form elements
+    const registrationForm = document.getElementById('registrationForm');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+ 
+    // Add an event listener to the form submission
+    registrationForm.addEventListener('submit', (event) => {
+     event.preventDefault(); // Prevent default form submission
+ 
+     const username = usernameInput.value.trim();
+     const email = emailInput.value.trim();
+     const password = passwordInput.value;
+     const confirmPassword = confirmPasswordInput.value;
+ 
+     // Basic validation
+     if (!username || !email || !password || !confirmPassword) {
+         alert("Please fill in all fields.");
+         return;
+     }
+     if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+     }
+ 
+     // --- Firebase Registration ---
+     if (!firebase || !firebase.auth || !firebase.database) {
+         alert("Firebase services are not initialized properly. Please refresh.");
+         console.error("Firebase auth or database object is not available.");
+         return;
+     }
+ 
+     firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+           // Registration successful (Auth part)
+           const user = userCredential.user;
+           console.log("User account created successfully:", user.uid);
+
+           // 1. Update Auth Profile
+           return user.updateProfile({ // Added return here
+               displayName: username
+           }).then(() => {
+               console.log("Auth profile updated with displayName:", username);
+
+               // 2. Prepare Initial Profile Data with Onboarding Flags
+               const initialProfileData = {
+                   displayName: username,
+                   email: email,
+                   role: "student", 
+                   createdAt: firebase.database.ServerValue.TIMESTAMP,
+                   gatewayComplete: false,
+                   orientationComplete: false 
+               };
+
+               const userProfileRef = firebase.database().ref('users/' + user.uid + '/profile');
+               // Set the initial profile data
+               return userProfileRef.set(initialProfileData); 
+           }); // This .then() was missing its pairing with user.updateProfile
+      }) // This .then() pairs with createUserWithEmailAndPassword
+      .then(() => { 
+           // This .then() is chained after the profile update and database set
+           console.log("Initial user profile data saved to Realtime Database.");
+           alert(`Registration successful for ${username}! Welcome to The Attic Gateway.`);
+           window.location.href = 'attic_gateway.html'; 
+      })
+      .catch((error) => { // This .catch() handles errors from createUserWithEmailAndPassword AND the chained .then() blocks
+           console.error("Error during registration or profile setup:", error); // Modified error log
+           // Handle specific auth errors if desired
+           if (error.code === 'auth/email-already-in-use') {
+               alert('This email address is already in use. Please use a different email or log in.');
+           } else if (error.code === 'auth/weak-password') {
+               alert('The password is too weak. Please choose a stronger password.');
+           } else {
+               alert(`Registration failed. Error: ${error.message}`);
+           }
+           // It might be better NOT to redirect to login.html on a registration profile setup error,
+           // as the user account might exist in Auth but not in the database.
+           // Let's keep them on the registration page or provide more specific instructions.
+           // For now, removing the redirect from the generic catch:
+           // window.location.href = 'login.html'; 
+      });
+    }); // This closes registrationForm.addEventListener
+ </script>
+</body>
+
+</html>

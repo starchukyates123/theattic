@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Submissions - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group select, .form-group button { padding: 8px; font-size: 1em; margin-right: 10px; }
+        #selection-area { padding: 15px; background-color: #f0f8f0; border: 1px solid #d4e9d4; border-radius: 8px; margin-bottom: 20px; }
+        #load-status { margin-top:10px; font-weight: bold; }
+        .submission-item-admin { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 5px; }
+        .submission-item-admin.archived { background-color: #e9ecef; opacity: 0.7; } /* Style for archived items */
+        .submission-item-admin h4 { margin-top: 0; color: #556b2f; }
+        .submission-item-admin pre { background-color:#f8f9fa; padding: 8px; border: 1px solid #eee; border-radius: 4px; max-height: 150px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; margin-top: 5px; }
+        .grading-form { margin-top:15px; padding-top:15px; border-top: 1px dashed #ccc; }
+        .grading-form label { margin-top: 10px; font-weight: normal; }
+        .grading-form select, .grading-form textarea { width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;}
+        .grading-form textarea { min-height: 60px; }
+        .button-small { font-size:0.8em; padding: 3px 6px !important; margin-right: 5px !important; }
+        .archive-action { margin-top: 10px; padding-top: 10px; border-top: 1px dotted #ccc; }
+        #admin-auth-status { padding: 10px; text-align: center; margin-bottom:15px; font-weight:bold;}
+        #grading-interface { display: none; } /* Hidden by default, shown on auth success */
+
+        #current-assignment-context {
+            margin-bottom: 20px; padding: 15px; background-color: #e9f5e9; 
+            border: 1px solid #c8e6c9; border-radius: 5px; display: none; 
+        }
+        #current-assignment-context h3 {
+            margin-top:0; color: #38761d; 
+            border-bottom: 1px solid #b2d8b2; padding-bottom: 5px;
+        }
+        #assignment-context-content h4 { 
+            margin-top: 10px; margin-bottom: 5px; color: #556b2f; font-size: 1.2em;
+             border-bottom: 1px solid #a9c9a9; padding-bottom: 3px;
+        }
+        #assignment-context-content h5 { 
+            margin-top: 10px; margin-bottom: 3px; color: #333; font-weight: bold; font-size: 1.1em;
+        }
+        #assignment-context-content p,
+        #assignment-context-content div { 
+            white-space: pre-wrap; word-wrap: break-word; color: #444; line-height: 1.6;
+        }
+        #assignment-context-content .storyline-display {
+            background-color: #e7f3fe; padding: 10px; margin-bottom: 10px;
+            border-radius: 4px; border-left: 4px solid #007bff;
+        }
+        #assignment-context-content .assignment-instructions-display {
+            padding: 8px; background-color: #fff; border: 1px solid #ced4da; border-radius: 4px;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+</head>
+<body>
+    <header>
+        <h1>The Attic - Grade Submissions</h1>
+        <div id="admin-auth-status">Loading authentication...</div>
+    </header>
+
+    <main id="grading-interface" style="display: none; padding: 20px;">
+        <section id="selection-area">
+            <h2>Select Course and Week to Grade</h2>
+            <div class="form-group">
+                <label for="course-select">Course:</label>
+                <select id="course-select">
+                    <option value="">-- Select a Course --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="week-select">Week with Assignment:</label>
+                <select id="week-select">
+                    <option value="">-- Select a Week --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="archive-filter-select">Show Submissions:</label>
+                <select id="archive-filter-select">
+                    <option value="active" selected>Active Only</option>
+                    <option value="archived">Archived Only</option>
+                    <option value="all">All Submissions</option>
+                </select>
+            </div>
+            <button id="load-submissions-button" class="button">Load Submissions</button>
+            <div id="load-status"></div>
+        </section>
+
+        <hr style="margin: 30px 0;">
+            <div id="bulk-delete-section" style="margin-top: 20px; padding: 15px; border: 1px dashed #dc3545; background-color: #fbeae5; border-radius: 5px; display: none;">
+                <h4 style="color: #dc3545; margin-top: 0;">Bulk Admin Actions</h4>
+                <button id="initiate-delete-all-archived-button" class="button" style="background-color: #c82333; color: white; border-color: #bd2130;">Delete ALL Archived in Current View</button>
+                
+                <div id="confirm-bulk-delete-controls" style="margin-top: 10px; display: none; padding:10px; border: 1px solid #c82333;">
+                    <p style="color: red; font-weight: bold; font-size: 1.1em;">EXTREME WARNING!</p>
+                    <p>You are about to permanently delete ALL <strong>archived</strong> submissions for:</p>
+                    <p><strong id="bulk-delete-course-week-info" style="font-size: 1.1em;">[Course and Week will appear here]</strong></p>
+                    <p>This action is IRREVERSIBLE and will affect all students who have archived work for this specific course and week. Ensure this is the correct selection.</p>
+                    <button id="execute-delete-all-archived-button" class="button" style="background-color: #a71d2a; color:white; font-size:1.1em; padding: 10px 15px;">YES, PERMANENTLY DELETE ALL ARCHIVED</button>
+                    <button id="cancel-bulk-delete-button" class="button" style="background-color: #6c757d; color:white; margin-left: 10px;">Cancel Bulk Delete</button>
+                </div>
+                <div id="bulk-delete-status" style="margin-top: 10px; font-weight: bold;"></div>
+            </div>
+
+        <section id="submissions-display-area">
+            <h2>Submissions</h2>
+            <div id="current-assignment-context"> 
+                <h3 style="margin-top:0; color: #556b2f;">Assignment Context</h3>
+                <div id="assignment-context-content">
+                    <p><em>Select a course and week, then click "Load Submissions" to see assignment details.</em></p>
+                </div>
+            </div>
+            <div id="submissions-list">
+                <p>Please select a course and week, then click "Load Submissions".</p>
+            </div>
+        </section>
+    </main>
+
+    <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+        <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+        <button onclick="window.location.href='dashboard.html'" class="button">Back to Dashboard</button>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+        authDomain: "attic-4ae31.firebaseapp.com",
+        projectId: "attic-4ae31",
+        storageBucket: "attic-4ae31.firebasestorage.app",
+        messagingSenderId: "259372678655",
+        appId: "1:259372678655:web:df9c03e07e022392837bca",
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+    };
+
+    try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        } else if (typeof firebase !== 'undefined') {
+            firebase.app();
+        }
+        if (!firebase.auth || !firebase.database || !firebase.storage) {
+            console.error("One or more Firebase SDKs not loaded!");
+        }
+    } catch (initError) {
+        console.error("CRITICAL Error initializing Firebase:", initError);
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                document.body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start.</p>";
+            } catch (bodyError) {
+                console.error("Error trying to write critical error to body:", bodyError);
+            }
+        });
+    }
+
+    let currentUser = null;
+    let currentAdminProfile = null;
+    let adminAuthStatusDiv, gradingInterfaceDiv, courseSelect, weekSelect, loadSubmissionsButton, submissionsListDiv, loadStatusDiv, archiveFilterSelect;
+    let bulkDeleteSection, initiateDeleteAllArchivedButton, confirmBulkDeleteControls, bulkDeleteCourseWeekInfo, executeDeleteAllArchivedButton, cancelBulkDeleteButton, bulkDeleteStatus;
+    let globalBulkDeleteCourseId = null;
+    let globalBulkDeleteWeekNum = null;
+    let assignmentContextDisplayArea, assignmentContextContentDiv;
+
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function initializeGradingPage() {
+        adminAuthStatusDiv = document.getElementById('admin-auth-status');
+        gradingInterfaceDiv = document.getElementById('grading-interface');
+        courseSelect = document.getElementById('course-select');
+        weekSelect = document.getElementById('week-select');
+        loadSubmissionsButton = document.getElementById('load-submissions-button');
+        submissionsListDiv = document.getElementById('submissions-list');
+        loadStatusDiv = document.getElementById('load-status');
+        archiveFilterSelect = document.getElementById('archive-filter-select');
+        assignmentContextDisplayArea = document.getElementById('current-assignment-context');
+        assignmentContextContentDiv = document.getElementById('assignment-context-content');
+        bulkDeleteSection = document.getElementById('bulk-delete-section');
+        initiateDeleteAllArchivedButton = document.getElementById('initiate-delete-all-archived-button');
+        confirmBulkDeleteControls = document.getElementById('confirm-bulk-delete-controls');
+        bulkDeleteCourseWeekInfo = document.getElementById('bulk-delete-course-week-info');
+        executeDeleteAllArchivedButton = document.getElementById('execute-delete-all-archived-button');
+        cancelBulkDeleteButton = document.getElementById('cancel-bulk-delete-button');
+        bulkDeleteStatus = document.getElementById('bulk-delete-status');
+
+        if (!adminAuthStatusDiv || !gradingInterfaceDiv || !courseSelect || !weekSelect || !loadSubmissionsButton || !submissionsListDiv || !loadStatusDiv || !archiveFilterSelect || 
+            !assignmentContextDisplayArea || !assignmentContextContentDiv || 
+            !bulkDeleteSection || !initiateDeleteAllArchivedButton || !confirmBulkDeleteControls || !bulkDeleteCourseWeekInfo || !executeDeleteAllArchivedButton || !cancelBulkDeleteButton || !bulkDeleteStatus) {
+            console.error("One or more critical HTML elements are missing! Check IDs.");
+            if(adminAuthStatusDiv) adminAuthStatusDiv.innerHTML = "<p style='color:red;'>Page structure error.</p>";
+            return;
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                // MODIFIED: Replaced template literal with string concatenation
+                firebase.database().ref('users/' + currentUser.uid + '/profile').once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        currentAdminProfile = snapshot.val();
+                        if (currentAdminProfile.role === 'admin' || currentAdminProfile.role === 'ta') {
+                            // MODIFIED: Replaced template literal
+                            adminAuthStatusDiv.textContent = 'Logged in as: ' + escapeHtml(currentAdminProfile.displayName || currentUser.email) + ' (Role: ' + escapeHtml(currentAdminProfile.role) + ')';
+                            adminAuthStatusDiv.style.color = 'green';
+                            gradingInterfaceDiv.style.display = 'block';
+                            loadCoursesIntoSelector();
+                            courseSelect.addEventListener('change', handleCourseSelectionChange);
+                            loadSubmissionsButton.addEventListener('click', handleLoadSubmissions);
+                            archiveFilterSelect.addEventListener('change', handleLoadSubmissions);
+
+                            if (currentAdminProfile.role === 'admin') {
+                                bulkDeleteSection.style.display = 'block';
+                                initiateDeleteAllArchivedButton.disabled = true; 
+                                initiateDeleteAllArchivedButton.addEventListener('click', initiateDeleteAllArchived);
+                                executeDeleteAllArchivedButton.addEventListener('click', executeDeleteAllArchived);
+                                cancelBulkDeleteButton.addEventListener('click', () => {
+                                    confirmBulkDeleteControls.style.display = 'none';
+                                    initiateDeleteAllArchivedButton.style.display = 'block'; 
+                                    bulkDeleteStatus.textContent = '';
+                                    globalBulkDeleteCourseId = null;
+                                    globalBulkDeleteWeekNum = null;
+                                });
+                            } else {
+                                bulkDeleteSection.style.display = 'none';
+                            }
+                        } else { 
+                            adminAuthStatusDiv.innerHTML = "<p style='color:red;'>Access Denied. You do not have Admin or TA privileges.</p>";
+                            gradingInterfaceDiv.style.display = 'none';
+                            if(bulkDeleteSection) bulkDeleteSection.style.display = 'none';
+                        }
+                    } else { 
+                        adminAuthStatusDiv.innerHTML = "<p style='color:red;'>Access Denied. Profile not found.</p>";
+                        gradingInterfaceDiv.style.display = 'none';
+                        if(bulkDeleteSection) bulkDeleteSection.style.display = 'none';
+                    }
+                }).catch(error => {
+                    console.error("Error fetching profile:", error);
+                    adminAuthStatusDiv.innerHTML = "<p style='color:red;'>Error verifying role.</p>";
+                    gradingInterfaceDiv.style.display = 'none';
+                    if(bulkDeleteSection) bulkDeleteSection.style.display = 'none';
+                });
+            } else { 
+                currentUser = null; currentAdminProfile = null;
+                // MODIFIED: Replaced template literal
+                adminAuthStatusDiv.innerHTML = '<p style=\'color:red;\'>You must be <a href="login.html?redirect=grade_submissions.html">logged in</a> with Admin/TA rights.</p>';
+                gradingInterfaceDiv.style.display = 'none';
+                if(bulkDeleteSection) bulkDeleteSection.style.display = 'none';
+            }
+        });
+    }
+
+    function loadCoursesIntoSelector() {
+        if (!courseSelect) return;
+        const coursesRef = firebase.database().ref('courses');
+        coursesRef.orderByChild('title').once('value')
+            .then(snapshot => {
+                courseSelect.innerHTML = '<option value="">-- Select a Course --</option>';
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        const courseId = childSnapshot.key;
+                        const courseData = childSnapshot.val();
+                        const option = document.createElement('option');
+                        option.value = courseId;
+                        // MODIFIED: Replaced template literal
+                        option.textContent = (escapeHtml(courseData.title) || 'Untitled') + ' (ID: ' + courseId + ')';
+                        courseSelect.appendChild(option);
+                    });
+                } else {
+                     courseSelect.innerHTML = '<option value="">No courses found</option>';
+                }
+            }).catch(error => {
+                console.error("Error loading courses:", error);
+                courseSelect.innerHTML = '<option value="">Error loading</option>';
+            });
+    }
+
+   function handleCourseSelectionChange() {
+        const selectedCourseId = courseSelect.value;
+        weekSelect.innerHTML = '<option value="">-- Select a Week --</option>'; 
+        if(assignmentContextDisplayArea) assignmentContextDisplayArea.style.display = 'none'; 
+        if(assignmentContextContentDiv) assignmentContextContentDiv.innerHTML = '<p><em>Select a course and week, then click "Load Submissions" to see assignment details.</em></p>';
+
+        if(submissionsListDiv) submissionsListDiv.innerHTML = '<p>Select course/week and load submissions.</p>';
+        if(loadStatusDiv) loadStatusDiv.textContent = '';
+        
+        if(confirmBulkDeleteControls) confirmBulkDeleteControls.style.display = 'none';
+        if(initiateDeleteAllArchivedButton) {
+            initiateDeleteAllArchivedButton.style.display = (currentAdminProfile && currentAdminProfile.role === 'admin') ? 'block' : 'none';
+            initiateDeleteAllArchivedButton.disabled = true; 
+        }
+        if(bulkDeleteStatus) bulkDeleteStatus.textContent = '';
+
+        if (selectedCourseId) {
+            // MODIFIED: Replaced template literal
+            firebase.database().ref('courses/' + selectedCourseId + '/weeks').once('value')
+                .then(snapshot => {
+                    weekSelect.innerHTML = '<option value="">-- Select a Week --</option>'; 
+                    if (snapshot.exists()) {
+                        const weeksData = snapshot.val();
+                        let weeksFound = 0;
+                        for (let i = 1; i <= 13; i++) { 
+                            const weekKey = i.toString();
+                            const weekContent = weeksData[weekKey]; 
+
+                            if (weekContent && (weekContent.assignment || weekContent.quiz)) {
+                                const option = document.createElement('option');
+                                option.value = weekKey;
+                                
+                                let weekDisplayText = "Week " + weekKey; // Using traditional concatenation
+                                if (weekContent.topic) { 
+                                     weekDisplayText += ": " + weekContent.topic.substring(0,35) + (weekContent.topic.length > 35 ? '...' : '');
+                                } else if (weekContent.assignment && typeof weekContent.assignment === 'string' && weekContent.assignment.trim() !== "") {
+                                    weekDisplayText += ": " + weekContent.assignment.substring(0,30) + (weekContent.assignment.length > 30 ? '...' : '');
+                                } else if (weekContent.quiz && weekContent.quiz.title) {
+                                     weekDisplayText += ": Quiz - " + weekContent.quiz.title.substring(0,25) + (weekContent.quiz.title.length > 25 ? '...' : '');
+                                } else if (weekKey === '13') { 
+                                    weekDisplayText += " (Final Exam)";
+                                }
+                                option.textContent = escapeHtml(weekDisplayText);
+                                weekSelect.appendChild(option);
+                                weeksFound++;
+                            }
+                        }
+                        if (weeksFound === 0) {
+                            weekSelect.innerHTML = '<option value="">No assignable weeks/content found</option>';
+                        }
+                    } else {
+                        weekSelect.innerHTML = '<option value="">No weeks defined for this course</option>';
+                    }
+                }).catch(error => { // MODIFIED: Replaced template literal for console.error
+                     weekSelect.innerHTML = '<option value="">Error loading weeks</option>';
+                     console.error("Error loading weeks for " + selectedCourseId + ":", error);
+                });
+        }
+        
+        weekSelect.onchange = () => {
+            if (initiateDeleteAllArchivedButton) {
+                initiateDeleteAllArchivedButton.disabled = !(courseSelect.value && weekSelect.value && currentAdminProfile && currentAdminProfile.role === 'admin');
+                initiateDeleteAllArchivedButton.style.display = (currentAdminProfile && currentAdminProfile.role === 'admin') ? 'block' : 'none';
+            }
+            if(confirmBulkDeleteControls) confirmBulkDeleteControls.style.display = 'none';
+            if(bulkDeleteStatus) bulkDeleteStatus.textContent = '';
+        };
+
+        if (typeof weekSelect.onchange === 'function') {
+            weekSelect.onchange(); 
+        }
+    }
+    
+    function displayCourseContentForGrading(weekData) {
+        if (!assignmentContextContentDiv || !assignmentContextDisplayArea) {
+            console.error("Assignment context display elements not found in displayCourseContentForGrading.");
+            return;
+        }
+
+        let contentHTML = '';
+        let hasContent = false;
+
+        if (weekData && typeof weekData === 'object') { // Ensure weekData is an object
+            if (weekData.storyline) {
+                contentHTML += '<div class="storyline-display">';
+                contentHTML += '<h5>This Week\'s Story Beat:</h5>'; // Corrected: Escaped the apostrophe
+                contentHTML += '<p>' + escapeHtml(weekData.storyline) + '</p></div>';
+                hasContent = true;
+            }
+
+            if (weekData.topic) {
+                contentHTML += '<h4>Topic: ' + escapeHtml(weekData.topic) + '</h4>';
+                hasContent = true;
+            }
+
+            if (weekData.summary) {
+                contentHTML += '<h5>Summary:</h5>';
+                contentHTML += '<div>' + escapeHtml(weekData.summary) + '</div>';
+                hasContent = true;
+            }
+
+            if (weekData.assignment) { 
+                contentHTML += '<h5>Assignment Instructions:</h5>';
+                contentHTML += '<div class="assignment-instructions-display">' + escapeHtml(weekData.assignment) + '</div>';
+                hasContent = true;
+            } else if (weekData.quiz) { 
+                 contentHTML += '<p style="margin-top:15px;"><em>This week may involve a quiz. Refer to course details.</em></p>';
+                 hasContent = true; 
+            }
+        }
+
+        if (!hasContent) {
+             contentHTML = "<p><em>No specific descriptive content (topic, summary, assignment, storyline) found for this week, or week data is unavailable.</em></p>";
+        }
+
+        assignmentContextContentDiv.innerHTML = contentHTML;
+        assignmentContextDisplayArea.style.display = 'block'; 
+    }
+
+    function handleLoadSubmissions() {
+        const selectedCourseId = courseSelect.value;
+        const selectedWeekNum = weekSelect.value;
+        const archiveFilterValue = archiveFilterSelect.value;
+
+        if (!selectedCourseId || !selectedWeekNum) {
+            if(loadStatusDiv) { loadStatusDiv.textContent = "Please select both a course and a week."; loadStatusDiv.style.color = "orange"; }
+            if (initiateDeleteAllArchivedButton && currentAdminProfile && currentAdminProfile.role === 'admin') { initiateDeleteAllArchivedButton.disabled = true; }
+            if(assignmentContextDisplayArea) assignmentContextDisplayArea.style.display = 'none';
+            return;
+        }
+        if (initiateDeleteAllArchivedButton && currentAdminProfile && currentAdminProfile.role === 'admin') { initiateDeleteAllArchivedButton.disabled = false; }
+        
+        if(confirmBulkDeleteControls) confirmBulkDeleteControls.style.display = 'none';
+        if(initiateDeleteAllArchivedButton) { 
+            initiateDeleteAllArchivedButton.style.display = (currentAdminProfile && currentAdminProfile.role === 'admin') ? 'block' : 'none';
+        }
+        if(bulkDeleteStatus) bulkDeleteStatus.textContent = '';
+
+        if(loadStatusDiv) { // MODIFIED: Replaced template literal
+            loadStatusDiv.textContent = 'Loading data for Course: ' + selectedCourseId + ', Week: ' + selectedWeekNum + '...';
+            loadStatusDiv.style.color = "blue";
+        }
+        if(submissionsListDiv) submissionsListDiv.innerHTML = "";
+        
+        if (assignmentContextDisplayArea) assignmentContextDisplayArea.style.display = 'none'; 
+        if (assignmentContextContentDiv) assignmentContextContentDiv.innerHTML = '<p><em>Loading assignment details...</em></p>';
+
+        // MODIFIED: Replaced template literals for paths
+        const submissionsPath = 'submissionsByCourseWeek/' + selectedCourseId + '_' + selectedWeekNum;
+        const courseWeekContentPath = 'courses/' + selectedCourseId + '/weeks/' + selectedWeekNum; 
+
+        Promise.all([
+            firebase.database().ref(submissionsPath).orderByChild('submittedAt').once('value'), 
+            firebase.database().ref(courseWeekContentPath).once('value')                     
+        ])
+        .then(([submissionsSnapshot, courseWeekSnapshot]) => { 
+            if(loadStatusDiv) loadStatusDiv.textContent = ""; 
+
+            if (courseWeekSnapshot.exists()) {
+                const weekData = courseWeekSnapshot.val();
+                displayCourseContentForGrading(weekData); 
+            } else {
+                if (assignmentContextContentDiv) assignmentContextContentDiv.innerHTML = '<p><em>Assignment details not found for this week.</em></p>';
+                if (assignmentContextDisplayArea) assignmentContextDisplayArea.style.display = 'block'; 
+            }
+
+            if (submissionsSnapshot.exists()) {
+                let displayedCount = 0;
+                let filterText = archiveFilterSelect.options[archiveFilterSelect.selectedIndex].text;
+                submissionsSnapshot.forEach(subSnapshot => {
+                    const submissionId = subSnapshot.key;
+                    const submissionData = subSnapshot.val();
+                    if (!submissionData) return; 
+                    const isArchived = submissionData.isArchived === true;
+                    if (archiveFilterValue === 'active' && isArchived) return;
+                    if (archiveFilterValue === 'archived' && !isArchived) return;
+                    displaySingleSubmissionForGrading(submissionId, submissionData);
+                    displayedCount++;
+                });
+                if (displayedCount > 0) {
+                    if(loadStatusDiv) { // MODIFIED: Replaced template literal
+                        loadStatusDiv.textContent = displayedCount + ' submission(s) loaded (' + filterText + ').';
+                        loadStatusDiv.style.color = "green";
+                    }
+                } else { // MODIFIED: Replaced template literal
+                    if(submissionsListDiv) submissionsListDiv.innerHTML = '<p>No submissions found for this course/week matching filter: ' + filterText + '.</p>';
+                    if(loadStatusDiv) { 
+                        loadStatusDiv.textContent = 'No submissions found (' + filterText + ').';
+                        loadStatusDiv.style.color = "orange"; 
+                    }
+                }
+            } else { 
+                if(submissionsListDiv) submissionsListDiv.innerHTML = "<p>No submissions found for this course/week.</p>";
+                if(loadStatusDiv) {
+                    loadStatusDiv.textContent = "No submissions found for this course/week.";
+                    loadStatusDiv.style.color = "orange";
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error loading submissions or course content:", error);
+            if(submissionsListDiv) submissionsListDiv.innerHTML = "<p style='color:red;'>Error loading data. Check console.</p>";
+            if(loadStatusDiv) {
+                loadStatusDiv.textContent = "Error loading data. See console for details.";
+                loadStatusDiv.style.color = "red";
+            }
+            if (assignmentContextContentDiv) assignmentContextContentDiv.innerHTML = '<p style="color:red;"><em>Error loading assignment details.</em></p>';
+            if (assignmentContextDisplayArea) assignmentContextDisplayArea.style.display = 'block'; 
+        });
+    }
+
+    function displaySingleSubmissionForGrading(submissionId, data) {
+        if (!submissionsListDiv || !data) { 
+            console.error("SubmissionsListDiv or submission data is null for displaying submissionId: " + submissionId); 
+            return; 
+        }
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'submission-item-admin';
+        itemDiv.id = 'submission-item-' + submissionId;
+        const isGraded = data.status === 'graded';
+        const isArchived = data.isArchived === true;
+
+        if (isArchived) itemDiv.classList.add('archived');
+        else itemDiv.style.backgroundColor = isGraded ? '#e9ffe9' : '#fff8e1'; 
+
+        let contentHTML = '<h4>Submission from: ' + escapeHtml(data.studentDisplayName || 'Unknown') + ' (UID: ' + escapeHtml(data.studentUid) + ')</h4>';
+        contentHTML += '<p><strong>Submitted At:</strong> ' + new Date(data.submittedAt).toLocaleString() + '</p>';
+        contentHTML += '<p><strong>Course:</strong> ' + escapeHtml(data.courseId) + ' | <strong>Week:</strong> ' + escapeHtml(data.weekNum) + '</p>';
+        
+        if (data.submittedText) {
+            contentHTML += '<strong>Text:</strong><pre>' + escapeHtml(data.submittedText) + '</pre>';
+        } else if (data.fileName && data.storagePath) { // MODIFIED: Replaced template literal
+            contentHTML += '<strong>File:</strong> ' + escapeHtml(data.fileName) + ' <button type="button" class="button button-small" onclick="getViewableLink(\'' + escapeHtml(data.storagePath) + '\', this)">View File</button>';
+        } else {
+            contentHTML += '<p><em>No text or file submitted.</em></p>';
+        }
+
+        if (data.studentExplanation) { // MODIFIED: Replaced template literal
+            contentHTML += '<div style="margin-top:5px; padding:5px; border:1px dashed blue; background-color:#e7f3fe;"><strong>Student Explanation:</strong><pre>' + escapeHtml(data.studentExplanation) + '</pre></div>';
+        }
+
+        const gradingFormDisabled = (isGraded && !isArchived) || isArchived; 
+        const saveBtnText = isArchived ? 'Archived' : (isGraded ? 'Graded (Update Disabled)' : 'Save Grade');
+        // MODIFIED: Replaced template literals in the form HTML string
+        contentHTML += '<div class="grading-form" style="margin-top:10px;">' +
+            '<div class="form-group">' +
+                '<label for="grade-' + submissionId + '">Grade:</label>' +
+                '<select id="grade-' + submissionId + '" ' + (gradingFormDisabled ? 'disabled' : '') + '>' +
+                    '<option value="">-- Grade --</option>' +
+                    '<option value="Seedling" ' + (data.grade === 'Seedling' ? 'selected' : '') + '>Seedling</option>' +
+                    '<option value="Sapling" ' + (data.grade === 'Sapling' ? 'selected' : '') + '>Sapling</option>' +
+                    '<option value="Sprout" ' + (data.grade === 'Sprout' ? 'selected' : '') + '>Sprout</option>' +
+                    '<option value="Flourishing" ' + (data.grade === 'Flourishing' ? 'selected' : '') + '>Flourishing</option>' +
+                    '<option value="Needs Review" ' + (data.grade === 'Needs Review' ? 'selected' : '') + '>Needs Review</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label for="feedback-' + submissionId + '">Feedback:</label>' +
+                '<textarea id="feedback-' + submissionId + '" rows="3" ' + (gradingFormDisabled ? 'disabled' : '') + '>' + escapeHtml(data.feedback || '') + '</textarea>' +
+            '</div>' +
+            '<button type="button" class="button save-grade-button" '+
+                    'data-submission-id="' + submissionId + '" data-course-id="' + data.courseId + '" ' +
+                    'data-week-num="' + data.weekNum + '" data-student-uid="' + data.studentUid + '" ' +
+                    'data-usersubmissionpath="' + escapeHtml(data.userSubmissionPath || (data.courseId + '_' + data.weekNum)) + '" ' +
+                    'style="margin-top:5px;" ' + (gradingFormDisabled ? 'disabled' : '') + '>' + saveBtnText + '</button>' +
+            '<span id="grade-status-' + submissionId + '" style="margin-left:10px;font-weight:bold;">' +
+                (isArchived ? 'ARCHIVED' : (isGraded ? 'Graded (' + escapeHtml(data.grade || 'N/A') + ') by ' + escapeHtml(data.gradedByName || 'N/A') : 'Pending')) +
+            '</span>' +
+        '</div>';
+        
+        contentHTML += '<div class="archive-action" style="margin-top:10px;padding-top:10px;border-top:1px dotted #ccc;">';
+        if (isArchived) { // MODIFIED: Replaced template literals
+            contentHTML += '<button type="button" class="button button-small unarchive-button" ' +
+                'data-submission-id="' + submissionId + '" data-course-id="' + data.courseId + '" data-week-num="' + data.weekNum + '" ' +
+                'data-usersubmissionpath="' + escapeHtml(data.userSubmissionPath || (data.courseId + '_' + data.weekNum)) + '" ' +
+                'style="background-color:#ffc107;color:black;">Unarchive</button>' +
+                '<span style="margin-left:5px;font-size:0.9em;color:#555;">Archived: ' + (data.archivedAt ? new Date(data.archivedAt).toLocaleDateString() : 'N/A') + ' by ' + escapeHtml(data.archivedByName || 'Unk') + '</span>';
+            if (currentAdminProfile && currentAdminProfile.role === 'admin') { // MODIFIED: Replaced template literals
+                contentHTML += '<div class="delete-controls-container" id="delete-container-' + submissionId + '" style="display:inline-block;margin-left:10px;vertical-align:middle;">' +
+                    '<button type="button" class="button button-small initial-permanent-delete-button" data-submission-id="' + submissionId + '" style="background-color:#dc3545;color:white;">Delete Permanently</button>' +
+                    '<span id="delete-warning-' + submissionId + '" style="color:red;font-weight:bold;margin:0 5px;display:none;">IRREVERSIBLE!</span>' +
+                    '<button type="button" class="button button-small confirm-permanent-delete-button" data-submission-id="' + submissionId + '" data-course-id="' + data.courseId + '" data-week-num="' + data.weekNum + '" data-student-uid="' + data.studentUid + '" data-storage-path="' + escapeHtml(data.storagePath||'') + '" style="background-color:#bd2130;color:white;display:none;margin-left:5px;">CONFIRM DELETE</button>' +
+                    '<button type="button" class="button button-small cancel-delete-button" data-submission-id="' + submissionId + '" style="background-color:#6c757d;color:white;display:none;margin-left:5px;">Cancel</button>' +
+                '</div>';
+            }
+        } else { // MODIFIED: Replaced template literal
+            contentHTML += '<button type="button" class="button button-small archive-button" ' +
+                'data-submission-id="' + submissionId + '" data-course-id="' + data.courseId + '" data-week-num="' + data.weekNum + '" ' +
+                'data-usersubmissionpath="' + escapeHtml(data.userSubmissionPath || (data.courseId + '_' + data.weekNum)) + '" ' +
+                'style="background-color:#6c757d;color:white;">Archive</button>';
+        }
+        contentHTML += '</div>'; 
+        itemDiv.innerHTML = contentHTML;
+        submissionsListDiv.appendChild(itemDiv);
+
+        const saveBtn = itemDiv.querySelector('.save-grade-button');
+        if(saveBtn && !gradingFormDisabled) saveBtn.addEventListener('click', handleSaveGradeEvent);
+        const archiveBtn = itemDiv.querySelector('.archive-button');
+        if(archiveBtn) archiveBtn.addEventListener('click', handleArchiveSubmissionEvent);
+        const unarchiveBtn = itemDiv.querySelector('.unarchive-button');
+        if(unarchiveBtn) unarchiveBtn.addEventListener('click', handleArchiveSubmissionEvent);
+        const initialDeleteBtn = itemDiv.querySelector('.initial-permanent-delete-button');
+        if(initialDeleteBtn) initialDeleteBtn.addEventListener('click', initiatePermanentDelete);
+        const confirmDeleteBtn = itemDiv.querySelector('.confirm-permanent-delete-button');
+        if(confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', handlePermanentDeleteSubmissionEvent);
+        const cancelDeleteBtn = itemDiv.querySelector('.cancel-delete-button');
+        if(cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', cancelPermanentDelete);
+    }
+
+    function getViewableLink(storagePath, buttonElement) {
+        if (!firebase?.storage) { alert("Storage service not available."); return; }
+        if (!storagePath || typeof storagePath !== 'string' || storagePath.trim() === "" || storagePath === "null" || storagePath === "undefined") { 
+            alert("Error: File path is missing or invalid."); 
+            if(buttonElement) {buttonElement.textContent = 'No Link'; buttonElement.disabled = true;}
+            return; 
+        }
+        if(buttonElement) { buttonElement.textContent = 'Loading...'; buttonElement.disabled = true; }
+        firebase.storage().ref(storagePath).getDownloadURL()
+            .then(url => { window.open(url, '_blank'); if(buttonElement) { buttonElement.textContent = 'View File'; buttonElement.disabled = false; }})
+            .catch(error => { 
+                console.error("Error getting download link for '" + storagePath + "':", error); 
+                alert('Could not retrieve file: ' + error.code); 
+                if(buttonElement) { 
+                    buttonElement.textContent = 'Error'; 
+                    setTimeout(() => { if (buttonElement) { buttonElement.textContent='View File'; buttonElement.disabled=false;} }, 3000);
+                }
+            });
+    }
+
+    function handleSaveGradeEvent(event) {
+        const button = event.target;
+        const submissionId = button.dataset.submissionId;
+        const courseId = button.dataset.courseId;
+        const weekNum = button.dataset.weekNum;
+        const studentUid = button.dataset.studentUid;
+        const userSubmissionPathKey = button.dataset.usersubmissionpath; 
+        
+        const gradeInput = document.getElementById('grade-' + submissionId);
+        const feedbackInput = document.getElementById('feedback-' + submissionId);
+        const gradeStatusSpan = document.getElementById('grade-status-' + submissionId);
+
+        if (!gradeInput || !feedbackInput || !gradeStatusSpan) { console.error("Grading form elements missing for " + submissionId); return; }
+        const grade = gradeInput.value;
+        const feedback = feedbackInput.value.trim();
+        if (!grade) { alert("Please select a grade."); return; }
+
+        button.disabled = true;
+        gradeStatusSpan.textContent = "Saving..."; gradeStatusSpan.style.color = "blue";
+
+        const updates = {};
+        const now = firebase.database.ServerValue.TIMESTAMP;
+        // MODIFIED: Replaced template literals for paths
+        const adminQueuePath = 'submissionsByCourseWeek/' + courseId + '_' + weekNum + '/' + submissionId;
+        
+        updates[adminQueuePath + '/grade'] = grade;
+        updates[adminQueuePath + '/feedback'] = feedback;
+        updates[adminQueuePath + '/status'] = "graded";
+        updates[adminQueuePath + '/gradedAt'] = now;
+        updates[adminQueuePath + '/gradedBy'] = currentUser.uid;
+        updates[adminQueuePath + '/gradedByName'] = currentAdminProfile.displayName || currentUser.email;
+
+        const studentSpecificSubmissionPath = 'userSubmissions/' + studentUid + '/' + userSubmissionPathKey;                                                                        
+        if (userSubmissionPathKey && userSubmissionPathKey !== "undefined" && userSubmissionPathKey !== "null") {
+            updates[studentSpecificSubmissionPath + '/grade'] = grade;
+            updates[studentSpecificSubmissionPath + '/feedback'] = feedback;
+            updates[studentSpecificSubmissionPath + '/status'] = "graded";
+            updates[studentSpecificSubmissionPath + '/gradedAt'] = now;
+            updates[studentSpecificSubmissionPath + '/gradedBy'] = currentUser.uid;
+            updates[studentSpecificSubmissionPath + '/gradedByName'] = currentAdminProfile.displayName || currentUser.email;
+        } else {
+            console.warn("userSubmissionPathKey was not valid for student-side update:" + userSubmissionPathKey);
+        }
+        
+        const userProgressAssignmentPath = 'userProgress/' + studentUid + '/year1/courses/' + courseId + '/assignments/' + weekNum;
+        updates[userProgressAssignmentPath] = "graded";
+
+        firebase.database().ref().update(updates)
+            .then(() => { alert("Grade saved!"); handleLoadSubmissions(); })
+            .catch(error => {
+                gradeStatusSpan.textContent = "Error saving."; gradeStatusSpan.style.color = "red";
+                button.disabled = false; 
+                alert("Error saving grade: " + error.message);
+                console.error("Error saving grade:", error);
+            });
+    }
+
+    function handleArchiveSubmissionEvent(event) {
+        const button = event.target;
+        const submissionId = button.dataset.submissionId;
+        const courseId = button.dataset.courseId;
+        const weekNum = button.dataset.weekNum;
+        const userSubmissionPathKey = button.dataset.usersubmissionpath; 
+        
+        const itemAdminDiv = button.closest('.submission-item-admin');
+        let studentUid = null;
+        if(itemAdminDiv) {
+            const saveGradeButton = itemAdminDiv.querySelector('.save-grade-button');
+            if(saveGradeButton && saveGradeButton.dataset.studentUid) studentUid = saveGradeButton.dataset.studentUid;
+            else { 
+                const confirmDelButton = itemAdminDiv.querySelector('.confirm-permanent-delete-button');
+                if(confirmDelButton && confirmDelButton.dataset.studentUid) studentUid = confirmDelButton.dataset.studentUid;
+            }
+        }
+
+        if (!currentUser || !currentAdminProfile) { alert("Admin/TA not logged in."); return; }
+        if (!submissionId || !courseId || !weekNum || !userSubmissionPathKey || !studentUid) {
+            alert("Error: Missing critical data for archive/unarchive operation. Cannot find student UID.");
+            console.error("Archive/Unarchive missing data:", {submissionId, courseId, weekNum, userSubmissionPathKey, studentUid});
+            return;
+        }
+
+        const isArchiving = button.classList.contains('archive-button');
+        if (!confirm('Are you sure you want to ' + (isArchiving ? 'archive' : 'unarchive') + ' this submission?')) return;
+
+        button.disabled = true; 
+        button.textContent = isArchiving ? "Archiving..." : "Unarchiving...";
+
+        const updates = {};
+        const now = firebase.database.ServerValue.TIMESTAMP;
+        // MODIFIED: Replaced template literals for paths
+        const adminQueuePath = 'submissionsByCourseWeek/' + courseId + '_' + weekNum + '/' + submissionId;
+        const studentSpecificPath = 'userSubmissions/' + studentUid + '/' + userSubmissionPathKey;
+        
+        // CORRECTED: Use null to remove fields when unarchiving
+        const archiveStatus = isArchiving ? true : null; 
+        const timeStatus = isArchiving ? now : null;
+        const byUidStatus = isArchiving ? currentUser.uid : null;
+        const byNameStatus = isArchiving ? (currentAdminProfile.displayName || currentUser.email) : null;
+
+        updates[adminQueuePath + '/isArchived'] = archiveStatus;
+        updates[adminQueuePath + '/archivedAt'] = timeStatus;
+        updates[adminQueuePath + '/archivedBy'] = byUidStatus;
+        updates[adminQueuePath + '/archivedByName'] = byNameStatus;
+
+        updates[studentSpecificPath + '/isArchived'] = archiveStatus;
+        updates[studentSpecificPath + '/archivedAt'] = timeStatus;
+        updates[studentSpecificPath + '/archivedBy'] = byUidStatus;
+        updates[studentSpecificPath + '/archivedByName'] = byNameStatus;
+        
+        firebase.database().ref().update(updates)
+            .then(() => { 
+                alert('Submission successfully ' + (isArchiving ? 'archived' : 'unarchived') + '.'); 
+                handleLoadSubmissions(); 
+            })
+            .catch(error => { 
+                alert('Error ' + (isArchiving ? 'archiving' : 'unarchiving') + ': ' + error.message); 
+                handleLoadSubmissions(); 
+            });
+    }
+
+    function initiatePermanentDelete(event) {
+        const button = event.target;
+        const submissionId = button.dataset.submissionId;
+        const deleteContainer = document.getElementById('delete-container-' + submissionId);
+        if (!deleteContainer) return;
+        const initialBtn = deleteContainer.querySelector('.initial-permanent-delete-button');
+        if (initialBtn) initialBtn.style.display = 'none';
+        const warningSpan = deleteContainer.querySelector('#delete-warning-' + submissionId);
+        if (warningSpan) warningSpan.style.display = 'inline';
+        const confirmBtn = deleteContainer.querySelector('.confirm-permanent-delete-button');
+        if (confirmBtn) confirmBtn.style.display = 'inline-block';
+        const cancelBtn = deleteContainer.querySelector('.cancel-delete-button');
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    }
+
+    function cancelPermanentDelete(event) {
+        const button = event.target;
+        const submissionId = button.dataset.submissionId;
+        const deleteContainer = document.getElementById('delete-container-' + submissionId);
+        if (!deleteContainer) return;
+        const initialBtn = deleteContainer.querySelector('.initial-permanent-delete-button');
+        if (initialBtn) initialBtn.style.display = 'inline-block';
+        const warningSpan = deleteContainer.querySelector('#delete-warning-' + submissionId);
+        if (warningSpan) warningSpan.style.display = 'none';
+        const confirmBtn = deleteContainer.querySelector('.confirm-permanent-delete-button');
+        if (confirmBtn) confirmBtn.style.display = 'none';
+        const cancelBtnSelf = deleteContainer.querySelector('.cancel-delete-button');
+        if (cancelBtnSelf) cancelBtnSelf.style.display = 'none';
+    }
+
+    function handlePermanentDeleteSubmissionEvent(event) {
+        const confirmButton = event.target;
+        const submissionId = confirmButton.dataset.submissionId;
+        const courseId = confirmButton.dataset.courseId;
+        const weekNum = confirmButton.dataset.weekNum;
+        const studentUid = confirmButton.dataset.studentUid;
+        const storagePath = confirmButton.dataset.storagePath; 
+
+        if (!currentUser || !(currentAdminProfile?.role === 'admin')) { alert("Error: Admins only for permanent deletion."); return; }
+        if (!submissionId || !courseId || !weekNum || !studentUid) { alert("Error: Missing critical data for delete operation."); return; }
+        
+        // MODIFIED: Replaced template literals for paths
+        const queuePath = 'submissionsByCourseWeek/' + courseId + '_' + weekNum + '/' + submissionId;
+        const studentRecPath = 'userSubmissions/' + studentUid + '/' + courseId + '_' + weekNum; 
+
+        if (!confirm('FINAL CONFIRMATION: Are you absolutely sure you want to PERMANENTLY DELETE submission ' + submissionId + ' for student ' + studentUid + ', course ' + courseId + ', Week ' + weekNum + '? THIS ACTION CANNOT BE UNDONE.')) return;
+        
+        confirmButton.disabled = true; confirmButton.textContent = "Deleting...";
+        const delCont = document.getElementById('delete-container-' + submissionId);
+        if(delCont) {
+            const cancelB = delCont.querySelector('.cancel-delete-button'); if(cancelB) cancelB.style.display = 'none';
+            const warnS = delCont.querySelector('#delete-warning-' + submissionId); if(warnS) warnS.textContent = 'DELETING...';
+        }
+        if(loadStatusDiv) { loadStatusDiv.textContent = 'Deleting submission ' + submissionId + ' permanently...'; loadStatusDiv.style.color = 'red'; loadStatusDiv.style.display = 'block'; }
+
+        const db = firebase.database();
+        const promises = [];
+
+        promises.push(db.ref(queuePath).remove().then(()=>console.log('Permanently deleted from admin queue: ' + queuePath)));
+        
+        promises.push(db.ref(studentRecPath).once('value').then(snapshot => {
+            if (snapshot.exists() && snapshot.val().submissionPushId === submissionId) {
+                return db.ref(studentRecPath).remove().then(()=>console.log('Permanently deleted student record: ' + studentRecPath));
+            } else {
+                console.log('Student record ' + studentRecPath + ' not deleted (no match/not found).');
+                return Promise.resolve(); 
+            }
+        }).catch(error => {
+            console.warn('Warning during check/delete of student record ' + studentRecPath + ':', error);
+            return Promise.resolve(); 
+        }));
+
+        if (storagePath && storagePath.trim() !== "" && storagePath !== "null" && storagePath !== "undefined") {
+            promises.push(firebase.storage().ref(storagePath).delete().then(()=>console.log('Permanently deleted file from storage: ' + storagePath)).catch(error => {
+                if(error.code === 'storage/object-not-found') {
+                    console.warn('Storage file not found (already deleted?): ' + storagePath);
+                } else {
+                    console.error('Error deleting file ' + storagePath + ' from storage:', error);
+                }
+                return Promise.resolve(); 
+            }));
+        }
+        
+        Promise.all(promises).then(() => { // MODIFIED: Replaced template literals
+            alert('Submission ' + submissionId + ' and associated data permanently deleted!');
+            if(loadStatusDiv){loadStatusDiv.textContent = 'Submission ' + submissionId + ' permanently deleted.'; loadStatusDiv.style.color = 'green';setTimeout(()=> {if(loadStatusDiv && loadStatusDiv.textContent.includes('Deleted ' + submissionId))loadStatusDiv.style.display='none';},4000);}
+            handleLoadSubmissions(); 
+        }).catch(e => { 
+            alert('An error occurred during permanent deletion: ' + e.message);
+            if(loadStatusDiv){loadStatusDiv.textContent = 'Error during permanent deletion: ' + e.message;loadStatusDiv.style.color = 'red';}
+            console.error("Error in Promise.all for permanent delete:", e);
+            handleLoadSubmissions(); 
+        });
+    }
+
+    function initiateDeleteAllArchived() {
+        globalBulkDeleteCourseId = courseSelect.value;
+        globalBulkDeleteWeekNum = weekSelect.value;
+        if (!globalBulkDeleteCourseId || !globalBulkDeleteWeekNum) { alert("Select course/week for bulk delete."); return; }
+        if (!(currentAdminProfile && currentAdminProfile.role === 'admin')) { alert("Admins only for bulk delete."); return; }
+        if(bulkDeleteCourseWeekInfo) bulkDeleteCourseWeekInfo.textContent = courseSelect.options[courseSelect.selectedIndex].text + ', ' + weekSelect.options[weekSelect.selectedIndex].text;
+        if(confirmBulkDeleteControls) confirmBulkDeleteControls.style.display = 'block';
+        if(initiateDeleteAllArchivedButton) initiateDeleteAllArchivedButton.style.display = 'none';
+        if(bulkDeleteStatus) { bulkDeleteStatus.textContent = ''; bulkDeleteStatus.style.color = 'inherit'; }
+    }
+
+    function executeDeleteAllArchived() {
+        if (!globalBulkDeleteCourseId || !globalBulkDeleteWeekNum) { alert("Error: Course/Week context lost for bulk delete."); resetBulkDeleteUI(); return; }
+        if (!(currentAdminProfile && currentAdminProfile.role === 'admin')) { alert("Admins only for bulk delete operation."); return; }
+        // MODIFIED: Replaced template literals
+        if (!confirm('FINAL CONFIRMATION:\nAre you absolutely sure you want to PERMANENTLY DELETE ALL ARCHIVED submissions for:\nCourse: ' + courseSelect.options[courseSelect.selectedIndex].text + '\nWeek: ' + weekSelect.options[weekSelect.selectedIndex].text + '\n\nTHIS ACTION IS IRREVERSIBLE AND WILL AFFECT ALL ARCHIVED SUBMISSIONS FOR THIS SPECIFIC COURSE AND WEEK.')) return;
+        
+        if(executeDeleteAllArchivedButton) executeDeleteAllArchivedButton.disabled = true;
+        if(cancelBulkDeleteButton) cancelBulkDeleteButton.disabled = true;
+        if(bulkDeleteStatus) { bulkDeleteStatus.textContent = 'Processing bulk delete of archived submissions... Please wait.'; bulkDeleteStatus.style.color = 'orange';}
+        
+        // MODIFIED: Replaced template literal
+        const submissionsPath = 'submissionsByCourseWeek/' + globalBulkDeleteCourseId + '_' + globalBulkDeleteWeekNum;
+        const db = firebase.database();
+        const storage = firebase.storage();
+        let submissionsToDeleteDetails = []; 
+
+        db.ref(submissionsPath).once('value')
+            .then(snapshot => {
+                if (!snapshot.exists()) { throw new Error("No submissions found in the queue for this course/week."); }
+                
+                snapshot.forEach(subSnapshot => {
+                    const d = subSnapshot.val();
+                    if (d && d.isArchived === true) { 
+                        submissionsToDeleteDetails.push({
+                            submissionId: subSnapshot.key, 
+                            courseId: d.courseId || globalBulkDeleteCourseId,
+                            weekNum: d.weekNum || globalBulkDeleteWeekNum, 
+                            studentUid: d.studentUid, 
+                            storagePath: d.storagePath || null,
+                            userSubmissionPathKey: d.userSubmissionPath 
+                        });
+                    }
+                });
+
+                if (submissionsToDeleteDetails.length === 0) { throw new Error("No ARCHIVED submissions found to delete for this course/week."); }
+                
+                // MODIFIED: Replaced template literal
+                if(bulkDeleteStatus) bulkDeleteStatus.textContent = 'Found ' + submissionsToDeleteDetails.length + ' archived submission(s). Deleting now... Do not navigate away.';
+                
+                const allDelPromises = [];
+                submissionsToDeleteDetails.forEach(detail => {
+                    // MODIFIED: Replaced template literals for paths
+                    const qPath = 'submissionsByCourseWeek/' + detail.courseId + '_' + detail.weekNum + '/' + detail.submissionId;
+                    allDelPromises.push(db.ref(qPath).remove().then(()=>console.log('BulkDelQ: Deleted ' + qPath)));
+                    
+                    const studentRecPath = 'userSubmissions/' + detail.studentUid + '/' + detail.userSubmissionPathKey;
+                    allDelPromises.push(db.ref(studentRecPath).once('value').then(sS => {
+                        if (sS.exists() && sS.val().submissionPushId === detail.submissionId) {
+                            return db.ref(studentRecPath).remove().then(()=>console.log('BulkDelStud: Deleted ' + studentRecPath));
+                        }
+                        console.log('BulkDelStud: Skipped ' + studentRecPath + ' (no match or not found)');
+                        return Promise.resolve();
+                    }).catch(e=>{console.warn('BulkErrCheckStud for ' + studentRecPath + ':', e);return Promise.resolve();}));
+                    
+                    if (detail.storagePath && detail.storagePath.trim() !== "" && detail.storagePath!=="null" && detail.storagePath!=="undefined") {
+                        allDelPromises.push(storage.ref(detail.storagePath).delete().then(()=>console.log('BulkDelStore: Deleted ' + detail.storagePath)).catch(sE => {
+                            if (sE.code === 'storage/object-not-found') console.warn('BulkDelStore: File not found ' + detail.storagePath);
+                            else console.warn('BulkDelStore: Error deleting ' + detail.storagePath + ': ' + sE.message + '.'); 
+                            return Promise.resolve(); 
+                        }));
+                    }
+                });
+                return Promise.allSettled(allDelPromises); 
+            })
+            .then(results => { 
+                let successfulOperations = 0;
+                let failedOperations = 0;
+                if (results) { 
+                    results.forEach(result => {
+                        if (result.status === 'fulfilled') successfulOperations++;
+                        else failedOperations++;
+                    });
+                }
+
+                const totalProcessed = submissionsToDeleteDetails.length; 
+                // MODIFIED: Replaced template literals
+                const message = 'Bulk delete of archived submissions for ' + globalBulkDeleteCourseId + ' W' + globalBulkDeleteWeekNum + ' completed. ' +
+                                totalProcessed + ' item(s) targeted. ' +
+                                'Individual operations: ' + successfulOperations + ' successful, ' + failedOperations + ' failed.';
+                
+                if(bulkDeleteStatus) {
+                    bulkDeleteStatus.textContent = message; 
+                    bulkDeleteStatus.style.color = failedOperations > 0 ? 'red' : 'green';
+                }
+                alert(message + (failedOperations > 0 ? " Some operations failed. Check console for details." : " All operations processed."));
+                
+                handleLoadSubmissions(); 
+            })
+            .catch(error => { 
+                if (error.message.includes("No submissions in queue") || error.message.includes("No ARCHIVED submissions found")) {
+                    if(bulkDeleteStatus) {bulkDeleteStatus.textContent = error.message; bulkDeleteStatus.style.color = 'orange';}
+                    alert(error.message); 
+                } else {
+                    console.error("Error in bulk delete execution:", error);
+                    if(bulkDeleteStatus) {bulkDeleteStatus.textContent = 'Critical error during bulk delete: ' + error.message; bulkDeleteStatus.style.color = 'red';}
+                    alert('Critical error during bulk delete: ' + error.message);
+                }
+            })
+            .finally(() => {
+                resetBulkDeleteUI();
+                setTimeout(() => {
+                    if (bulkDeleteStatus && !bulkDeleteStatus.style.color.includes('red') && !bulkDeleteStatus.textContent.includes('Processing')) {
+                       if(bulkDeleteStatus) bulkDeleteStatus.textContent = '';
+                    }
+                }, 8000); 
+            });
+    }
+
+    function resetBulkDeleteUI() {
+        if (executeDeleteAllArchivedButton) executeDeleteAllArchivedButton.disabled = false;
+        if (cancelBulkDeleteButton) cancelBulkDeleteButton.disabled = false;
+        if (confirmBulkDeleteControls) confirmBulkDeleteControls.style.display = 'none';
+        if (initiateDeleteAllArchivedButton) {
+             initiateDeleteAllArchivedButton.style.display = (currentAdminProfile && currentAdminProfile.role === 'admin') ? 'block' : 'none'; 
+             initiateDeleteAllArchivedButton.disabled = !(courseSelect.value && weekSelect.value);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeGradingPage);
+</script>
+</body>
+</html>

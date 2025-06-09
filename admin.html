@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Centre - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1 id="admin-header-title">The Attic - Admin Centre</h1>
+    </header>
+
+    <main>
+        <div id="admin-content" style="display: none; padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px;">
+            <h2 id="admin-tools-heading">Admin Tools</h2>
+            <p id="admin-welcome-message">Welcome!</p>
+
+            <button onclick="window.location.href='grade_submissions.html'" style="margin-bottom: 10px; background-color: #17a2b8; color: white;">Grade Homework Submissions</button>
+            <button onclick="window.location.href='manage_access_requests.html'" style="margin-bottom: 10px; background-color: #fd7e14; color: white;">Manage Special Group Requests</button>
+            <button onclick="window.location.href='manage_ta_applications.html'" style="margin-bottom: 10px; background-color: #20c997; color: white;">Manage TA Applications</button>
+            <button onclick="window.location.href='manage_professor_applications.html'" style="margin-bottom: 10px; background-color: #4CAF50; color: white;">Manage Professor Applications</button>
+            <button onclick="window.location.href='manage_story_prompts.html'" style="margin-bottom: 10px; background-color: #6f42c1; color: white;">Manage Story Prompts (Chronicles)</button>
+            <button onclick="window.location.href='review_flags.html'" style="margin-bottom: 10px; background-color: #ff8c00; color: white;">Review Flagged Content/Users</button>
+            <button onclick="window.location.href='ta_centre.html'" style="margin-bottom: 10px; background-color: #6610f2; color: white;">Go to TA Centre</button>
+
+            <hr style="margin-top:10px; margin-bottom: 20px;">
+
+            <section id="course-management">
+                <h3>Manage Courses</h3>
+                <h4>Add / Edit Course</h4>
+                <form id="courseAdminForm">
+                    <div class="form-group">
+                        <label for="courseIdField">Course ID (Unique, e.g., Y1CORE_WRIT):</label>
+                        <input type="text" id="courseIdField" required pattern="^[a-zA-Z0-9_]+$">
+                        <small>Use only letters, numbers, and underscores. Cannot be changed after adding.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseTitleField">Course Title:</label>
+                        <input type="text" id="courseTitleField" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseDescField">Description:</label>
+                        <textarea id="courseDescField" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="courseYearField">Year:</label>
+                        <select id="courseYearField" required>
+                            <option value="">--Select Year--</option>
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3">Year 3</option>
+                            <option value="4">Year 4</option>
+                            <option value="5">Year 5</option>
+                            <option value="Adult">Adult</option>
+                        </select>
+                    </div>
+                     <div class="form-group">
+                        <label for="courseTypeField">Type:</label>
+                        <select id="courseTypeField" required>
+                            <option value="">--Select Type--</option>
+                            <option value="Core">Core</option>
+                            <option value="Elective">Elective</option>
+                            <option value="BackToBasics">Back to Basics</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button type="submit">Add Course</button>
+                    <button type="button" onclick="resetCourseForm()" style="margin-left: 15px; background-color: #aaa;">Clear Form / New</button>
+                </form>
+                <hr style="margin: 30px 0;">
+                <h4>Existing Courses</h4>
+                <div id="existing-courses-list" style="max-height: 500px; overflow-y: auto; border: 1px solid #eee; padding: 10px;">
+                    <p>Loading existing courses...</p>
+                </div>
+            </section>
+
+            <hr style="margin: 30px 0;">
+
+            <section id="forum-management">
+                <h3>Manage Forums</h3>
+                <h4>Add Forum</h4>
+                <form id="forumAdminForm">
+                    <div class="form-group">
+                        <label for="forumIdField">Forum ID (Unique, e.g., lounge_Y1READ):</label>
+                        <input type="text" id="forumIdField" required pattern="^[a-zA-Z0-9_]+$">
+                        <small>Use only letters, numbers, and underscores.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="forumTitleField">Forum Title:</label>
+                        <input type="text" id="forumTitleField" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="forumDescField">Description:</label>
+                        <textarea id="forumDescField" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="forumCategoryField">Category:</label>
+                        <select id="forumCategoryField" required>
+                            <option value="">--Select Category--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="forumAccessGroupField">Access Group (Optional):</label>
+                        <input type="text" id="forumAccessGroupField">
+                        <small>E.g., eco, Y1CORE_Read_Students. Leave blank for public.</small>
+                    </div>
+                    <button type="submit">Add Forum</button>
+                    <button type="button" onclick="resetForumForm()" style="margin-left: 15px; background-color: #aaa;">Clear Form / New</button>
+                </form>
+                <hr style="margin: 30px 0;">
+                <h4>Existing Forums</h4>
+                <div id="existing-forums-list" style="max-height: 500px; overflow-y: auto; border: 1px solid #eee; padding: 10px;">
+                    <p>Loading existing forums...</p>
+                </div>
+            </section>
+
+            <hr style="margin: 30px 0;">
+
+            <section id="workshop-management">
+                <h3>Manage Forum Workshops / Classes</h3>
+                <div class="tab-nav">
+                    <button class="tab-button active" onclick="openWorkshopTab(event, 'addEditWorkshopTab')">Add/Edit Workshop/Class</button>
+                    <button class="tab-button" onclick="openWorkshopTab(event, 'viewExistingWorkshopsTab')">Existing Workshops/Classes</button>
+                </div>
+                <div id="addEditWorkshopTab" class="tab-content" style="display: block;">
+                    <h4>Add / Edit Workshop or Class</h4>
+                    <form id="workshopAdminForm">
+                        <div class="form-group">
+                            <label for="workshopTitleField">Workshop/Class Title:</label>
+                            <input type="text" id="workshopTitleField" required>
+                        </div>
+                        <div class="form-group" id="professor-select-group">
+                            <label for="workshopProfessorField">Professor:</label>
+                            <select id="workshopProfessorField" required>
+                                <option value="">--Select Professor--</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="workshopTypeField">Workshop/Class Type:</label>
+                            <select id="workshopTypeField" required>
+                                <option value="roleplaying_class" selected>Roleplaying Class (with Terms & Lessons)</option>
+                                <option value="standard_workshop">Standard Forum Workshop</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="workshopTermField">Overall Term Display (e.g., Fall 2025, Ongoing):</label>
+                            <input type="text" id="workshopTermField" required placeholder="e.g., Fall 2025 (Sep-Nov), Open Enrollment">
+                        </div>
+                        <div class="form-group">
+                            <label for="workshopAudienceField">Target Audience (e.g., Year 1 Only):</label>
+                            <input type="text" id="workshopAudienceField" required placeholder="e.g., All Levels 13+, Year 1 Students">
+                        </div>
+                        <div class="form-group">
+                            <label for="workshopEnrollmentLimitField">Enrollment Limit:</label>
+                            <input type="number" id="workshopEnrollmentLimitField" required min="1" value="15">
+                        </div>
+                        <div class="form-group">
+                            <label for="workshopDescField">Workshop/Class Description:</label>
+                            <textarea id="workshopDescField" rows="4" required></textarea>
+                        </div>
+
+                        <fieldset id="rpClassSpecificFields" style="display:none; border: 1px dashed #556b2f; margin-top: 20px; margin-bottom:20px; padding: 15px;">
+                            <legend style="font-size: 1.1em; color: #556b2f; font-weight:bold;">Roleplaying Class Details (Current Term)</legend>
+                            <p style="font-size:0.9em; color:#666; margin-bottom:15px;"><em>These fields are specific to Roleplaying Classes and define their active term for enrollment and lesson progression.</em></p>
+
+                            <div class="form-group">
+                                <label for="rpTermNameField">Term Name (e.g., The First Chapter, Spring Session '25):</label>
+                                <input type="text" id="rpTermNameField" placeholder="e.g., The Dragon's Tooth Academy - Term 1">
+                                <small>This will be displayed as the main term identifier.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="rpTermSeasonField">Season (Optional, e.g., Spring, Summer):</label>
+                                <input type="text" id="rpTermSeasonField" placeholder="e.g., Spring">
+                            </div>
+                            <div class="form-group">
+                                <label for="rpTermYearField">Year (Optional, e.g., 2025):</label>
+                                <input type="number" id="rpTermYearField" placeholder="e.g., 2025" min="2020">
+                            </div>
+                            <div class="form-group">
+                                <label for="rpTermStartDateField">Term Start Date (Optional):</label>
+                                <input type="date" id="rpTermStartDateField">
+                            </div>
+                            <div class="form-group">
+                                <label for="rpTermEndDateField">Term End Date (Optional):</label>
+                                <input type="date" id="rpTermEndDateField">
+                            </div>
+                            <div class="form-group">
+                                <label for="rpTermStatusField">Initial Term Status:</label>
+                                <select id="rpTermStatusField">
+                                    <option value="enrollment_open" selected>Enrollment Open</option>
+                                    <option value="upcoming">Upcoming (Display Only, No Enrollment)</option>
+                                    <option value="active_lesson_1">Active: Lesson 1 (Enrollment Closed)</option>
+                                </select>
+                                <small>Determines if students can enroll or the initial state of the class.</small>
+                            </div>
+                        </fieldset>
+
+                        <h4>Monthly Module Summaries (Brief - Optional for RP Classes if using Term Lessons)</h4>
+                        <div class="form-group">
+                            <label for="workshopModule1TitleField">Module 1 Title:</label>
+                            <input type="text" id="workshopModule1TitleField" placeholder="e.g., Introduction to X">
+                            <label for="workshopModule1SummaryField">Module 1 Summary:</label>
+                            <textarea id="workshopModule1SummaryField" rows="2" placeholder="Brief summary of Month 1 content/activity"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="workshopModule2TitleField">Module 2 Title:</label>
+                            <input type="text" id="workshopModule2TitleField" placeholder="e.g., Exploring Y">
+                            <label for="workshopModule2SummaryField">Module 2 Summary:</label>
+                            <textarea id="workshopModule2SummaryField" rows="2" placeholder="Brief summary of Month 2 content/activity"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="workshopModule3TitleField">Module 3 Title:</label>
+                            <input type="text" id="workshopModule3TitleField" placeholder="e.g., Advanced Z">
+                            <label for="workshopModule3SummaryField">Module 3 Summary:</label>
+                            <textarea id="workshopModule3SummaryField" rows="2" placeholder="Brief summary of Month 3 content/activity"></textarea>
+                        </div>
+                        <button type="submit">Add Workshop/Class</button>
+                        <button type="button" onclick="resetWorkshopForm()" style="margin-left: 15px; background-color: #aaa;">Clear Form / New</button>
+                    </form>
+                </div>
+                <div id="viewExistingWorkshopsTab" class="tab-content" style="display: none;">
+                    <h4>Existing Workshops/Classes</h4>
+                    <div id="existing-workshops-list" style="max-height: 500px; overflow-y: auto; border: 1px solid #eee; padding: 10px;">
+                        <p>Loading existing workshops/classes...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div id="access-denied" style="display: block; padding: 20px; margin: 20px; background-color: #ffebee; border: 1px solid #ef5350; border-radius: 8px; color: #c62828;">
+            <p>Loading authentication status...</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <button onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+            authDomain: "attic-4ae31.firebaseapp.com",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            measurementId: "G-2WWH3YVXT5"
+        };
+
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+                if (!firebase.database) console.error("Firebase Database SDK missing!");
+                if (!firebase.auth) console.error("Firebase Auth SDK missing!");
+            } else { console.error("Firebase core SDK missing!"); }
+        } catch (initError) { console.error("Firebase init error in admin.html:", initError); }
+
+        const db = firebase.database();
+
+        // --- Global Variables ---
+        const adminContent = document.getElementById('admin-content');
+        const accessDeniedMessage = document.getElementById('access-denied');
+        const adminHeaderTitle = document.getElementById('admin-header-title');
+        const adminWelcomeMessage = document.getElementById('admin-welcome-message');
+        const professorSelectGroup = document.getElementById('professor-select-group');
+
+        const courseAdminFormEl = document.getElementById('courseAdminForm');
+        const existingCoursesListEl = document.getElementById('existing-courses-list');
+        let currentEditingCourseId = null;
+
+        const forumAdminFormEl = document.getElementById('forumAdminForm');
+        const existingForumsListEl_Forum = document.getElementById('existing-forums-list');
+        const forumCategorySelectEl = document.getElementById('forumCategoryField');
+        let currentEditingForumId = null; // Added for forum editing context
+
+        const workshopAdminFormEl = document.getElementById('workshopAdminForm');
+        const workshopProfessorSelectEl = document.getElementById('workshopProfessorField');
+        let currentEditingWorkshopId_WS = null;
+
+        const initialAccessDeniedElGlobal = document.getElementById('access-denied');
+        const initialAdminContentElGlobal = document.getElementById('admin-content');
+
+        let currentUserRole = null;
+        let currentUserId = null;
+        let currentUserProfile = null;
+
+        const workshopTypeSelect = document.getElementById('workshopTypeField');
+        const rpFieldsContainer = document.getElementById('rpClassSpecificFields');
+        const rpTermNameFieldInput = document.getElementById('rpTermNameField');
+
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return unsafe;
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        
+        function toggleRPFields() {
+            if (workshopTypeSelect && rpFieldsContainer && rpTermNameFieldInput) {
+                if (workshopTypeSelect.value === 'roleplaying_class') {
+                    rpFieldsContainer.style.display = 'block';
+                    rpTermNameFieldInput.required = true;
+                } else {
+                    rpFieldsContainer.style.display = 'none';
+                    rpTermNameFieldInput.required = false;
+                }
+            } else {
+                // This might be called before elements are fully ready on initial load sometimes.
+                // console.warn("toggleRPFields: One or more RP specific field elements not found yet.");
+            }
+        }
+
+
+        function checkAdminStatus(user) {
+            console.log("[Auth State Changed] User object received:", user);
+            const currentAdminContentEl = document.getElementById('admin-content');
+            const currentAccessDeniedEl = document.getElementById('access-denied');
+
+            if (!currentAdminContentEl || !currentAccessDeniedEl) { 
+                console.error("Admin content or access denied divs not found in checkAdminStatus.");
+                return; 
+            }
+
+            currentAdminContentEl.style.display = 'none';
+            currentAccessDeniedEl.style.display = 'block';
+
+            if (user) {
+                currentUserId = user.uid;
+                currentAccessDeniedEl.innerHTML = `<p>User logged in. Verifying privileges for UID: ${user.uid}...</p>`;
+
+                const profileRef = firebase.database().ref('users/' + user.uid + '/profile');
+                profileRef.once('value').then(snapshot => {
+                    currentUserProfile = snapshot.val();
+                    currentUserRole = currentUserProfile ? currentUserProfile.role : null;
+
+                    if (currentUserProfile && (currentUserRole === 'admin' || currentUserRole === 'professor')) {
+                        console.log(`[Privilege Check] Access GRANTED. User role: ${currentUserRole}`);
+                        currentAccessDeniedEl.style.display = 'none';
+                        currentAdminContentEl.style.display = 'block';
+                        const userDisplayName = escapeHtml(currentUserProfile.displayName || currentUserProfile.atticNickname || user.email);
+                        adminWelcomeMessage.textContent = `Welcome, ${currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)} ${userDisplayName}!`;
+                        adminHeaderTitle.textContent = `The Attic - ${currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)} Centre`;
+                        document.getElementById('admin-tools-heading').textContent = `${currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)} Tools`;
+
+                        if (typeof resetCourseForm === 'function') resetCourseForm();
+                        if (typeof loadExistingCourses === 'function') loadExistingCourses();
+                        if (typeof resetForumForm === 'function') resetForumForm();
+                        if (typeof loadForumCategories === 'function') loadForumCategories();
+                        if (typeof loadExistingForums === 'function') loadExistingForums();
+                        if (typeof resetWorkshopForm === 'function') resetWorkshopForm();
+                        if (typeof loadProfessors === 'function') loadProfessors();
+                        if (typeof loadExistingWorkshops === 'function') loadExistingWorkshops();
+                        if (typeof openWorkshopTab === 'function') openWorkshopTab(null, 'addEditWorkshopTab');
+                        
+                        if (currentUserRole === 'professor' && professorSelectGroup) {
+                            professorSelectGroup.style.display = 'none';
+                        } else if (currentUserRole === 'admin' && professorSelectGroup) {
+                            professorSelectGroup.style.display = 'block';
+                        }
+                        if (typeof toggleRPFields === 'function') toggleRPFields();
+
+
+                    } else {
+                        const roleFound = currentUserProfile ? currentUserRole : 'No profile data';
+                        console.warn(`[Access Check] DENIED. User not admin/professor. Role: '${roleFound}'.`);
+                        currentAdminContentEl.style.display = 'none';
+                        currentAccessDeniedEl.innerHTML = '<p><strong>Access Denied:</strong> You do not have sufficient privileges to view this page.</p>';
+                        currentAccessDeniedEl.style.display = 'block';
+                    }
+                }).catch(error => { 
+                    console.error("Error fetching profile:", error);
+                    currentAdminContentEl.style.display = 'none';
+                    currentAccessDeniedEl.innerHTML = '<p><strong>Error:</strong> Could not verify your privileges.</p>';
+                    currentAccessDeniedEl.style.display = 'block';
+                 });
+            } else {
+                currentUserRole = null; currentUserId = null; currentUserProfile = null;
+                console.log("[Access Check] No user is currently logged in according to Firebase Auth.");
+                currentAdminContentEl.style.display = 'none';
+                currentAccessDeniedEl.innerHTML = '<p>Admin/Professor access required. You are not logged in. Redirecting to login page...</p>';
+                currentAccessDeniedEl.style.display = 'block';
+                setTimeout(() => { if (!firebase.auth().currentUser) window.location.href = 'login.html'; }, 2000);
+            }
+        }
+
+        function resetForumForm() {
+            if (!forumAdminFormEl) return;
+            forumAdminFormEl.reset();
+            document.getElementById('forumIdField').readOnly = false;
+            forumAdminFormEl.querySelector('button[type="submit"]').textContent = 'Add Forum';
+            currentEditingForumId = null; // Reset forum editing context
+        }
+
+        function loadForumCategories() {
+            if (!firebase || !firebase.database || !forumCategorySelectEl) return;
+            const categoriesRef = firebase.database().ref('forumData/categories');
+            forumCategorySelectEl.innerHTML = '<option value="">--Loading Categories--</option>';
+            categoriesRef.orderByChild('order').once('value').then(snapshot => {
+                if (!forumCategorySelectEl) return;
+                forumCategorySelectEl.innerHTML = '<option value="">--Select Category--</option>';
+                if (snapshot.exists()) {
+                    const categories = snapshot.val();
+                    Object.keys(categories).forEach(catId => {
+                        const option = document.createElement('option');
+                        option.value = catId;
+                        option.textContent = escapeHtml(categories[catId].name || catId);
+                        forumCategorySelectEl.appendChild(option);
+                    });
+                } else {
+                    forumCategorySelectEl.innerHTML = '<option value="">--No Categories Found--</option>';
+                }
+            }).catch(error => {
+                console.error("Error loading forum categories:", error);
+                if (forumCategorySelectEl) forumCategorySelectEl.innerHTML = '<option value="">--Error Loading--</option>';
+            });
+        }
+
+        function handleForumSubmit(event) {
+            event.preventDefault();
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Forum creation/editing is for Admins only.");
+            const id = document.getElementById('forumIdField').value.trim();
+            const title = document.getElementById('forumTitleField').value.trim();
+            const description = document.getElementById('forumDescField').value.trim();
+            const categoryId = document.getElementById('forumCategoryField').value;
+            const accessGroupInput = document.getElementById('forumAccessGroupField').value.trim();
+            const accessGroup = accessGroupInput === "" ? null : accessGroupInput;
+
+            if (!id || !title || !description || !categoryId) { return alert("Please fill out Forum ID, Title, Description, and Category."); }
+            if (!/^[a-zA-Z0-9_]+$/.test(id)) { return alert("Forum ID can only contain letters, numbers, and underscores."); }
+
+            const forumDataValue = { title: title, description: description, categoryId: categoryId };
+            if (accessGroup !== null) forumDataValue.accessGroup = accessGroup;
+            
+            let actionPromise;
+            const forumRef = firebase.database().ref('forumData/forums/' + id);
+
+            if (currentEditingForumId && currentEditingForumId === id) { // UPDATE
+                 // For updates, you might not want to reset threadCount/postCount unless intended
+                actionPromise = forumRef.update(forumDataValue).then(() => `Forum "${escapeHtml(title)}" updated successfully.`);
+            } else { // ADD NEW
+                forumDataValue.threadCount = 0;
+                forumDataValue.postCount = 0;
+                forumDataValue.createdAt = firebase.database.ServerValue.TIMESTAMP;
+                actionPromise = forumRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) throw new Error(`Forum ID "${id}" already exists. Choose a unique ID or edit the existing one.`);
+                    return forumRef.set(forumDataValue);
+                }).then(() => `Forum "${escapeHtml(title)}" (ID: ${id}) added successfully.`);
+            }
+            
+            actionPromise.then(msg => {
+                alert(msg);
+                resetForumForm();
+            }).catch((error) => {
+                console.error("Error saving forum:", error);
+                alert(`Error: ${error.message}`);
+            });
+        }
+        
+        // Basic edit function for forums (can be expanded)
+        function editForum(forumId) {
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Forum editing is for Admins only.");
+            if (!firebase || !firebase.database || !forumAdminFormEl) return;
+            firebase.database().ref('forumData/forums/' + forumId).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const f = snapshot.val();
+                    document.getElementById('forumIdField').value = forumId;
+                    document.getElementById('forumIdField').readOnly = true; // Prevent ID change on edit
+                    document.getElementById('forumTitleField').value = f.title || '';
+                    document.getElementById('forumDescField').value = f.description || '';
+                    document.getElementById('forumCategoryField').value = f.categoryId || '';
+                    document.getElementById('forumAccessGroupField').value = f.accessGroup || '';
+                    // Populate other fields if they exist (e.g., accessType, linkedWorkshopId)
+                    // document.getElementById('forumAccessTypeField').value = f.accessType || ''; // If you add this field
+                    
+                    currentEditingForumId = forumId;
+                    forumAdminFormEl.querySelector('button[type="submit"]').textContent = 'Update Forum';
+                    forumAdminFormEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    alert("Forum data not found.");
+                    resetForumForm();
+                }
+            }).catch(e => {
+                console.error("Error loading forum for edit:", e);
+                alert(`Error: ${e.message}`);
+                resetForumForm();
+            });
+        }
+
+
+        function deleteForum(forumId, forumTitle) {
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Forum deletion is for Admins only.");
+            if (!confirm(`ARE YOU ABSOLUTELY SURE you want to delete the forum "${escapeHtml(forumTitle)}" (ID: ${forumId}) AND ALL ITS THREADS AND POSTS?\nThis action cannot be undone.`)) return;
+            if (!confirm(`SECOND CONFIRMATION: Deleting "${escapeHtml(forumTitle)}" will remove all content within it. Proceed?`)) return;
+
+            if (!firebase || !firebase.database) return alert("Database error.");
+            const updates = {};
+            updates[`/forumData/forums/${forumId}`] = null;
+            updates[`/forumData/threads/${forumId}`] = null;
+
+            console.warn(`Deletion of forum ${forumId} initiated. Associated threads for this forum ID are marked for deletion. Posts within those threads may require a more complex cleanup if not directly nested under thread ID in a single posts node.`);
+
+            firebase.database().ref().update(updates)
+                .then(() => alert(`Forum "${escapeHtml(forumTitle)}" (ID: ${forumId}) definition and its threads list deleted.`))
+                .catch(e => { console.error("Error deleting forum:", e); alert(`Error deleting forum: ${e.message}`); });
+        }
+
+        function loadExistingForums() {
+            if (currentUserRole !== 'admin') {
+                if (existingForumsListEl_Forum) existingForumsListEl_Forum.innerHTML = '<p>Forum list is available for Admins.</p>';
+                return;
+            }
+            if (!existingForumsListEl_Forum || !firebase || !firebase.database) return;
+            const forumsRef = firebase.database().ref('forumData/forums');
+            existingForumsListEl_Forum.innerHTML = '<p>Fetching forums...</p>';
+            forumsRef.orderByKey().on('value', (snapshot) => {
+                if (!existingForumsListEl_Forum) return;
+                existingForumsListEl_Forum.innerHTML = '';
+                if (snapshot.exists()) {
+                    const forums = snapshot.val();
+                    const ul = document.createElement('ul');
+                    ul.style.cssText = 'list-style-type: none; padding-left: 0;';
+                    Object.keys(forums).sort().forEach(id => {
+                        const f = forums[id];
+                        if (!f) { console.warn(`Forum data for ID ${id} is null.`); return; }
+                        const li = document.createElement('li');
+                        li.style.cssText = 'margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;';
+                        const safeTitle = escapeHtml(f.title || 'N/A');
+                        li.innerHTML = `<div><strong>ID:</strong> ${id}</div><div><strong>Title:</strong> ${safeTitle}</div><div><strong>Category ID:</strong> ${escapeHtml(f.categoryId || 'N/A')} | <strong>Access:</strong> ${escapeHtml(f.accessGroup || 'Public')} | <strong>Type:</strong> ${escapeHtml(f.accessType || 'Standard')} | <strong>Linked Workshop:</strong> ${escapeHtml(f.linkedWorkshopId || 'N/A')} </div><div><strong>Desc:</strong> ${escapeHtml(f.description || 'N/A')}</div>
+                                        <div style="margin-top: 8px;">
+                                            <button type="button" onclick="editForum('${id}')" style="background-color: #ffc107; margin-right: 5px; color: #333;">Edit Forum</button>
+                                            <button type="button" onclick="deleteForum('${id}', '${safeTitle.replace(/'/g, "\\'")}')" style="background-color: #dc3545; color: white;">Delete Forum</button>
+                                        </div>`;
+                        ul.appendChild(li);
+                    });
+                    existingForumsListEl_Forum.appendChild(ul);
+                } else {
+                    existingForumsListEl_Forum.innerHTML = '<p>No forums found.</p>';
+                }
+            }, (error) => { console.error("Error loading forums list:", error); if (existingForumsListEl_Forum) existingForumsListEl_Forum.innerHTML = '<p style="color:red;">Error loading forums.</p>'; });
+        }
+
+        function resetCourseForm() {
+            if (!courseAdminFormEl) return;
+            courseAdminFormEl.reset();
+            document.getElementById('courseIdField').readOnly = false;
+            courseAdminFormEl.querySelector('button[type="submit"]').textContent = 'Add Course';
+            currentEditingCourseId = null;
+        }
+
+        function handleCourseSubmit(event) {
+            event.preventDefault();
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Course creation/editing is for Admins only.");
+            const id = document.getElementById('courseIdField').value.trim();
+            const title = document.getElementById('courseTitleField').value.trim();
+            const description = document.getElementById('courseDescField').value.trim();
+            const year = document.getElementById('courseYearField').value;
+            const type = document.getElementById('courseTypeField').value;
+            if (!id || !title || !description || !year || !type) return alert("Please fill out all course fields.");
+            if (!/^[a-zA-Z0-9_]+$/.test(id)) return alert("Course ID: letters, numbers, underscores only.");
+
+            const courseDataValue = { title: title, description: description, year: year, type: type };
+            let actionPromise;
+            const isEditing = !!currentEditingCourseId;
+            if (isEditing) {
+                if (id !== currentEditingCourseId) { alert("Error: Course ID cannot be changed when editing."); document.getElementById('courseIdField').value = currentEditingCourseId; return; }
+                actionPromise = firebase.database().ref('courses/' + currentEditingCourseId).update(courseDataValue).then(() => `Course "${escapeHtml(title)}" updated successfully.`);
+            } else {
+                const courseRef = firebase.database().ref('courses/' + id);
+                actionPromise = courseRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) throw new Error(`Course ID "${id}" already exists. Choose a unique ID.`);
+                    return courseRef.set(courseDataValue);
+                }).then(() => `Course "${escapeHtml(title)}" added successfully.`);
+            }
+            actionPromise.then(msg => { alert(msg); resetCourseForm(); }).catch(err => { console.error("Error saving course:", err); alert(`Error: ${err.message}`); });
+        }
+
+        function editCourse(courseIdToEdit) {
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Course editing is for Admins only.");
+            if (!firebase || !firebase.database || !courseAdminFormEl) return;
+            firebase.database().ref('courses/' + courseIdToEdit).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const d = snapshot.val();
+                    if (!d) { alert("Course data corrupt or not found."); resetCourseForm(); return; }
+                    document.getElementById('courseIdField').value = courseIdToEdit;
+                    document.getElementById('courseIdField').readOnly = true;
+                    document.getElementById('courseTitleField').value = d.title || '';
+                    document.getElementById('courseDescField').value = d.description || '';
+                    document.getElementById('courseYearField').value = d.year || '';
+                    document.getElementById('courseTypeField').value = d.type || '';
+                    currentEditingCourseId = courseIdToEdit;
+                    courseAdminFormEl.querySelector('button[type="submit"]').textContent = 'Update Course';
+                    courseAdminFormEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else { alert("Course data not found."); resetCourseForm(); }
+            }).catch(e => { console.error("Error loading course for edit:", e); alert(`Error: ${e.message}`); resetCourseForm(); });
+        }
+
+        function deleteCourse(courseIdToDelete) {
+            if (currentUserRole !== 'admin') return alert("Permission Denied. Course deletion is for Admins only.");
+            if (!confirm(`DELETE Course ID: ${courseIdToDelete}? This action cannot be undone.`)) return;
+            if (!firebase || !firebase.database) return alert("Database error.");
+            firebase.database().ref('courses/' + courseIdToDelete).remove()
+                .then(() => { alert(`Course ${courseIdToDelete} deleted.`); if (currentEditingCourseId === courseIdToDelete) resetCourseForm(); })
+                .catch(e => { console.error("Error deleting course:", e); alert(`Error: ${e.message}`); });
+        }
+
+        function loadExistingCourses() {
+            if (currentUserRole !== 'admin') {
+                if (existingCoursesListEl) existingCoursesListEl.innerHTML = '<p>Course list is available for Admins.</p>';
+                return;
+            }
+            if (!existingCoursesListEl || !firebase || !firebase.database) return;
+            const coursesRef = firebase.database().ref('courses');
+            existingCoursesListEl.innerHTML = '<p>Fetching courses...</p>';
+            coursesRef.orderByKey().on('value', (snapshot) => {
+                if (!existingCoursesListEl) return;
+                existingCoursesListEl.innerHTML = '';
+                if (snapshot.exists()) {
+                    const courses = snapshot.val();
+                    const ul = document.createElement('ul');
+                    ul.style.cssText = 'list-style-type: none; padding-left: 0;';
+                    Object.keys(courses).sort().forEach(id => {
+                        const c = courses[id];
+                        if (!c) { console.warn(`Course data for ID ${id} is null.`); return; }
+                        const li = document.createElement('li');
+                        li.style.cssText = 'margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;';
+                        const safeTitle = escapeHtml(c.title || 'N/A');
+                        li.innerHTML = `<div><strong>ID:</strong> ${id}</div><div><strong>Title:</strong> ${safeTitle}</div><div><strong>Year:</strong> ${escapeHtml(c.year || 'N/A')} | <strong>Type:</strong> ${escapeHtml(c.type || 'N/A')}</div><div><strong>Desc:</strong> ${escapeHtml(c.description || 'N/A')}</div><div style="margin-top: 8px;"><button type="button" onclick="editCourse('${id}')" style="background-color: #ffc107; margin-right: 5px; color: #333;">Edit</button><button type="button" onclick="deleteCourse('${id}')" style="background-color: #dc3545; color: white; margin-right: 5px;">Delete</button><button type="button" onclick="window.location.href='manage_content.html?id=${id}'" style="background-color: #28a745; color: white;">Manage Content</button></div>`;
+                        ul.appendChild(li);
+                    });
+                    existingCoursesListEl.appendChild(ul);
+                } else {
+                    existingCoursesListEl.innerHTML = '<p>No courses found.</p>';
+                }
+            }, (error) => { console.error("Error loading courses list:", error); if (existingCoursesListEl) { existingCoursesListEl.innerHTML = '<p style="color:red;">Error loading courses.</p>'; } });
+        }
+
+        function openWorkshopTab(evt, tabName) {
+            let i, tabcontent, tabbuttons;
+            const workshopManagementSection = document.getElementById('workshop-management');
+            if (!workshopManagementSection) return;
+            tabcontent = workshopManagementSection.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = "none";
+            tabbuttons = workshopManagementSection.getElementsByClassName("tab-button");
+            for (i = 0; i < tabbuttons.length; i++) tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+            const selectedTabContent = document.getElementById(tabName);
+            if (selectedTabContent) selectedTabContent.style.display = "block";
+            if (evt && evt.currentTarget) { evt.currentTarget.className += " active"; }
+            else if (tabbuttons.length > 0 && tabName === 'addEditWorkshopTab') {
+                const defaultButton = Array.from(tabbuttons).find(btn => btn.getAttribute('onclick').includes("'" + tabName + "'"));
+                if (defaultButton) defaultButton.className += " active";
+            }
+        }
+
+        function resetWorkshopForm() {
+            if (!workshopAdminFormEl) return;
+            workshopAdminFormEl.reset();
+            ['1', '2', '3'].forEach(num => {
+                const titleField = document.getElementById(`workshopModule${num}TitleField`);
+                const summaryField = document.getElementById(`workshopModule${num}SummaryField`);
+                if (titleField) titleField.value = '';
+                if (summaryField) summaryField.value = '';
+            });
+            const submitButton = workshopAdminFormEl.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.textContent = 'Add Workshop/Class';
+            currentEditingWorkshopId_WS = null;
+
+            if (workshopTypeSelect) {
+                 workshopTypeSelect.value = 'roleplaying_class'; // Default to RP Class
+                 if (typeof toggleRPFields === 'function') toggleRPFields(); // Update field visibility
+            }
+
+            if (currentUserRole === 'admin' && workshopProfessorSelectEl && professorSelectGroup) {
+                workshopProfessorSelectEl.disabled = false;
+                if (professorSelectGroup) professorSelectGroup.style.display = 'block';
+            } else if (currentUserRole === 'professor' && professorSelectGroup) {
+                if (professorSelectGroup) professorSelectGroup.style.display = 'none';
+            }
+            console.log("Workshop form reset.");
+        }
+
+        function editWorkshop(workshopId) {
+            if (!firebase || !firebase.database || !workshopAdminFormEl) return alert("Initialization error.");
+            const workshopRef = firebase.database().ref('workshops/' + workshopId);
+            workshopRef.once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const wsData = snapshot.val();
+                    if (!wsData) { alert("Workshop data is corrupt or missing."); resetWorkshopForm(); return; }
+
+                    if (currentUserRole === 'professor') {
+                        if (wsData.professorUid !== currentUserId) {
+                            alert("Permission Denied: You can only edit your own workshops.");
+                            resetWorkshopForm(); return;
+                        }
+                        if (professorSelectGroup) professorSelectGroup.style.display = 'none';
+                    } else if (currentUserRole === 'admin') {
+                        if (professorSelectGroup) professorSelectGroup.style.display = 'block';
+                        if (workshopProfessorSelectEl) workshopProfessorSelectEl.disabled = false;
+                    }
+
+                    document.getElementById('workshopTitleField').value = wsData.title || '';
+                    if (currentUserRole === 'admin' && workshopProfessorSelectEl) {
+                        workshopProfessorSelectEl.value = wsData.professorUid || '';
+                    }
+                    
+                    if (workshopTypeSelect) workshopTypeSelect.value = wsData.type || 'standard_workshop';
+                    
+                    if (wsData.type === 'roleplaying_class' && wsData.currentTerm) {
+                        if (rpTermNameFieldInput) rpTermNameFieldInput.value = wsData.currentTerm.termName || '';
+                        document.getElementById('rpTermSeasonField').value = wsData.currentTerm.season || '';
+                        document.getElementById('rpTermYearField').value = wsData.currentTerm.year || '';
+                        document.getElementById('rpTermStartDateField').value = wsData.currentTerm.startDate || '';
+                        document.getElementById('rpTermEndDateField').value = wsData.currentTerm.endDate || '';
+                        document.getElementById('rpTermStatusField').value = wsData.currentTerm.status || 'upcoming';
+                    } else {
+                        if (rpTermNameFieldInput) rpTermNameFieldInput.value = '';
+                        document.getElementById('rpTermSeasonField').value = '';
+                        document.getElementById('rpTermYearField').value = '';
+                        document.getElementById('rpTermStartDateField').value = '';
+                        document.getElementById('rpTermEndDateField').value = '';
+                        document.getElementById('rpTermStatusField').value = 'upcoming'; // Default for RP fields if not RP type
+                    }
+                    if (typeof toggleRPFields === 'function') toggleRPFields();
+
+
+                    document.getElementById('workshopTermField').value = wsData.term || '';
+                    document.getElementById('workshopAudienceField').value = wsData.targetAudience || '';
+                    document.getElementById('workshopEnrollmentLimitField').value = wsData.enrollmentLimit || 15;
+                    document.getElementById('workshopDescField').value = wsData.description || '';
+                    if (wsData.monthlyModules) {
+                        document.getElementById('workshopModule1TitleField').value = wsData.monthlyModules.month1?.title || '';
+                        document.getElementById('workshopModule1SummaryField').value = wsData.monthlyModules.month1?.promptSummary || '';
+                        document.getElementById('workshopModule2TitleField').value = wsData.monthlyModules.month2?.title || '';
+                        document.getElementById('workshopModule2SummaryField').value = wsData.monthlyModules.month2?.promptSummary || '';
+                        document.getElementById('workshopModule3TitleField').value = wsData.monthlyModules.month3?.title || '';
+                        document.getElementById('workshopModule3SummaryField').value = wsData.monthlyModules.month3?.promptSummary || '';
+                    } else {
+                        ['1', '2', '3'].forEach(num => {
+                            const modTitle = document.getElementById(`workshopModule${num}TitleField`);
+                            const modSum = document.getElementById(`workshopModule${num}SummaryField`);
+                            if (modTitle) modTitle.value = '';
+                            if (modSum) modSum.value = '';
+                        });
+                    }
+
+                    currentEditingWorkshopId_WS = workshopId;
+                    workshopAdminFormEl.querySelector('button[type="submit"]').textContent = 'Update Workshop/Class';
+                    openWorkshopTab(null, 'addEditWorkshopTab');
+                    workshopAdminFormEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else { alert("Workshop data not found for editing."); resetWorkshopForm(); }
+            }).catch(error => { console.error("Error loading workshop for edit:", error); alert("Error: " + error.message); resetWorkshopForm(); });
+        }
+
+        function deleteWorkshop(workshopId, workshopTitle, forumId) {
+            if (currentUserRole !== 'admin') return alert("Permission Denied: Only admins can delete workshops.");
+            if (!workshopId || !workshopTitle) return alert("Error: Workshop ID or Title missing for deletion.");
+            if (!confirm(`ARE YOU ABSOLUTELY SURE you want to delete workshop "${escapeHtml(workshopTitle)}"?\nThis also deletes its forum and enrollment data.`)) return;
+            if (!confirm(`SECOND CONFIRMATION: Deleting "${escapeHtml(workshopTitle)}" is permanent. Proceed?`)) return;
+
+            if (!firebase || !firebase.database) return alert("DB error.");
+            const updates = {};
+            updates[`/workshops/${workshopId}`] = null;
+            updates[`/workshopEnrollments/${workshopId}`] = null;
+            updates[`/workshopParticipation/${workshopId}`] = null;
+            if (forumId && typeof forumId === 'string' && forumId !== 'N/A' && forumId !== 'undefined') {
+                updates[`/forumData/forums/${forumId}`] = null;
+                updates[`/forumData/threads/${forumId}`] = null;
+                console.warn(`Workshop forum ${forumId} definition and its threads list deleted. Posts within those threads may require separate, more complex cleanup if not directly nested.`);
+            }
+            firebase.database().ref().update(updates)
+                .then(() => { alert(`Workshop "${escapeHtml(workshopTitle)}" deleted.`); if (currentEditingWorkshopId_WS === workshopId) resetWorkshopForm(); })
+                .catch(error => { console.error("Error deleting workshop:", error); alert("Error deleting workshop: " + error.message); });
+        }
+
+        function loadProfessors() {
+            if (!firebase || !firebase.database || !workshopProfessorSelectEl) return;
+            if (currentUserRole === 'professor') {
+                if (professorSelectGroup) professorSelectGroup.style.display = 'none';
+                return;
+            }
+            if (professorSelectGroup) professorSelectGroup.style.display = 'block';
+
+            const usersRef = firebase.database().ref('users');
+            workshopProfessorSelectEl.innerHTML = '<option value="">--Loading Professors--</option>';
+            usersRef.orderByChild('profile/displayName').once('value').then(snapshot => {
+                if (!workshopProfessorSelectEl) return;
+                workshopProfessorSelectEl.innerHTML = '<option value="">--Select Professor--</option>';
+                if (snapshot.exists()) {
+                    snapshot.forEach(userSnapshot => {
+                        const userData = userSnapshot.val();
+                        const profile = userData.profile;
+                        if (profile && (profile.role === 'admin' || profile.role === 'ta' || profile.role === 'professor')) {
+                            const option = document.createElement('option');
+                            option.value = userSnapshot.key;
+                            option.textContent = `${escapeHtml(profile.displayName || profile.atticNickname || userSnapshot.key)} (${escapeHtml(profile.role)})`;
+                            workshopProfessorSelectEl.appendChild(option);
+                        }
+                    });
+                } else { workshopProfessorSelectEl.innerHTML = '<option value="">--No Suitable Users--</option>'; }
+            }).catch(error => { console.error("Error loading professors:", error); if (workshopProfessorSelectEl) workshopProfessorSelectEl.innerHTML = '<option value="">--Error Loading Users--</option>'; });
+        }
+
+      function handleWorkshopSubmit(event) {
+            event.preventDefault();
+            const submitBtn = workshopAdminFormEl.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            if (!firebase || !firebase.database) {
+                alert("Database error. Please ensure Firebase is correctly initialized.");
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+            if (!currentUserRole) { // Check if admin/professor role is determined
+                alert("User role not determined. Cannot proceed. Please ensure you are logged in with appropriate permissions.");
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const title = document.getElementById('workshopTitleField').value.trim();
+            let professorUid, professorName;
+
+            if (currentUserRole === 'professor') {
+                if (!currentUserProfile || !currentUserId) {
+                    alert("Error: Professor details not loaded. Please refresh.");
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+                professorUid = currentUserId;
+                professorName = currentUserProfile.displayName || currentUserProfile.atticNickname || (firebase.auth().currentUser ? firebase.auth().currentUser.email.split('@')[0] : 'Professor');
+            } else if (currentUserRole === 'admin') {
+                professorUid = workshopProfessorSelectEl.value;
+                const selectedOption = workshopProfessorSelectEl.options[workshopProfessorSelectEl.selectedIndex];
+                professorName = selectedOption && selectedOption.value ? selectedOption.text.split(' (')[0] : 'N/A';
+                if (!professorUid) {
+                    alert("Please select a professor for the workshop.");
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+            } else {
+                alert("Permission denied for workshop submission. You must be an Admin or Professor.");
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const workshopType = document.getElementById('workshopTypeField').value;
+            const termString = document.getElementById('workshopTermField').value.trim(); // General term string from main form
+            const audience = document.getElementById('workshopAudienceField').value.trim();
+            const enrollmentLimit = parseInt(document.getElementById('workshopEnrollmentLimitField').value, 10);
+            const description = document.getElementById('workshopDescField').value.trim();
+
+            const module1Title = document.getElementById('workshopModule1TitleField').value.trim();
+            const module1Summary = document.getElementById('workshopModule1SummaryField').value.trim();
+            const module2Title = document.getElementById('workshopModule2TitleField').value.trim();
+            const module2Summary = document.getElementById('workshopModule2SummaryField').value.trim();
+            const module3Title = document.getElementById('workshopModule3TitleField').value.trim();
+            const module3Summary = document.getElementById('workshopModule3SummaryField').value.trim();
+
+            if (!title || !termString || !audience || isNaN(enrollmentLimit) || !description) {
+                alert("Please fill all required workshop fields (Title, Overall Term Display, Audience, Limit, Description).");
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const workshopDataPayload = {
+                title: title,
+                professorUid: professorUid,
+                professorName: professorName,
+                term: termString, // General descriptive term string from main form
+                targetAudience: audience,
+                enrollmentLimit: enrollmentLimit,
+                description: description,
+                type: workshopType, // Set based on dropdown
+                monthlyModules: {},
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            if (module1Title || module1Summary) workshopDataPayload.monthlyModules.month1 = { title: module1Title || "Module 1", promptSummary: module1Summary };
+            if (module2Title || module2Summary) workshopDataPayload.monthlyModules.month2 = { title: module2Title || "Module 2", promptSummary: module2Summary };
+            if (module3Title || module3Summary) workshopDataPayload.monthlyModules.month3 = { title: module3Title || "Module 3", promptSummary: module3Summary };
+
+            if (workshopType === 'roleplaying_class') {
+                const rpTermNameValue = document.getElementById('rpTermNameField').value.trim();
+                if (!rpTermNameValue) { // This field is required if type is RP Class
+                    alert("Term Name (under Roleplaying Class Details) is required for Roleplaying Classes.");
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+                workshopDataPayload.currentTerm = {
+                    termName: rpTermNameValue,
+                    season: document.getElementById('rpTermSeasonField').value.trim() || null,
+                    year: document.getElementById('rpTermYearField').value.trim() || null,
+                    startDate: document.getElementById('rpTermStartDateField').value || null,
+                    endDate: document.getElementById('rpTermEndDateField').value || null,
+                    status: document.getElementById('rpTermStatusField').value,
+                    lessons: {
+                        "1": { title: "Lesson 1: Getting Started", content: "The adventure begins! Your first lesson's details will appear here soon.", postedAt: null, updates: {} },
+                        "2": { title: "Lesson 2: Core Concepts", content: "Building upon the basics.", postedAt: null, updates: {} },
+                        "3": { title: "Lesson 3: Application & Beyond", content: "Putting it all together.", postedAt: null, updates: {} }
+                    },
+                    professorWrapUp: { title: "", content: "", postedAt: null }
+                };
+                workshopDataPayload.status = workshopDataPayload.currentTerm.status; // Overall workshop status mirrors current term for RP
+                // currentEnrollmentCount is set to 0 for new, or preserved for edit
+                workshopDataPayload.currentEnrollmentCount = currentEditingWorkshopId_WS ? (workshopDataPayload.currentEnrollmentCount || 0) : 0;
+
+
+            } else { // For 'standard_workshop'
+                workshopDataPayload.status = currentEditingWorkshopId_WS ? (workshopDataPayload.status || "open") : "open";
+                workshopDataPayload.currentEnrollmentCount = currentEditingWorkshopId_WS ? (workshopDataPayload.currentEnrollmentCount || 0) : 0;
+                workshopDataPayload.currentTerm = null; // Ensure no currentTerm for standard workshops
+            }
+
+
+            if (currentEditingWorkshopId_WS) { // ---- UPDATE ----
+                const workshopRef = firebase.database().ref('workshops/' + currentEditingWorkshopId_WS);
+                workshopRef.once('value').then(snapshot => {
+                    const existingWorkshop = snapshot.val();
+                    if (!existingWorkshop) return Promise.reject(new Error("Workshop not found for update."));
+                    if (currentUserRole === 'professor' && existingWorkshop.professorUid !== currentUserId) {
+                        return Promise.reject(new Error("Permission Denied: Cannot edit others' workshops."));
+                    }
+
+                    workshopDataPayload.createdAt = existingWorkshop.createdAt || firebase.database.ServerValue.TIMESTAMP;
+                    workshopDataPayload.forumId = existingWorkshop.forumId;
+                    workshopDataPayload.accessGroupKey = existingWorkshop.accessGroupKey;
+                    
+                    // If editing, currentEnrollmentCount should be preserved from existingWorkshop unless specifically being reset.
+                    workshopDataPayload.currentEnrollmentCount = existingWorkshop.currentEnrollmentCount || 0;
+
+                    // If type changed from RP to Standard, nullify currentTerm
+                    if (workshopType === 'standard_workshop' && existingWorkshop.type === 'roleplaying_class') {
+                        workshopDataPayload.currentTerm = null;
+                        workshopDataPayload.status = "open"; // Reset status for standard if it was an RP status
+                    } else if (workshopType === 'roleplaying_class' && workshopDataPayload.currentTerm) {
+                        // Status is driven by currentTerm.status if it's an RP class
+                        workshopDataPayload.status = workshopDataPayload.currentTerm.status;
+                    } else { // Standard workshop retaining its type
+                        workshopDataPayload.status = existingWorkshop.status || "open";
+                    }
+
+
+                    let forumUpdatePromise = Promise.resolve();
+                    if ((existingWorkshop.type !== workshopType || existingWorkshop.title !== title) && existingWorkshop.forumId) {
+                        const forumUpdates = {};
+                        const newForumTitle = (workshopType === 'roleplaying_class' ? `RP Classroom: ${title}` : `Workshop Forum: ${title}`);
+                        forumUpdates[`/forumData/forums/${existingWorkshop.forumId}/title`] = newForumTitle;
+
+                        if (workshopType === 'roleplaying_class') {
+                            forumUpdates[`/forumData/forums/${existingWorkshop.forumId}/accessType`] = "rp_class_restricted";
+                            forumUpdates[`/forumData/forums/${existingWorkshop.forumId}/linkedWorkshopId`] = currentEditingWorkshopId_WS;
+                        } else {
+                            forumUpdates[`/forumData/forums/${existingWorkshop.forumId}/accessType`] = "standard_workshop_forum";
+                            forumUpdates[`/forumData/forums/${existingWorkshop.forumId}/linkedWorkshopId`] = null;
+                        }
+                        forumUpdatePromise = firebase.database().ref().update(forumUpdates)
+                            .then(() => console.log("Forum details updated due to workshop type/title change."))
+                            .catch(err => console.error("Error updating forum details:", err));
+                    }
+                    
+                    return forumUpdatePromise.then(() => workshopRef.update(workshopDataPayload));
+                })
+                .then(() => { alert(`Workshop "${escapeHtml(title)}" updated.`); resetWorkshopForm(); if (submitBtn) submitBtn.disabled = false; })
+                .catch((error) => { console.error("Error updating workshop:", error); alert(`Error: ${error.message}`); if (submitBtn) submitBtn.disabled = false; });
+            } else { // ---- ADD NEW ----
+                const workshopId = firebase.database().ref('workshops').push().key;
+                const sanitizedTitleForId = title.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').substring(0, 25);
+                // Ensure workshopId is used in forumId and accessGroupKey generation if it's truly new.
+                const forumId = `forum_ws_${sanitizedTitleForId}_${workshopId.substring(workshopId.length - 5)}`;
+                const accessGroupKey = `ws_${sanitizedTitleForId}_${workshopId.substring(workshopId.length - 5)}_access`;
+
+                workshopDataPayload.createdAt = firebase.database.ServerValue.TIMESTAMP;
+                workshopDataPayload.forumId = forumId;
+                workshopDataPayload.accessGroupKey = accessGroupKey;
+                // currentEnrollmentCount and status are already set based on type above for new workshops
+
+                const newForumData = {
+                    title: (workshopType === 'roleplaying_class' ? `RP Classroom: ${title}` : `Workshop Forum: ${title}`),
+                    description: `Discussion forum for: ${description.substring(0, 150)}...`,
+                    categoryId: "workshops_category", 
+                    accessGroup: accessGroupKey, 
+                    isWorkshopForum: true,
+                    workshopId: workshopId, // General link
+                    professorUid: professorUid,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    postCount: 0,
+                    threadCount: 0
+                };
+
+                if (workshopType === 'roleplaying_class') {
+                    newForumData.accessType = "rp_class_restricted";
+                    newForumData.linkedWorkshopId = workshopId; 
+                } else {
+                    newForumData.accessType = "standard_workshop_forum";
+                }
+
+                firebase.database().ref('forumData/categories/workshops_category').once('value').then(catSnapshot => {
+                    if (!catSnapshot.exists()) {
+                        console.warn("Warning: Forum category 'workshops_category' not found. Please ensure it exists in /forumData/categories or select/create an appropriate category for these forums. Workshop forum will still be created but might not appear in lists correctly.");
+                    }
+                    const updates = {};
+                    updates[`/workshops/${workshopId}`] = workshopDataPayload;
+                    updates[`/forumData/forums/${forumId}`] = newForumData;
+                    return firebase.database().ref().update(updates)
+                        .then(() => {
+                            alert(`Workshop "${escapeHtml(title)}" added successfully!`);
+                            return createDefaultThreadsForForumClass(workshopId, title, forumId, professorUid, professorName);
+                        });
+                })
+                .then(() => {
+                    console.log("Default threads creation initiated for " + workshopId);
+                    resetWorkshopForm();
+                    if (submitBtn) submitBtn.disabled = false;
+                })
+                .catch((error) => {
+                    console.error("Error saving new workshop:", error);
+                    alert(`Error: ${error.message}`);
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+            }
+        }
+
+        function createDefaultThreadsForForumClass(workshopId, workshopTitle, forumIdForThreads, profUid, profName) {
+            if (!firebase || !firebase.database) return Promise.reject(new Error("Firebase DB not available."));
+            const db = firebase.database();
+            const now = firebase.database.ServerValue.TIMESTAMP;
+            let allUpdates = {}; let threadsCreatedCount = 0; let postsCreatedCount = 0;
+            const standardThreads = [
+                { titleTemplate: `📜 ${escapeHtml(workshopTitle)} - Main Lessons & Story Beats!`, initialPostContent: `This is the primary thread for "${escapeHtml(workshopTitle)}". Your Professor, ${escapeHtml(profName)}, will post key lessons, story updates, and important announcements here. Participants can reply to engage with prompts and official content.` },
+                { titleTemplate: `❓ ${escapeHtml(workshopTitle)} - Q&A and Help Desk`, initialPostContent: `Have questions about "${escapeHtml(workshopTitle)}"? Need clarification on a task or a game mechanic? Post your questions here. Fellow students or ${escapeHtml(profName)} can help answer!` },
+                { titleTemplate: `👋 ${escapeHtml(workshopTitle)} - Introductions & General Chat`, initialPostContent: `Welcome to "${escapeHtml(workshopTitle)}"! Use this thread to introduce yourselves (in or out of character, as appropriate for the class style), share your excitement, or for general chit-chat related to our class.` }
+            ];
+            let lastThreadInfoForForum = null;
+            standardThreads.forEach(threadDef => {
+                const threadTitle = threadDef.titleTemplate; const initialContent = threadDef.initialPostContent;
+                const newThreadRef = db.ref(`forumData/threads/${forumIdForThreads}`).push(); const threadId = newThreadRef.key;
+                const newPostRef = db.ref(`forumData/posts/${threadId}`).push(); const postId = newPostRef.key;
+                const threadData = { title: threadTitle, authorUid: profUid, authorName: escapeHtml(profName), createdAt: now, forumId: forumIdForThreads, postCount: 1, lastPostInfo: { postId: postId, authorUid: profUid, authorName: escapeHtml(profName), timestamp: now }, isPinned: true };
+                const postData = { content: initialContent, authorUid: profUid, authorName: escapeHtml(profName), createdAt: now, threadId: threadId, forumId: forumIdForThreads };
+                allUpdates[`/forumData/threads/${forumIdForThreads}/${threadId}`] = threadData;
+                allUpdates[`/forumData/posts/${threadId}/${postId}`] = postData;
+                threadsCreatedCount++; postsCreatedCount++;
+                lastThreadInfoForForum = { threadId: threadId, threadTitle: threadTitle, postId: postId, authorUid: profUid, authorName: escapeHtml(profName), timestamp: now };
+            });
+            allUpdates[`/forumData/forums/${forumIdForThreads}/threadCount`] = firebase.database.ServerValue.increment(threadsCreatedCount);
+            allUpdates[`/forumData/forums/${forumIdForThreads}/postCount`] = firebase.database.ServerValue.increment(postsCreatedCount);
+            if (lastThreadInfoForForum) allUpdates[`/forumData/forums/${forumIdForThreads}/lastPostInfo`] = lastThreadInfoForForum;
+            return db.ref().update(allUpdates);
+        }
+
+        function loadExistingWorkshops() {
+            const workshopsListContainer = document.getElementById('workshop-management')?.querySelector('#existing-workshops-list');
+            if (!workshopsListContainer || !firebase || !firebase.database) {
+                if (workshopsListContainer) workshopsListContainer.innerHTML = "<p>Error: Essential elements missing or DB connection failed.</p>";
+                return;
+            }
+            const workshopsRef = db.ref('workshops');
+            workshopsListContainer.innerHTML = '<p>Fetching workshops/classes...</p>';
+            workshopsRef.orderByChild('createdAt').on('value', (snapshot) => {
+                if (!workshopsListContainer) return;
+                workshopsListContainer.innerHTML = ''; let displayedCount = 0;
+                if (snapshot.exists()) {
+                    const workshops = snapshot.val(); const ul = document.createElement('ul'); ul.style.cssText = 'list-style-type: none; padding-left: 0;';
+                    const workshopKeys = Object.keys(workshops).reverse();
+                    workshopKeys.forEach(id => {
+                        const ws = workshops[id]; if (!ws) { console.warn(`Workshop ${id} null.`); return; }
+                        if (currentUserRole === 'professor' && ws.professorUid !== currentUserId) return;
+                        displayedCount++;
+                        const li = document.createElement('li');
+                        li.style.cssText = 'margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;';
+                        const safeTitle = escapeHtml(ws.title || 'N/A');
+                        const workshopTypeDisplay = ws.type ? escapeHtml(ws.type.replace(/_/g, ' ')) : 'Standard Workshop';
+
+                        let termDisplay = escapeHtml(ws.term || 'N/A'); // General term string from main form
+                        if (ws.type === 'roleplaying_class' && ws.currentTerm && ws.currentTerm.termName) {
+                            termDisplay = `Current Term: ${escapeHtml(ws.currentTerm.termName)} (Status: ${escapeHtml(ws.currentTerm.status || 'N/A')})`;
+                        }
+
+                        let modulesText = '';
+                        if (ws.monthlyModules && typeof ws.monthlyModules === 'object') {
+                            Object.keys(ws.monthlyModules).forEach(mKey => {
+                                const module = ws.monthlyModules[mKey];
+                                if (module && (module.title || module.promptSummary)) {
+                                    modulesText += `<li>${escapeHtml(module.title || 'Module')}: ${escapeHtml(module.promptSummary || 'No summary')}</li>`;
+                                }
+                            });
+                        }
+                        li.innerHTML = `<div><strong>ID:</strong> ${id} | <strong>Type:</strong> ${workshopTypeDisplay}</div>
+                                        <div><strong>Title:</strong> ${safeTitle}</div>
+                                        <div><strong>Professor:</strong> ${escapeHtml(ws.professorName || ws.professorUid)} | <strong>Term Info:</strong> ${termDisplay}</div>
+                                        <div><strong>Audience:</strong> ${escapeHtml(ws.targetAudience || 'N/A')} | <strong>Limit:</strong> ${ws.enrollmentLimit || 'N/A'} | <strong>Enrolled:</strong> ${ws.currentEnrollmentCount || 0}</div>
+                                        <div><strong>Overall Status:</strong> ${escapeHtml(ws.status || 'N/A')} | <strong>Forum ID:</strong> ${escapeHtml(ws.forumId || 'N/A')} | <strong>Access Key:</strong> ${escapeHtml(ws.accessGroupKey || 'N/A')}</div>
+                                        <div><strong>Description:</strong> ${escapeHtml(ws.description || 'N/A')}</div>
+                                        ${(modulesText ? `<div><strong>Modules:</strong><ul>${modulesText}</ul></div>` : '')}
+                                        <div style="margin-top: 8px;">
+                                            <button type="button" onclick="editWorkshop('${id}')" style="background-color: #ffc107; margin-right: 5px; color: #333;">Edit</button>
+                                            ${(currentUserRole === 'admin' ? `<button type="button" onclick="deleteWorkshop('${id}', '${safeTitle.replace(/'/g, "\\'")}', '${ws.forumId}')" style="background-color: #dc3545; color: white;">Delete</button>` : '')}
+                                        </div>`;
+                        ul.appendChild(li);
+                    });
+                    if (displayedCount > 0) workshopsListContainer.appendChild(ul);
+                }
+                if (displayedCount === 0) workshopsListContainer.innerHTML = `<p>No workshops/classes found ${currentUserRole === 'professor' ? 'assigned to you' : 'in the database'}.</p>`;
+            }, (error) => {
+                console.error("Error loading workshops list:", error);
+                if (workshopsListContainer) workshopsListContainer.innerHTML = '<p style="color:red;">Error loading workshops.</p>';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const localWorkshopTypeSelect = document.getElementById('workshopTypeField'); // Ensure these are re-scoped if needed
+            const localRpFieldsContainer = document.getElementById('rpClassSpecificFields');
+            const localRpTermNameFieldInput = document.getElementById('rpTermNameField');
+        
+            if (localWorkshopTypeSelect && localRpFieldsContainer && localRpTermNameFieldInput) {
+                localWorkshopTypeSelect.addEventListener('change', toggleRPFields);
+                // Initial call to set visibility now happens within checkAdminStatus, 
+                // after elements are confirmed and user role is known.
+            } else {
+                console.warn("One or more elements for RP field toggling were not found on DOMContentLoaded of admin.html.");
+            }
+        
+            if (initialAccessDeniedElGlobal) { initialAccessDeniedElGlobal.innerHTML = "<p>Initializing Admin Centre...</p>"; }
+            if (initialAdminContentElGlobal) initialAdminContentElGlobal.style.display = 'none';
+        
+            if (courseAdminFormEl) courseAdminFormEl.addEventListener('submit', handleCourseSubmit);
+            if (forumAdminFormEl) forumAdminFormEl.addEventListener('submit', handleForumSubmit);
+            if (workshopAdminFormEl) workshopAdminFormEl.addEventListener('submit', handleWorkshopSubmit);
+        
+            if (firebase && firebase.auth) {
+                firebase.auth().onAuthStateChanged(checkAdminStatus);
+            } else {
+                console.error("CRITICAL: Firebase Auth SDK not available when setting up onAuthStateChanged listener on DOMContentLoaded of admin.html.");
+                if (initialAccessDeniedElGlobal) {
+                    initialAccessDeniedElGlobal.innerHTML = "<p style='color:red;'>CRITICAL ERROR: Firebase services not loaded. Please refresh.</p>";
+                    initialAccessDeniedElGlobal.style.display = 'block';
+                }
+                if (initialAdminContentElGlobal) initialAdminContentElGlobal.style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+</html>

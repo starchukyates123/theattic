@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewing Thread - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .thread-container { padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px; }
+        #post-list { margin-bottom: 30px; }
+        .post-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            overflow: hidden; 
+        }
+        .post-header {
+            background-color: #f0f8f0; 
+            padding: 10px 15px;
+            border-bottom: 1px solid #d4e9d4;
+            font-size: 0.9em;
+            color: #556b2f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .post-header strong { font-weight: 600; }
+        .post-meta { /* For grouping author and date - This rule is empty, can be removed if not styled elsewhere or intentionally blank */ }
+        .admin-post-actions button { /* Style for delete button */
+            margin-left: 10px;
+            padding: 3px 8px;
+            font-size: 0.8em;
+            background-color: #dc3545; /* Red */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .admin-post-actions button:hover {
+            background-color: #c82333;
+        }
+        .post-content { padding: 15px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
+        #reply-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #8fbc8f; }
+        #reply-section label { display: block; margin-bottom: 5px; font-weight: bold; }
+        #reply-section textarea {
+            width: 95%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 1em;
+            resize: vertical;
+        }
+        #reply-status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            display: none;
+            font-weight: bold;
+        }
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-processing { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+ 
+</head>
+
+<body>
+    <header>
+        <h1 id="thread-title-h1">Loading Thread...</h1>
+         <p><a id="backToForumLink" href="forums.html">Back to Forum List</a></p>
+    </header>
+
+    <main>
+        <div class="thread-container">
+            <div id="post-list">
+                <p>Loading posts...</p>
+            </div>
+
+            <div id="reply-section" style="display: none;"> <h3>Post a Reply</h3>
+                <form id="replyForm">
+                    <div class="form-group">
+                        <label for="replyContent">Your Reply:</label>
+                        <textarea id="replyContent" name="replyContent" required minlength="5"></textarea>
+                    </div>
+                    <button type="submit" id="submitReplyButton" class="button">Submit Reply</button>
+                    <div id="reply-status-message"></div>
+                </form>
+            </div>
+             <div id="login-prompt" style="display: block; text-align:center; margin-top: 20px;">
+                 <p><a href="login.html">Log in</a> to reply.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="flagPostModal" style="display:none; position:fixed; z-index:1050; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.4);">
+  <div style="background-color:#fefefe; margin:10% auto; padding:20px; border:1px solid #888; width:90%; max-width:550px; border-radius:8px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);">
+    <span id="closeFlagPostModal" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+    <h4>Flag Post for Review</h4>
+    <p>You are about to flag this post. Please provide a brief reason if you wish. Your report will be sent to administrators.</p>
+    <input type="hidden" id="postIdToFlag"> <input type="hidden" id="postAuthorIdToFlag"> <div class="form-group">
+      <label for="flagReason">Reason (optional):</label>
+      <textarea id="flagReason" name="flagReason" style="width:95%; min-height:80px; padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea>
+    </div>
+    <div id="flag-status-message" style="margin-top:10px; padding:8px; border-radius:5px; display:none; font-weight:bold;"></div>
+    <button id="submitFlagButton" type="button" style="background-color:#dc3545; color:white; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; margin-right:10px;">Submit Flag</button>
+    <button id="cancelFlagButton" type="button" style="background-color:#6c757d; color:white; padding:10px 15px; border:none; border-radius:5px; cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+   <script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // Ensure this is your correct API key
+        authDomain: "attic-4ae31.firebaseapp.com",
+        projectId: "attic-4ae31",
+        storageBucket: "attic-4ae31.firebasestorage.app",
+        messagingSenderId: "259372678655",
+        appId: "1:259372678655:web:df9c03e07e022392837bca",
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+    };
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized on thread_view.html");
+        }
+        if (!firebase?.auth || !firebase?.database) {
+            throw new Error("Firebase Auth or Database SDK not loaded!");
+        }
+    } catch (initError) {
+        console.error("Firebase init error:", initError);
+        document.addEventListener('DOMContentLoaded', () => {
+             const body = document.querySelector('body');
+             if(body) body.innerHTML = `<p style='color:red; padding:20px;'>Error initializing site services. Please try again later.</p>`;
+        });
+    }
+
+    // --- Get Element References ---
+    const threadTitleH1 = document.getElementById('thread-title-h1');
+    const postListDiv = document.getElementById('post-list');
+    const replySectionDiv = document.getElementById('reply-section');
+    const replyStatusMessageDiv = document.getElementById('reply-status-message');
+    const loginPromptDiv = document.getElementById('login-prompt');
+    const backToForumLink = document.getElementById('backToForumLink');
+
+    // References for Flag Modal
+    const flagPostModalEl = document.getElementById('flagPostModal');
+    const closeFlagPostModalSpan = document.getElementById('closeFlagPostModal');
+    const cancelFlagButton = document.getElementById('cancelFlagButton');
+    const submitFlagButton = document.getElementById('submitFlagButton');
+    const flagReasonInput = document.getElementById('flagReason');
+    const postIdToFlagInput = document.getElementById('postIdToFlag');
+    const postAuthorIdToFlagInput = document.getElementById('postAuthorIdToFlag');
+    const flagStatusMessageDiv = document.getElementById('flag-status-message');
+
+
+    // --- Global Variables ---
+    let currentUser = null;
+    let currentThreadId = null;
+    let currentForumId = null;
+    let currentThreadTitle = "this thread";
+    let currentUserProfile = null;
+    let isAdmin = false;
+
+    // --- Utility Functions ---
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function showReplyStatus(message, type = 'error') {
+        if (replyStatusMessageDiv) {
+            replyStatusMessageDiv.textContent = message;
+            replyStatusMessageDiv.className = `status-${type}`; // Ensure you have .status-error, .status-success etc. in CSS
+            replyStatusMessageDiv.style.display = 'block';
+            if (type === 'success' || type === 'processing') {
+                setTimeout(() => {
+                    if (replyStatusMessageDiv.textContent === message) {
+                         replyStatusMessageDiv.style.display = 'none';
+                    }
+                }, 4000);
+            }
+        } else { console.warn("replyStatusMessageDiv not found"); }
+    }
+
+    // --- Functions for Flag Modal ---
+    function showFlagStatus(message, type = 'error') {
+        if (flagStatusMessageDiv) {
+            flagStatusMessageDiv.textContent = message;
+            flagStatusMessageDiv.className = `status-${type}`;
+            flagStatusMessageDiv.style.display = 'block';
+             if (type === 'success' || type === 'processing') {
+                setTimeout(() => {
+                    if (flagStatusMessageDiv.textContent === message) {
+                        flagStatusMessageDiv.style.display = 'none';
+                    }
+                }, 4000);
+            }
+        }
+    }
+
+    function openFlagPostModal(postId, postAuthorId) {
+        if (!currentUser) {
+            alert("Please log in to flag a post.");
+            // Optionally, redirect to login: window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            return;
+        }
+        if (flagPostModalEl && postIdToFlagInput && postAuthorIdToFlagInput && flagReasonInput && flagStatusMessageDiv) {
+            postIdToFlagInput.value = postId;
+            postAuthorIdToFlagInput.value = postAuthorId;
+            flagReasonInput.value = ''; // Clear previous reason
+            flagStatusMessageDiv.style.display = 'none'; // Hide previous status
+            flagPostModalEl.style.display = 'block';
+        } else {
+            console.error("Flag modal elements not found.");
+            alert("Sorry, an error occurred. Unable to open flag dialog.");
+        }
+    }
+
+    function closeFlagPostModal() {
+        if (flagPostModalEl) {
+            flagPostModalEl.style.display = 'none';
+        }
+    }
+
+    // --- Core Page Logic ---
+    function getIdsFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentThreadId = urlParams.get('id');
+        currentForumId = urlParams.get('forumId');
+        console.log("DEBUG getIdsFromUrl -> threadId:", currentThreadId, "| forumId:", currentForumId); //
+        return currentThreadId && currentForumId;
+    }
+
+    function fetchThreadTitle(db) {
+        if (!currentThreadId || !currentForumId || !db) {
+            console.error("fetchThreadTitle: Missing IDs or db connection.");
+            if(threadTitleH1) threadTitleH1.textContent = "Error: Thread not found";
+            return;
+        }
+        const threadTitleRef = db.ref(`forumData/threads/${currentForumId}/${currentThreadId}/title`);
+        threadTitleRef.once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    currentThreadTitle = snapshot.val();
+                    if (threadTitleH1) threadTitleH1.textContent = currentThreadTitle;
+                    document.title = `${currentThreadTitle} - The Attic`;
+                } else {
+                    if(threadTitleH1) threadTitleH1.textContent = "Thread Not Found";
+                    console.warn("Thread title not found for:", currentForumId, currentThreadId);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching thread title:", error);
+                if(threadTitleH1) threadTitleH1.textContent = "Error Loading Thread Title";
+            });
+
+        if (backToForumLink && currentForumId) {
+            // Construct the link back to the specific forum view page
+            // Assuming forum_view.html takes forumId as a parameter
+            backToForumLink.href = `forum_view.html?id=${currentForumId}`;
+        } else if (backToForumLink) {
+            backToForumLink.href = 'forums.html'; // Default fallback
+        }
+    }
+
+    function listenForPosts(db) {
+        if (!currentThreadId || !db) {
+             if(postListDiv) postListDiv.innerHTML = '<p>Error: Cannot load posts for this thread.</p>';
+            console.error("listenForPosts: Missing threadId or db connection.");
+            return;
+        }
+        const postsRef = db.ref(`forumData/posts/${currentThreadId}`).orderByChild('createdAt');
+        let initialLoad = true;
+
+        if (postListDiv && postListDiv.innerHTML.includes("Loading posts...")) {
+             postListDiv.innerHTML = ''; // Clear "Loading posts..." immediately if it's there
+        }
+
+
+        postsRef.on('child_added', (snapshot) => {
+            if (!postListDiv) return;
+            if (initialLoad && postListDiv.innerHTML === '') { // If it was cleared
+                // Do nothing extra, already cleared.
+            } else if (initialLoad && postListDiv.innerHTML.includes("This thread has no posts yet.")) {
+                 postListDiv.innerHTML = ''; // Clear "no posts" message
+            }
+            initialLoad = false; // Subsequent additions won't clear
+            const postId = snapshot.key;
+            const postData = snapshot.val();
+            if (!postData) return;
+            displayPost(postId, postData);
+        }, (error) => {
+            console.error("Error listening for posts (child_added):", error);
+            if (postListDiv) postListDiv.innerHTML = '<p style="color:red;">Error loading posts. Please try again.</p>';
+        });
+
+        postsRef.once('value', snapshot => {
+             if (!postListDiv) return;
+             if (!snapshot.exists() && initialLoad) { // Only show "no posts" if nothing came via child_added
+                 postListDiv.innerHTML = '<p>This thread has no posts yet. Be the first to reply!</p>';
+                 initialLoad = false;
+             }
+        }, (error) => {
+            console.error("Error fetching initial posts (once value):", error);
+            if (postListDiv && initialLoad) { // Check initialLoad to prevent overwriting errors from 'on'
+                 postListDiv.innerHTML = '<p style="color:red;">Could not verify if posts exist. Please refresh.</p>';
+            }
+        });
+    }
+
+    function displayPost(postId, postData) {
+        if (!postListDiv) return;
+
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post-item';
+        postDiv.id = `post-${postId}`;
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'post-header';
+
+        const postMetaDiv = document.createElement('div');
+        postMetaDiv.className = 'post-meta';
+
+        const authorSpan = document.createElement('span');
+        authorSpan.innerHTML = `Posted by: <strong>${escapeHtml(postData.authorName || 'Unknown User')}</strong>`;
+
+        const dateSpan = document.createElement('span');
+        dateSpan.style.marginLeft = '10px';
+        dateSpan.style.fontSize = '0.9em';
+        dateSpan.textContent = postData.createdAt ? new Date(postData.createdAt).toLocaleString() : 'Unknown Time';
+
+        postMetaDiv.appendChild(authorSpan);
+        postMetaDiv.appendChild(dateSpan);
+        headerDiv.appendChild(postMetaDiv);
+
+        const allActionsContainer = document.createElement('div');
+        allActionsContainer.className = 'post-actions-container';
+        allActionsContainer.style.display = 'flex';
+        allActionsContainer.style.alignItems = 'center';
+
+        // User Flag Action (Visible to logged-in users)
+        if (currentUser) {
+            const flagButton = document.createElement('span');
+            flagButton.innerHTML = '🚩'; // You can replace with an <img> or icon font
+            flagButton.title = 'Flag this post for review';
+            flagButton.style.cursor = 'pointer';
+            flagButton.style.marginLeft = '15px';
+            flagButton.style.fontSize = '1.2em';
+            flagButton.setAttribute('role', 'button');
+            flagButton.setAttribute('tabindex', '0'); // Make it focusable
+            flagButton.onclick = function() {
+                openFlagPostModal(postId, postData.authorUid);
+            };
+            flagButton.onkeypress = function(e) { // For accessibility
+                if (e.key === 'Enter' || e.key === ' ') {
+                    openFlagPostModal(postId, postData.authorUid);
+                }
+            };
+            allActionsContainer.appendChild(flagButton);
+        }
+
+        // Admin-only Actions
+        if (isAdmin) {
+            const adminActionsDiv = document.createElement('div'); // Changed from adminActionsContainer to avoid name clash
+            adminActionsDiv.className = 'admin-post-actions'; // Use existing class from your CSS
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete Post';
+            // deleteButton styling is in your <style> block already for .admin-post-actions button
+            deleteButton.onclick = function() {
+                deletePostByAdmin(currentForumId, currentThreadId, postId);
+            };
+            adminActionsDiv.appendChild(deleteButton);
+            allActionsContainer.appendChild(adminActionsDiv);
+        }
+        headerDiv.appendChild(allActionsContainer);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'post-content';
+        contentDiv.innerHTML = escapeHtml(String(postData.content || '')).replace(/\n/g, '<br>');
+
+        postDiv.appendChild(headerDiv);
+        postDiv.appendChild(contentDiv);
+        postListDiv.appendChild(postDiv);
+    }
+
+    function checkAuthentication(db) { //
+        if (!firebase?.auth || !db) {
+            console.error("checkAuthentication: Firebase Auth or db connection missing.");
+            if (replySectionDiv) replySectionDiv.style.display = 'none';
+            if (loginPromptDiv) loginPromptDiv.style.display = 'block';
+            if (getIdsFromUrl()) {
+                listenForPosts(db);
+            }
+            return;
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                console.log("User authenticated:", currentUser.uid, currentUser.displayName); //
+
+                const profileRef = db.ref(`users/${currentUser.uid}/profile`);
+                profileRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        currentUserProfile = snapshot.val();
+                        isAdmin = (currentUserProfile && currentUserProfile.role === 'admin');
+                        console.log("User isAdmin (thread_view):", isAdmin); //
+                    } else {
+                        isAdmin = false;
+                        console.warn("User profile not found for admin check (thread_view)."); //
+                    }
+                    if (getIdsFromUrl()) {
+                        listenForPosts(db); // Load posts after admin status is determined
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user profile for admin check (thread_view):", error); //
+                    isAdmin = false;
+                    if (getIdsFromUrl()) {
+                        listenForPosts(db);
+                    }
+                });
+
+                if (replySectionDiv) replySectionDiv.style.display = 'block';
+                if (loginPromptDiv) loginPromptDiv.style.display = 'none';
+                // Re-enable reply button explicitly if it exists
+                const submitReplyBtn = document.getElementById('submitReplyButton');
+                if (submitReplyBtn) submitReplyBtn.disabled = false;
+
+
+                // Re-attach event listener to reply form
+                const currentReplyForm = document.getElementById('replyForm');
+                if (currentReplyForm) {
+                    // Clone and replace to remove old listeners, then add new one
+                    const newReplyForm = currentReplyForm.cloneNode(true);
+                    currentReplyForm.parentNode.replaceChild(newReplyForm, currentReplyForm);
+                    const reattachedReplyForm = document.getElementById('replyForm'); // Get the new clone
+                    if (reattachedReplyForm) {
+                         reattachedReplyForm.addEventListener('submit', function(event) {
+                            // Ensure these are fetched from the current DOM if form was cloned
+                            const reattachedReplyContentInput = document.getElementById('replyContent');
+                            const reattachedSubmitReplyButton = document.getElementById('submitReplyButton');
+                            handleReplySubmit(event, db, reattachedReplyContentInput, reattachedSubmitReplyButton);
+                        });
+                    }
+                }
+            } else { // User is not logged in
+                currentUser = null;
+                isAdmin = false;
+                currentUserProfile = null;
+                if (replySectionDiv) replySectionDiv.style.display = 'none';
+                if (loginPromptDiv) loginPromptDiv.style.display = 'block';
+                if (getIdsFromUrl()) {
+                    listenForPosts(db); // Load posts even if not logged in, isAdmin will be false
+                }
+            }
+        });
+    }
+
+    function handleReplySubmit(event, db, currentReplyContentInput, currentSubmitReplyButton) { //
+        event.preventDefault();
+        if (!db) { showReplyStatus('Database error. Cannot post reply.', 'error'); return; }
+        if (!currentUser || !currentThreadId || !currentForumId) {
+            showReplyStatus('You must be logged in and in a valid thread to reply.', 'error');
+            return;
+        }
+
+        const activeReplyContentInput = currentReplyContentInput || document.getElementById('replyContent');
+        const activeSubmitReplyButton = currentSubmitReplyButton || document.getElementById('submitReplyButton');
+        const replyContent = activeReplyContentInput.value.trim();
+
+        if (!replyContent || replyContent.length < 5) {
+            showReplyStatus('Reply must be at least 5 characters long.', 'error');
+            return;
+        }
+
+        if(activeSubmitReplyButton) activeSubmitReplyButton.disabled = true;
+        showReplyStatus('Posting reply...', 'processing');
+
+        const timestamp = firebase.database.ServerValue.TIMESTAMP;
+        const authorName = (currentUserProfile && currentUserProfile.atticNickname) || currentUser.displayName || currentUser.email || 'Anonymous';
+        const newPostRef = db.ref(`forumData/posts/${currentThreadId}`).push();
+        const newPostId = newPostRef.key;
+
+        const postData = {
+            authorUid: currentUser.uid,
+            authorName: authorName,
+            content: replyContent,
+            createdAt: timestamp
+        };
+
+        const lastPostUpdate = {
+            postId: newPostId,
+            authorUid: currentUser.uid,
+            authorName: authorName,
+            timestamp: timestamp
+        };
+
+        const updates = {};
+        updates[`/forumData/posts/${currentThreadId}/${newPostId}`] = postData;
+        updates[`/forumData/threads/${currentForumId}/${currentThreadId}/postCount`] = firebase.database.ServerValue.increment(1);
+        updates[`/forumData/threads/${currentForumId}/${currentThreadId}/lastPostInfo`] = lastPostUpdate;
+        updates[`/forumData/forums/${currentForumId}/postCount`] = firebase.database.ServerValue.increment(1);
+
+        // Fetch current thread title for forum's lastPostInfo to ensure accuracy
+        db.ref(`forumData/threads/${currentForumId}/${currentThreadId}/title`).once('value').then(titleSnapshot => {
+            const accurateThreadTitle = titleSnapshot.exists() ? titleSnapshot.val() : currentThreadTitle; // Use fetched title if available
+            const forumLastPostUpdate = {
+                threadId: currentThreadId,
+                threadTitle: accurateThreadTitle, // Use accurate title
+                postId: newPostId,
+                authorUid: currentUser.uid,
+                authorName: authorName,
+                timestamp: timestamp
+            };
+            updates[`/forumData/forums/${currentForumId}/lastPostInfo`] = forumLastPostUpdate;
+            return db.ref().update(updates);
+        })
+        .then(() => {
+            console.log("Reply posted successfully!"); //
+            if(activeReplyContentInput) activeReplyContentInput.value = '';
+            showReplyStatus('Reply posted!', 'success');
+            if(activeSubmitReplyButton) activeSubmitReplyButton.disabled = false;
+        })
+        .catch((error) => {
+            console.error("Error posting reply:", error); //
+            showReplyStatus(`Error posting reply: ${error.message}`, 'error');
+            if(activeSubmitReplyButton) activeSubmitReplyButton.disabled = false;
+        });
+    }
+
+    function deletePostByAdmin(forumId, threadId, postId) { //
+        if (!isAdmin) {
+            alert("You do not have permission to delete posts.");
+            return;
+        }
+        if (!confirm(`Are you sure you want to permanently delete this post?\n\nThis action CANNOT be undone.`)) {
+            return;
+        }
+        if (!firebase || !firebase.database || !forumId || !threadId || !postId) {
+            alert("Error: Missing necessary information or database connection to delete the post.");
+            console.error("deletePostByAdmin: Missing IDs or DB. ForumID:", forumId, "ThreadID:", threadId, "PostID:", postId); //
+            return;
+        }
+        const db = firebase.database();
+        const postRef = db.ref(`forumData/posts/${threadId}/${postId}`);
+        const threadMetaRef = db.ref(`forumData/threads/${forumId}/${threadId}`);
+        const forumMetaRef = db.ref(`forumData/forums/${forumId}`);
+
+        postRef.remove()
+            .then(() => {
+                console.log(`Post ${postId} deleted from Firebase path: forumData/posts/${threadId}/${postId}`); //
+                // Decrement post counts using transactions
+                const threadTransactionPromise = threadMetaRef.transaction(currentThreadData => {
+                    if (currentThreadData) {
+                        currentThreadData.postCount = Math.max(0, (currentThreadData.postCount || 0) - 1);
+                        // Potentially update lastPostInfo if this was the last post, requires more complex logic
+                    }
+                    return currentThreadData;
+                });
+                const forumTransactionPromise = forumMetaRef.transaction(currentForumData => {
+                    if (currentForumData) {
+                        currentForumData.postCount = Math.max(0, (currentForumData.postCount || 0) - 1);
+                         // Potentially update lastPostInfo if this was the last post in the forum, requires more complex logic
+                    }
+                    return currentForumData;
+                });
+                return Promise.all([threadTransactionPromise, forumTransactionPromise]);
+            })
+            .then(([threadTxResult, forumTxResult]) => {
+                 if (!threadTxResult.committed) console.warn("Transaction to update thread post count may not have fully committed for thread:", threadId, threadTxResult); //
+                 if (!forumTxResult.committed) console.warn("Transaction to update forum post count may not have fully committed for forum:", forumId, forumTxResult); //
+
+                alert("Post deleted successfully.");
+                const postElementToRemove = document.getElementById(`post-${postId}`);
+                if (postElementToRemove) {
+                    postElementToRemove.remove();
+                    console.log(`Post element post-${postId} removed from DOM.`); //
+                } else { console.warn(`Could not find post element post-${postId} in DOM to remove.`); } //
+            })
+            .catch(error => {
+                console.error("Error in deletePostByAdmin process:", error); //
+                alert(`Failed to delete post: ${error.message}`);
+            });
+    }
+
+    function submitPostFlag() {
+        if (!currentUser || !firebase || !firebase.database) {
+            showFlagStatus("Error: Not logged in or database connection issue.", "error");
+            return;
+        }
+
+        const postId = postIdToFlagInput.value;
+        const postAuthorUid = postAuthorIdToFlagInput.value;
+        const reason = flagReasonInput.value.trim();
+
+        if (!postId || !postAuthorUid) {
+            showFlagStatus("Error: Missing post information for flagging.", "error");
+            return;
+        }
+
+        if(submitFlagButton) submitFlagButton.disabled = true;
+        showFlagStatus("Submitting flag...", "processing");
+
+
+        const db = firebase.database();
+        const reportsRef = db.ref('reports');
+        const newReportRef = reportsRef.push();
+
+        const reportData = {
+            reportedContentId: postId,
+            contentType: "forum_post",
+            reportedUserId: postAuthorUid,
+            reporterUserId: currentUser.uid,
+            reporterUserName: (currentUserProfile && currentUserProfile.atticNickname) || currentUser.displayName || currentUser.email,
+            reason: reason || "No reason provided.",
+            contentLink: `thread_view.html?forumId=${currentForumId}&id=${currentThreadId}#post-${postId}`,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            status: "pending_review"
+        };
+
+        newReportRef.set(reportData)
+            .then(() => {
+                showFlagStatus("Post flagged successfully. Thank you!", "success");
+                setTimeout(() => {
+                    closeFlagPostModal();
+                    if(submitFlagButton) submitFlagButton.disabled = false;
+                }, 2000);
+            })
+            .catch(error => {
+                console.error("Error submitting flag:", error);
+                showFlagStatus(`Error submitting flag: ${error.message}`, "error");
+                if(submitFlagButton) submitFlagButton.disabled = false;
+            });
+    }
+
+
+    // --- Event Listeners & Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!threadTitleH1 || !postListDiv || !replySectionDiv || !loginPromptDiv || !backToForumLink) { //
+            console.error("One or more critical HTML elements for thread view are missing from the page."); //
+            document.body.innerHTML = "<p style='color:red; padding:20px;'>Error: Page structure is incomplete. Cannot display thread.</p>"; //
+            return;
+        }
+
+        // Flag Modal Listeners
+        if (closeFlagPostModalSpan) {
+            closeFlagPostModalSpan.onclick = closeFlagPostModal;
+        }
+        if (cancelFlagButton) {
+            cancelFlagButton.onclick = closeFlagPostModal;
+        }
+        if (flagPostModalEl) {
+            flagPostModalEl.onclick = function(event) {
+                if (event.target == flagPostModalEl) { // Clicked on the background
+                    closeFlagPostModal();
+                }
+            }
+        }
+        if (submitFlagButton) {
+            submitFlagButton.onclick = submitPostFlag;
+        }
+
+
+        if (firebase && firebase.database && firebase.auth) {
+            const db = firebase.database();
+            if (getIdsFromUrl()) {
+                fetchThreadTitle(db);
+                checkAuthentication(db); // This calls listenForPosts internally after isAdmin is determined
+            } else {
+                if(threadTitleH1) threadTitleH1.textContent = "Error"; //
+                if(postListDiv) postListDiv.innerHTML = '<p style="color:red;">Error: Thread ID or Forum ID missing from URL.</p>'; //
+                if(replySectionDiv) replySectionDiv.style.display = 'none'; //
+                if(loginPromptDiv) loginPromptDiv.style.display = 'none'; //
+            }
+        } else {
+            console.error("Firebase services (Database, Auth) not available on DOMContentLoaded in thread_view.html"); //
+            if(threadTitleH1) threadTitleH1.textContent = "Error Initializing"; //
+            if(postListDiv) postListDiv.innerHTML = '<p style="color:red;">Error: Essential site services could not load. Please refresh.</p>'; //
+            if(replySectionDiv) replySectionDiv.style.display = 'none'; //
+            if(loginPromptDiv) loginPromptDiv.style.display = 'none'; //
+        }
+    });
+</script>
+
+</body>
+</html>

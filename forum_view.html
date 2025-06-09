@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - The Attic</title> <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Your existing styles from forum_view.html are preserved here */
+        .thread-list-container { padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px; }
+        .thread-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .thread-item:last-child { border-bottom: none; }
+        .thread-info { flex-grow: 1; margin-right: 15px; }
+        .thread-info h4 { margin: 0 0 5px 0; }
+        .thread-info h4 a { text-decoration: none; color: #556b2f; font-weight: 600; }
+        .thread-info h4 a:hover { text-decoration: underline; }
+        .thread-info p { margin: 0; font-size: 0.9em; color: #666; }
+        .thread-stats { text-align: right; font-size: 0.9em; color: #777; min-width: 150px; margin-right: 10px; }
+        .thread-stats span { display: block; margin-bottom: 3px; }
+        .admin-actions { min-width: 100px; text-align: right; }
+        .forum-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #8fbc8f; display: flex; justify-content: space-between; align-items: center; }
+        
+        #new-thread-button {
+            background-color: #556b2f; 
+            color: white;
+            padding: 8px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block; 
+            font-size: 0.95em;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #new-thread-button:hover {
+            background-color: #6B8E23; 
+        }
+        .button-small.button-danger {
+            background-color: #dc3545;
+            color: white;
+            border: 1px solid #dc3545;
+            padding: 3px 8px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button-small.button-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1 id="forum-title-h1">Loading Forum...</h1>
+    </header>
+
+    <main>
+        <div class="thread-list-container">
+            <div class="forum-header">
+                <h2 id="forum-title-h2">Threads</h2>
+                <button id="new-thread-button" class="button" style="display: none;">Create New Thread</button>
+            </div>
+            <div id="thread-list">
+                <p>Loading threads...</p>
+            </div>
+            <div id="access-message" style="color: red; margin-top: 15px;"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <button onclick="window.location.href='forums.html'">Back to Forum List</button>
+            <button onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    // --- Firebase Configuration (Matches your uploaded file) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+      authDomain: "attic-4ae31.firebaseapp.com",
+      databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com",
+      projectId: "attic-4ae31",
+      storageBucket: "attic-4ae31.firebasestorage.app",
+      messagingSenderId: "259372678655",
+      appId: "1:259372678655:web:df9c03e07e022392837bca",
+      measurementId: "G-2WWH3YVXT5"
+    };
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase initialized on forum_view.html (whole block update v2)");
+        } else if (typeof firebase !== 'undefined' && firebase.apps.length) {
+             firebase.app(); 
+             console.log("Firebase app already initialized on forum_view.html (whole block update v2)");
+        }
+        if (!firebase?.auth || !firebase?.database) {
+            throw new Error("Firebase Auth or Database SDK not loaded/initialized properly!");
+        }
+    } catch (initError) {
+        console.error("Firebase init error on forum_view.html (whole block update v2):", initError);
+        document.addEventListener('DOMContentLoaded', () => {
+             const body = document.querySelector('body');
+             if(body) body.innerHTML = `<p style='color:red; padding:20px;'>Error initializing site services. Please try again later.</p>`;
+        });
+    }
+
+    // --- DOM Element References ---
+    const forumTitleH1Elem = document.getElementById('forum-title-h1');
+    const forumTitleH2Elem = document.getElementById('forum-title-h2');
+    const threadListDivElem = document.getElementById('thread-list');
+    const newThreadButtonElem = document.getElementById('new-thread-button');
+    const accessMessageDivElem = document.getElementById('access-message');
+
+    // --- Global State Variables ---
+    let currentForumId = null;
+    let currentUser = null;      
+    let currentUserProfile = null;
+    let currentForumData = null; 
+    let isAdmin = false;          
+
+    // --- Utility Functions ---
+    function escapeHtml(unsafe) { // Keep this for when you build HTML strings with .innerHTML
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function getForumIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('id');
+    }
+
+    // --- Core Logic Functions ---
+
+    function checkAuthAndLoad() {
+        currentForumId = getForumIdFromUrl();
+        if (!currentForumId) {
+            handlePageError("Error: No Forum ID specified.");
+            return;
+        }
+        console.log("Loading forum:", currentForumId);
+
+        if (!firebase?.auth) {
+            handlePageError("Authentication service not ready.");
+            return;
+        }
+
+        firebase.auth().onAuthStateChanged(user => {
+            currentUser = user;
+            if (user) {
+                console.log("User authenticated:", currentUser.uid);
+                fetchUserProfileAndThenForumDetails();
+            } else { 
+                currentUserProfile = null;
+                isAdmin = false;
+                console.log("User not logged in. Fetching forum details for public access check.");
+                fetchForumDetailsAndCheckAccess(); 
+            }
+        });
+    }
+
+    function fetchUserProfileAndThenForumDetails() {
+        if (!currentUser || !firebase?.database) {
+            isAdmin = false;
+            currentUserProfile = null;
+            fetchForumDetailsAndCheckAccess(); 
+            return;
+        }
+
+        const profileRef = firebase.database().ref(`users/${currentUser.uid}/profile`);
+        profileRef.once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    currentUserProfile = snapshot.val();
+                    isAdmin = (currentUserProfile && currentUserProfile.role === 'admin');
+                    console.log("User profile fetched. Role:", currentUserProfile.role, "isAdmin:", isAdmin);
+                } else {
+                    currentUserProfile = null;
+                    isAdmin = false;
+                    console.warn("User profile data not found for UID:", currentUser.uid);
+                }
+                fetchForumDetailsAndCheckAccess(); 
+            })
+            .catch(error => {
+                console.error("Error fetching user profile:", error);
+                currentUserProfile = null;
+                isAdmin = false;
+                fetchForumDetailsAndCheckAccess();
+            });
+    }
+
+    function fetchForumDetailsAndCheckAccess() {
+        if (!currentForumId || !firebase?.database) {
+            handlePageError("Could not load forum details (missing Forum ID or Database service).");
+            return;
+        }
+
+        const forumRef = firebase.database().ref(`forumData/forums/${currentForumId}`);
+        forumRef.once('value')
+            .then(snapshot => {
+                if (snapshot.exists()) {
+                    currentForumData = snapshot.val(); 
+                    
+                    const title = currentForumData.title || "Forum";
+                    if(forumTitleH1Elem) forumTitleH1Elem.textContent = title;
+                    if(forumTitleH2Elem) forumTitleH2Elem.textContent = `Threads in "${title}"`;
+                    document.title = `${title} - The Attic`;
+                    
+                    checkUserAccessAndDisplayContent(); 
+                } else {
+                    handlePageError(`Forum with ID "${escapeHtml(currentForumId)}" not found.`);
+                }
+            })
+            .catch(error => {
+                handlePageError(`Error loading forum details: ${escapeHtml(error.message)}`);
+            });
+    }
+
+    function checkUserAccessAndDisplayContent() {
+        let canViewForum = false;
+        const forumAccessGroup = currentForumData ? currentForumData.accessGroup : null;
+
+        if (isAdmin) {
+            canViewForum = true;
+        } else if (!forumAccessGroup) { 
+            canViewForum = true;
+        } else if (currentUserProfile && currentUserProfile.specialAccessGroups && currentUserProfile.specialAccessGroups[forumAccessGroup] === true) {
+            canViewForum = true; 
+        }
+      
+        if (canViewForum) {
+            if (accessMessageDivElem) accessMessageDivElem.innerHTML = '';
+            loadThreads(); 
+
+            if (newThreadButtonElem) {
+                let canCreateThread = false;
+                const userRole = currentUserProfile ? currentUserProfile.role : null;
+
+                if (userRole === 'admin') {
+                    canCreateThread = true; 
+                } else if (currentForumData && currentForumData.isWorkshopForum === true) {
+                    const workshopProfUid = currentForumData.professorUid;
+                    if (currentUser && currentUser.uid === workshopProfUid) {
+                        canCreateThread = true;
+                    }
+                } else if (currentForumData && currentForumData.isCourseForum === true) { 
+                    if (currentUser) { canCreateThread = true; } // Example: Any logged-in user in Course Lounges
+                } else { // General forums
+                    if (currentUser) {
+                        canCreateThread = true;
+                    }
+                }
+
+                if (canCreateThread) {
+                    newThreadButtonElem.style.display = 'inline-block';
+                    newThreadButtonElem.onclick = () => { window.location.href = `create_thread.html?forumId=${currentForumId}`; };
+                } else {
+                    newThreadButtonElem.style.display = 'none';
+                }
+            }
+        } else { 
+            const loginRedirect = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+            if (accessMessageDivElem) accessMessageDivElem.innerHTML = `You do not have the necessary permissions to view this forum. You may need to <a href="${loginRedirect}">log in</a> or request access if it's a private group.`;
+            if (threadListDivElem) threadListDivElem.innerHTML = '<p><strong>Access Denied.</strong></p>';
+            if (newThreadButtonElem) newThreadButtonElem.style.display = 'none';
+        }
+    }
+    
+    function handlePageError(message) {
+        if (forumTitleH1Elem) forumTitleH1Elem.textContent = "Error";
+        if (threadListDivElem) threadListDivElem.innerHTML = `<p style="color:red;">${message}</p>`;
+        if (newThreadButtonElem) newThreadButtonElem.style.display = 'none';
+        if (accessMessageDivElem) accessMessageDivElem.innerHTML = '';
+        console.error(message);
+    }
+
+    function loadThreads() {
+        if (!currentForumId || !firebase?.database || !threadListDivElem) {
+            if(threadListDivElem) threadListDivElem.innerHTML = "<p style='color:red;'>Cannot load threads: Forum ID or Database missing.</p>";
+            return;
+        }
+        threadListDivElem.innerHTML = '<p>Loading threads...</p>';
+
+        const threadsRef = firebase.database().ref(`forumData/threads/${currentForumId}`).orderByChild('lastPostInfo/timestamp');
+
+        threadsRef.on('value', (snapshot) => {
+            if(!threadListDivElem) return;
+            threadListDivElem.innerHTML = '';
+            if (snapshot.exists()) {
+                const threadsData = snapshot.val();
+                const threadIds = Object.keys(threadsData).reverse();
+
+                if (threadIds.length === 0) {
+                     threadListDivElem.innerHTML = '<p>No threads have been started in this forum yet.</p>';
+                     return;
+                }
+
+                threadIds.forEach(threadId => {
+                    const thread = threadsData[threadId];
+                    if (!thread) return;
+
+                    const threadItemDiv = document.createElement('div');
+                    threadItemDiv.className = 'thread-item';
+
+                    const threadInfoDiv = document.createElement('div');
+                    threadInfoDiv.className = 'thread-info';
+                    const threadTitleH4 = document.createElement('h4');
+                    const threadLink = document.createElement('a');
+                    threadLink.href = `thread_view.html?id=${threadId}&forumId=${currentForumId}`;
+                    
+                    // --- PREFIX & AMPERSAND FIX FOR TITLE ---
+                    let rawTitle = thread.title || 'Untitled Thread'; // Use raw title
+                    if (currentForumData && currentForumData.isWorkshopForum === true) {
+                        // Option 1: Prefix only if a specific 'isLessonTask' flag is on the thread
+                        if (thread.isLessonTask === true) { // You'll need to set this flag when creating lesson threads
+                            rawTitle = "[Workshop Lesson] " + rawTitle;
+                        }
+                        // Option 2: Fallback to prefixing if author is professor (if isLessonTask flag isn't used yet)
+                        // else if (!thread.hasOwnProperty('isLessonTask') && thread.authorUid === currentForumData.professorUid) {
+                        //    rawTitle = "[WS Lesson by Prof] " + rawTitle;
+                        // }
+                    }
+                    threadLink.textContent = rawTitle; // Set textContent with the raw (potentially prefixed) title
+                    // --- END OF PREFIX & AMPERSAND FIX ---
+                    threadTitleH4.appendChild(threadLink);
+
+                    const threadMeta = document.createElement('p');
+                    // For author name in meta, it's okay to escape if it comes from user input & displayed via innerHTML elsewhere.
+                    // But here, if just for textContent, raw is fine. We'll keep escapeHtml for safety if this string is ever used in innerHTML.
+                    const author = escapeHtml(thread.authorName || 'Unknown User'); 
+                    const date = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString() : 'Unknown Date';
+                    threadMeta.textContent = `Started by ${author} on ${date}`;
+
+                    threadInfoDiv.appendChild(threadTitleH4);
+                    threadInfoDiv.appendChild(threadMeta);
+
+                    const threadStatsDiv = document.createElement('div');
+                    threadStatsDiv.className = 'thread-stats';
+                    const postCountSpan = document.createElement('span');
+                    postCountSpan.textContent = `Replies: ${Math.max(0, (thread.postCount || 0) - 1)}`;
+                    threadStatsDiv.appendChild(postCountSpan);
+
+                    if (thread.lastPostInfo) {
+                         const lastPostSpan = document.createElement('span');
+                         // lastAuthor and lastTime are used in innerHTML, so escaping author is good.
+                         const lastAuthor = escapeHtml(thread.lastPostInfo.authorName || 'Unknown');
+                         const lastTime = thread.lastPostInfo.timestamp ? new Date(thread.lastPostInfo.timestamp).toLocaleString() : 'Unknown Time';
+                         lastPostSpan.innerHTML = `Last post by ${lastAuthor}<br>${lastTime}`; // Using innerHTML here
+                         threadStatsDiv.appendChild(lastPostSpan);
+                    } else if (thread.postCount > 0) {
+                         const lastPostSpan = document.createElement('span');
+                         lastPostSpan.innerHTML = `Last post by ${author}<br>${new Date(thread.createdAt).toLocaleString()}`;
+                         threadStatsDiv.appendChild(lastPostSpan);
+                    } else {
+                         const noRepliesSpan = document.createElement('span');
+                         noRepliesSpan.textContent = 'No posts yet';
+                         threadStatsDiv.appendChild(noRepliesSpan);
+                    }
+                    
+                    const adminActionsDiv = document.createElement('div');
+                    adminActionsDiv.className = 'admin-actions';
+
+                    if (isAdmin) {
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete Thread';
+                        deleteButton.classList.add('button-small', 'button-danger');
+                        deleteButton.onclick = function() {
+                            const titleForConfirm = (thread.title || `Thread ID ${threadId}`);
+                            deleteThreadByAdmin(currentForumId, threadId, titleForConfirm);
+                        };
+                        adminActionsDiv.appendChild(deleteButton);
+                    }
+
+                    threadItemDiv.appendChild(threadInfoDiv);
+                    threadItemDiv.appendChild(threadStatsDiv);
+                    threadItemDiv.appendChild(adminActionsDiv);
+
+                    threadListDivElem.appendChild(threadItemDiv);
+                });
+            } else {
+                threadListDivElem.innerHTML = '<p>No threads have been started in this forum yet. Be the first!</p>';
+            }
+        }, (error) => {
+            console.error("Error fetching threads:", error);
+            if(threadListDivElem) threadListDivElem.innerHTML = `<p style="color:red;">Error loading threads: ${escapeHtml(error.message)}</p>`;
+        });
+    }
+
+   // In forum_view.html
+
+function deleteThreadByAdmin(forumId, threadId, threadTitleForConfirm) {
+    if (!isAdmin) { // Ensure isAdmin global variable is correctly set based on user role
+        alert("You do not have permission to delete threads.");
+        return;
+    }
+    if (!confirm(`Are you sure you want to permanently delete the thread "${escapeHtml(threadTitleForConfirm)}" (ID: ${threadId}) and all its posts?\n\nThis action CANNOT be undone.`)) {
+        return;
+    }
+    if (!firebase?.database || !forumId || !threadId) {
+        alert("Database connection error or missing IDs for deletion.");
+        console.error("deleteThreadByAdmin: Missing IDs or DB. ForumID:", forumId, "ThreadID:", threadId);
+        return;
+    }
+    
+    const db = firebase.database();
+    let postsInThreadCount = 0;
+
+    // Path to the thread's metadata
+    const threadMetaRef = db.ref(`forumData/threads/${forumId}/${threadId}`);
+    // Path to the posts of this thread
+    const threadPostsRef = db.ref(`forumData/posts/${threadId}`);
+    // Path to the parent forum's metadata
+    const forumMetaRef = db.ref(`forumData/forums/${forumId}`);
+
+    // 1. Get the number of posts in the thread to update the forum's postCount
+    threadMetaRef.child('postCount').once('value')
+        .then(countSnapshot => {
+            postsInThreadCount = countSnapshot.val() || 0;
+
+            // 2. Prepare atomic updates
+            const updates = {};
+            updates[`forumData/threads/${forumId}/${threadId}`] = null; // Delete thread metadata
+            updates[`forumData/posts/${threadId}`] = null;          // Delete all posts in the thread
+
+            // 3. Perform the multi-path update
+            return db.ref().update(updates);
+        })
+        .then(() => {
+            console.log(`Thread ${threadId} and its posts deleted from database.`);
+            // 4. Update forum's threadCount and postCount atomically
+            return forumMetaRef.transaction(currentForumData => {
+                if (currentForumData) {
+                    currentForumData.threadCount = Math.max(0, (currentForumData.threadCount || 0) - 1);
+                    currentForumData.postCount = Math.max(0, (currentForumData.postCount || 0) - postsInThreadCount);
+                    // Updating lastPostInfo accurately here is complex.
+                    // For simplicity, it will update when a new post/thread is made.
+                    // Or, you could query for the new latest thread/post and update it.
+                }
+                return currentForumData;
+            });
+        })
+        .then(transactionResult => {
+            if (!transactionResult.committed) {
+                console.warn("Transaction to update forum counts for deletion was not committed for forum:", forumId);
+            }
+            alert(`Thread "${escapeHtml(threadTitleForConfirm)}" and its posts have been deleted.`);
+            // The real-time listener for threads should refresh the list automatically.
+        })
+        .catch(error => {
+            console.error("Error deleting thread:", error);
+            alert(`Failed to delete thread: ${error.message}`);
+        });
+}
+
+    // --- Initial Execution ---
+    document.addEventListener('DOMContentLoaded', checkAuthAndLoad);
+</script>
+
+</body>
+</html>

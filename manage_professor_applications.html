@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Professor Applications - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-container { padding: 20px; margin: 20px auto; max-width: 900px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .application-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background-color: #f9f9f9; }
+        .application-item h4 { margin-top: 0; margin-bottom: 5px; color: #556b2f; }
+        .application-item p { margin: 5px 0; font-size: 0.9em; }
+        .application-item pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; margin-top:5px; }
+        .application-item .actions button { margin-right: 10px; padding: 6px 12px; font-size: 0.9em; cursor: pointer; }
+        .status-message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; font-weight: bold; text-align: center;}
+        .status-success { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+        #filter-controls { margin-bottom: 20px; padding:15px; background-color:#f0f8f0; border-radius:5px; border: 1px solid #d4e9d4; }
+        #filter-controls label { margin-right: 10px; font-weight: bold; }
+        #filter-controls select { padding: 8px; border-radius:4px; border:1px solid #ccc;}
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // Use your actual API key
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.firebasestorage.app",
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+        try {
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+        } catch (e) { console.error("Firebase init error", e); }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Manage Professor Applications</h1>
+    </header>
+    <main>
+        <div class="admin-container">
+            <div id="admin-auth-status" style="text-align:center; margin-bottom:20px;">Verifying admin access...</div>
+            
+            <div id="admin-controls" style="display:none;">
+                <div id="filter-controls">
+                    <label for="professorAppStatusFilter">Filter by status:</label>
+                    <select id="professorAppStatusFilter">
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                        <option value="all">Show All</option>
+                    </select>
+                </div>
+                <h3 id="current-professor-filter-heading" style="margin-top:20px;">Pending Professor Applications</h3>
+                <div id="professor-applications-list">Loading Professor applications...</div>
+            </div>
+            <div id="professor-app-process-status" class="status-message"></div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; margin-bottom:20px;">
+             <button onclick="window.location.href='admin.html'" class="button">Back to Admin Centre</button>
+        </div>
+    </main>
+    <footer> <p>&copy; 2025 The Attic - Alternative Academy</p> </footer>
+
+    <script>
+        const adminAuthStatusDiv = document.getElementById('admin-auth-status');
+        const adminControlsDiv = document.getElementById('admin-controls');
+        const professorApplicationsListDiv = document.getElementById('professor-applications-list');
+        const professorAppProcessStatusDiv = document.getElementById('professor-app-process-status');
+        const professorAppStatusFilterSelect = document.getElementById('professorAppStatusFilter');
+        const currentProfessorFilterHeading = document.getElementById('current-professor-filter-heading');
+
+        let currentAdminUser = null; 
+        let currentAdminProfile = null;
+        let professorAppListener = null;
+
+        function showProfessorAppProcessStatus(message, type = 'error') {
+            professorAppProcessStatusDiv.textContent = message;
+            professorAppProcessStatusDiv.className = `status-message status-${type}`;
+            professorAppProcessStatusDiv.style.display = 'block';
+            setTimeout(() => { if (professorAppProcessStatusDiv.textContent === message) professorAppProcessStatusDiv.style.display = 'none'; }, 5000);
+        }
+
+        function loadProfessorApplications(filterStatus = "pending") {
+            professorApplicationsListDiv.innerHTML = '<p>Fetching Professor applications...</p>';
+            currentProfessorFilterHeading.textContent = `${filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)} Professor Applications`;
+             if (filterStatus === "all") currentProfessorFilterHeading.textContent = "All Professor Applications";
+
+            let professorAppsRef = firebase.database().ref('professorApplications');
+            if (professorAppListener) {
+                professorAppsRef.off('value', professorAppListener); 
+            }
+
+            if (filterStatus && filterStatus !== "all") {
+                professorAppListener = professorAppsRef.orderByChild('status').equalTo(filterStatus).on('value', handleProfessorAppSnapshot, handleProfessorAppError);
+            } else {
+                professorAppListener = professorAppsRef.orderByChild('applicationTimestamp').on('value', handleProfessorAppSnapshot, handleProfessorAppError);
+            }
+        }
+
+        function handleProfessorAppSnapshot(snapshot) {
+            professorApplicationsListDiv.innerHTML = '';
+            const filterStatus = professorAppStatusFilterSelect.value;
+            if (!snapshot.exists()) {
+                professorApplicationsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} Professor applications found.</p>`;
+                return;
+            }
+            
+            const applications = [];
+            snapshot.forEach(childSnapshot => {
+                applications.push({ id: childSnapshot.key, ...childSnapshot.val() });
+            });
+
+            // Sort pending and all by newest first
+            if (filterStatus === "all" || filterStatus === "pending") {
+                applications.sort((a, b) => (b.applicationTimestamp || 0) - (a.applicationTimestamp || 0));
+            }
+
+            applications.forEach(appDataWithId => {
+                renderProfessorApplicationItem(appDataWithId.id, appDataWithId);
+            });
+             if (applications.length === 0) { 
+                professorApplicationsListDiv.innerHTML = `<p>No ${filterStatus !== 'all' ? filterStatus : ''} Professor applications found.</p>`;
+            }
+        }
+        
+        function handleProfessorAppError(error) {
+            console.error("Error loading Professor applications:", error);
+            professorApplicationsListDiv.innerHTML = '<p style="color:red;">Error loading Professor applications.</p>';
+        }
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function renderProfessorApplicationItem(appId, data) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'application-item';
+            itemDiv.id = `prof-app-${appId}`;
+
+            const appTimestamp = data.applicationTimestamp ? new Date(data.applicationTimestamp).toLocaleString() : 'N/A';
+            let actionsHTML = '';
+            let reviewInfoHTML = '';
+
+            if (data.status === 'pending') {
+                actionsHTML = `
+                    <div class="actions" style="margin-top:15px;">
+                        <button class="button" style="background-color:green; color:white;" onclick="processProfessorApplication('${appId}', true, '${data.userId}')">Approve as Professor</button>
+                        <button class="button" style="background-color:red; color:white;" onclick="processProfessorApplication('${appId}', false, '${data.userId}')">Deny Application</button>
+                    </div>`;
+            } else {
+                reviewInfoHTML = `<p>Status: <strong>${escapeHtml(data.status)}</strong>`;
+                if(data.reviewedByName) reviewInfoHTML += ` by ${escapeHtml(data.reviewedByName)}`;
+                if(data.reviewTimestamp) reviewInfoHTML += ` on ${new Date(data.reviewTimestamp).toLocaleString()}`;
+                reviewInfoHTML += `</p>`;
+                if(data.reviewNotes) reviewInfoHTML += `<p><small>Notes: ${escapeHtml(data.reviewNotes)}</small></p>`;
+            }
+            
+            const reasonText = data.applicationReason || "No reason provided.";
+            const expertiseText = data.applicationExpertise || "No expertise detailed.";
+
+            itemDiv.innerHTML = `
+                <h4>Applicant: ${escapeHtml(data.userDisplayName || data.userId)}</h4>
+                <p>Email: ${escapeHtml(data.userEmail || 'N/A')}</p>
+                <p>Submitted on: ${appTimestamp}</p>
+                <div><strong>Reason for Applying:</strong><pre>${escapeHtml(reasonText)}</pre></div>
+                <div><strong>Proposed Expertise/Workshops:</strong><pre>${escapeHtml(expertiseText)}</pre></div>
+                ${reviewInfoHTML}
+                ${actionsHTML}
+            `;
+            professorApplicationsListDiv.appendChild(itemDiv);
+        }
+
+        window.processProfessorApplication = function(appId, approve, applicantUserId) {
+            if (!currentAdminUser || !currentAdminProfile || currentAdminProfile.role !== 'admin') {
+                showProfessorAppProcessStatus("Only Admins can process Professor applications.", "error");
+                return;
+            }
+            const actionText = approve ? "Approving" : "Denying";
+            showProfessorAppProcessStatus(`${actionText} Professor application for ${applicantUserId}...`, "info");
+
+            const appRef = firebase.database().ref(`professorApplications/${appId}`);
+            
+            appRef.once('value').then(snapshot => {
+                 if (!snapshot.exists()) {
+                    showProfessorAppProcessStatus("Professor Application not found.", "error");
+                    loadProfessorApplications(professorAppStatusFilterSelect.value);
+                    return Promise.reject("Application not found");
+                }
+                const appDataOriginal = snapshot.val();
+                if (appDataOriginal.status !== 'pending') {
+                    showProfessorAppProcessStatus("This Professor application has already been processed.", "info");
+                    loadProfessorApplications(professorAppStatusFilterSelect.value);
+                    return Promise.reject("Already processed");
+                }
+
+                const updates = {};
+                const reviewTimestampValue = firebase.database.ServerValue.TIMESTAMP;
+
+                updates[`/professorApplications/${appId}/status`] = approve ? "approved" : "denied";
+                updates[`/professorApplications/${appId}/reviewedByUid`] = currentAdminUser.uid;
+                updates[`/professorApplications/${appId}/reviewedByName`] = currentAdminProfile.displayName || currentAdminUser.email;
+                updates[`/professorApplications/${appId}/reviewTimestamp`] = reviewTimestampValue;
+
+                if (approve) {
+                    updates[`/users/${applicantUserId}/profile/role`] = "professor";
+                }
+                // Optional: Add review notes on denial
+                // if (!approve) {
+                //     const reason = prompt("Reason for denial (optional):");
+                //     if (reason) updates[`/professorApplications/${appId}/reviewNotes`] = reason;
+                // }
+                return firebase.database().ref().update(updates);
+            })
+            .then(() => {
+                showProfessorAppProcessStatus(`Professor Application ${approve ? "approved" : "denied"} successfully. User role ${approve ? "updated to Professor." : "remains unchanged."}`, "success");
+                 // No need to call loadProfessorApplications here as the .on listener will pick up the change.
+            })
+            .catch(error => {
+                if (error !== "Application not found" && error !== "Already processed") {
+                    console.error("Error processing Professor application:", error);
+                    showProfessorAppProcessStatus(`Error processing Professor application: ${error.message}`, "error");
+                }
+            });
+        }
+
+        professorAppStatusFilterSelect.addEventListener('change', (e) => {
+            loadProfessorApplications(e.target.value);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!firebase?.auth || !firebase?.database) {
+                adminAuthStatusDiv.textContent = "Error: Firebase services unavailable."; return;
+            }
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    currentAdminUser = user;
+                    firebase.database().ref('users/' + user.uid + '/profile').once('value')
+                        .then(snapshot => {
+                            if (snapshot.exists() && snapshot.val().role === 'admin') {
+                                currentAdminProfile = snapshot.val();
+                                adminAuthStatusDiv.textContent = `Logged in as Admin: ${escapeHtml(currentAdminProfile.displayName || currentAdminUser.email)}.`;
+                                adminAuthStatusDiv.style.color = "green";
+                                adminControlsDiv.style.display = 'block';
+                                loadProfessorApplications(professorAppStatusFilterSelect.value); 
+                            } else {
+                                adminAuthStatusDiv.innerHTML = '<p style="color:red;">Access Denied. You must be an Admin to manage Professor applications.</p>';
+                                adminControlsDiv.style.display = 'none';
+                            }
+                        }).catch(err => {
+                            adminAuthStatusDiv.textContent = "Error verifying your admin status.";
+                            adminControlsDiv.style.display = 'none';
+                        });
+                } else {
+                    adminAuthStatusDiv.innerHTML = 'You must be <a href="login.html?redirect=manage_professor_applications.html">logged in</a> as an Admin.';
+                    adminControlsDiv.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

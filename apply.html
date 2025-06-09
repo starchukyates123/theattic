@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+ <html lang="en">
+
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnet Program Application</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+   const firebaseConfig = {
+    apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+    authDomain: "attic-4ae31.firebaseapp.com",
+    projectId: "attic-4ae31",
+    storageBucket: "attic-4ae31.firebasestorage.app",
+    messagingSenderId: "259372678655",
+    appId: "1:259372678655:web:df9c03e07e022392837bca",
+    measurementId: "G-2WWH3YVXT5"
+   };
+
+   // Initialize Firebase
+   try {
+    if (typeof firebase !== 'undefined') {
+     if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+      console.log("Firebase initialized on apply.html!");
+     } else {
+      firebase.app();
+       console.log("Firebase already initialized on apply.html");
+     }
+     // Check for necessary services
+     if (!firebase.auth) console.error("Firebase Auth SDK not loaded!");
+     if (!firebase.database) console.error("Firebase Database SDK not loaded!");
+    } else {
+     console.error("Firebase object is undefined! Check SDK script tags.");
+    }
+   } catch (initError) {
+    console.error("CRITICAL: Error during Firebase initialization:", initError);
+   }
+   // *** MOVED COMMENT BLOCK OUTSIDE try...catch ***
+   // Inside the submitButton listener in apply.html...
+   // ... (previous code) ...
+  </script>
+ </head>
+
+ <body>
+
+  <div class="quiz-container">
+   <h2>Apply to The Attic - Choose Your Path!</h2>
+
+   <div class="question-container" id="question1" style="display:none;">
+    <p class="question">Question 1: Which of the following topics sparks the most curiosity in you?</p>
+    <div class="answer"><input type="radio" id="eco1" name="q1" value="eco"><label for="eco1"> The environment and sustainability.</label></div>
+    <div class="answer"><input type="radio" id="thinker1" name="q1" value="thinker"><label for="thinker1"> Problem-solving and logical thinking.</label></div>
+    <div class="answer"><input type="radio" id="mover1" name="q1" value="mover"><label for="mover1"> Physical activity and creating with my hands.</label></div>
+    <div class="answer"><input type="radio" id="creative1" name="q1" value="creative"><label for="creative1"> Artistic expression and creativity.</label></div>
+    <div class="answer"><input type="radio" id="kind1" name="q1" value="kind"><label for="kind1"> Helping others and community building.</label></div>
+   </div>
+
+   <div class="question-container" id="question2" style="display:none;">
+    <p class="question">Question 2: If you had a free Saturday afternoon, how would you most likely spend it?</p>
+    <div class="answer"><input type="radio" id="eco2" name="q2" value="eco"><label for="eco2"> Exploring a local park or nature trail.</label></div>
+    <div class="answer"><input type="radio" id="thinker2" name="q2" value="thinker"><label for="thinker2"> Working on a puzzle or reading a non-fiction book.</label></div>
+    <div class="answer"><input type="radio" id="mover2" name="q2" value="eco"><label for="mover2"> Playing a sport or working on a DIY project.</label></div>
+    <div class="answer"><input type="radio" id="creative2" name="q2" value="creative"><label for="creative2"> Creating something artistic like writing, painting, or music.</label></div>
+    <div class="answer"><input type="radio" id="kind2" name="q2" value="kind"><label for="kind2"> Volunteering for a local charity or helping a friend.</label></div>
+   </div>
+
+   <div class="question-container" id="question3" style="display:none;">
+    <p class="question">Question 3: What kind of feeling do you value most in a learning environment?</p>
+    <div class="answer"><input type="radio" id="eco3" name="q3" value="eco"><label for="eco3"> Connection to the natural world.</label></div>
+    <div class="answer"><input type="radio" id="thinker3" name="q3" value="thinker"><label for="thinker3"> Intellectual stimulation.</label></div>
+    <div class="answer"><input type="radio" id="mover3" name="q3" value="mover"><label for="mover3"> Active engagement.</label></div>
+    <div class="answer"><input type="radio" id="creative3" name="q3" value="creative"><label for="creative3"> Creative freedom.</label></div>
+    <div class="answer"><input type="radio" id="kind3" name="q3" value="kind"><label for="kind3"> A sense of belonging and support.</label></div>
+   </div>
+
+   <div class="question-container" id="question4" style="display:none;">
+    <p class="question">Question 4: Which of these activities do you enjoy the most?</p>
+    <div class="answer"><input type="radio" id="eco4" name="q4" value="eco"><label for="eco4"> Learning about plants and animals.</label></div>
+    <div class="answer"><input type="radio" id="thinker4" name="q4" value="thinker"><label for="thinker4"> Debating ideas and solving mysteries.</label></div>
+    <div class="answer"><input type="radio" id="mover4" name="q4" value="mover"><label for="mover4"> Building and fixing things.</label></div>
+    <div class="answer"><input type="radio" id="creative4" name="q4" value="creative"><label for="creative4"> Drawing, painting, or playing a musical instrument.</label></div>
+    <div class="answer"><input type="radio" id="kind4" name="q4" value="kind"><label for="kind4"> Working on group projects for a common goal.</label></div>
+   </div>
+
+   <div class="question-container" id="question5" style="display:none;">
+    <p class="question">Question 5: Imagine a group project where you can choose your role. Which role would you be most drawn to?</p>
+    <div class="answer"><input type="radio" id="eco5" name="q5" value="eco"><label for="eco5"> The researcher, gathering information about the environment.</label></div>
+    <div class="answer"><input type="radio" id="thinker5" name="q5" value="thinker"><label for="thinker5"> The strategist, planning and organizing the project's logic.</label></div>
+    <div class="answer"><input type="radio" id="mover5" name="q5" value="mover"><label for="mover5"> The builder, creating the physical components of the project.</label></div>
+    <div class="answer"><input type="radio" id="creative5" name="q5" value="creative"><label for="creative5"> The designer, focusing on the visual and expressive aspects.</label></div>
+    <div class="answer"><input type="radio" id="kind5" name="q5" value="kind"><label for="kind5"> The facilitator, ensuring everyone's ideas are heard and valued.</label></div>
+   </div>
+
+   <button id="next-button" style="display:none;">Next</button> <button id="submit-button" style="display:none;">Submit Application</button>
+
+  </div> <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+   <button onclick="window.location.href='index.html'">Go to Home Page</button>
+  </div>
+
+  <footer>
+   <p>&copy; 2025 The Attic - Alternative Academy</p>
+  </footer>
+
+  <script>
+   // --- Page Elements ---
+   const nextButton = document.getElementById('next-button');
+   const submitButton = document.getElementById('submit-button');
+   const questionContainers = document.querySelectorAll('.question-container');
+   let currentQuestion = 0;
+
+   // --- Quiz Navigation Logic ---
+   function showQuestion(index) {
+    if (index < 0 || index >= questionContainers.length) return;
+    questionContainers.forEach((container, i) => {
+     container.style.display = (i === index) ? 'block' : 'none';
+    });
+     if (index === questionContainers.length - 1) {
+         nextButton.style.display = 'none';
+         submitButton.style.display = 'inline-block';
+     } else {
+         nextButton.style.display = 'inline-block';
+         submitButton.style.display = 'none';
+     }
+   }
+   if (nextButton) {
+    nextButton.addEventListener('click', () => {
+     const currentInputs = questionContainers[currentQuestion]?.querySelectorAll('input[type="radio"]');
+     if (!currentInputs) return;
+     let answered = Array.from(currentInputs).some(input => input.checked);
+     if (!answered) { alert('Please select an answer.'); return; }
+     if (currentQuestion < questionContainers.length - 1) { currentQuestion++; showQuestion(currentQuestion); }
+    });
+   } else { console.error("Next button not found!"); }
+   // --- End Quiz Navigation Logic ---
+
+
+   // --- Submit Button Logic ---
+   if (submitButton) {
+    submitButton.addEventListener('click', () => {
+     const lastInputs = questionContainers[currentQuestion]?.querySelectorAll('input[type="radio"]');
+     if (!lastInputs || !Array.from(lastInputs).some(input => input.checked)) { alert('Please answer final question.'); return; }
+
+     // Calculate Program
+     const answers = {};
+     questionContainers.forEach((container, index) => {
+         const qName = `q${index + 1}`;
+         const checkedInput = container.querySelector(`input[name="${qName}"]:checked`);
+         if (checkedInput) { answers[qName] = checkedInput.value; }
+     });
+     const counts = { eco: 0, thinker: 0, mover: 0, creative: 0, kind: 0 };
+     for (const key in answers) { if (counts.hasOwnProperty(answers[key])) { counts[answers[key]]++; } }
+     let assignedProgram = ''; let maxCount = -1;
+     for (const program in counts) { if (counts[program] > maxCount) { maxCount = counts[program]; assignedProgram = program; } }
+     console.log("Calculated program:", assignedProgram);
+
+     // Save to Firebase
+     if (!firebase || !firebase.auth || !firebase.database) { alert("Firebase not ready."); console.error("Firebase not ready for saving."); return; }
+     const currentUser = firebase.auth().currentUser;
+     if (currentUser) {
+         const userId = currentUser.uid;
+         const userProfileRef = firebase.database().ref('users/' + userId + '/profile');
+         userProfileRef.once('value').then(snapshot => {
+             if (snapshot.exists() && snapshot.val().magnetProgram) {
+                 alert("Application already submitted."); window.location.href = 'dashboard.html';
+             } else {
+                 const dataToSave = {
+                     magnetProgram: assignedProgram,
+                     applicationDate: new Date().toISOString(),
+                     answers: answers
+                 };
+                 console.log("Attempting to save application data:", dataToSave);
+
+                 // --- THIS IS THE CHANGED LINE ---
+                 userProfileRef.update(dataToSave) // USE UPDATE INSTEAD OF SET
+                 // ---------------------------------
+                     .then(() => {
+                         console.log("Data updated successfully!");
+                         alert('Application submitted! Program: ' + assignedProgram + ". Redirecting...");
+                         window.location.href = 'dashboard.html';
+                     })
+                     .catch((error) => {
+                         console.error("Error updating application data:", error);
+                         alert("Error submitting application: " + error.message);
+                     });
+             }
+         }).catch(error => {
+             console.error("Error checking existing application data:", error);
+             alert("Error checking status. Try submitting again.");
+         });
+     } else {
+         alert('Error: Not logged in.'); window.location.href = 'login.html';
+     }
+    });
+   } else { console.error("Submit button not found!"); }
+   // --- End Submit Button Logic ---
+
+
+   // --- Auth State Check on Page Load ---
+   function checkAuthState() {
+    setTimeout(() => {
+     if (!firebase || !firebase.auth) { console.error("Auth check failed."); window.location.href = 'login.html'; return; }
+     firebase.auth().onAuthStateChanged(user => {
+         if (!user) { window.location.href = 'login.html'; }
+         else {
+              if (firebase.database) {
+                  const checkRef = firebase.database().ref('users/' + user.uid + '/profile');
+                  checkRef.once('value').then(snapshot => {
+                      if (snapshot.exists() && snapshot.val().magnetProgram) {
+                          alert("Already applied. Redirecting."); window.location.href = 'dashboard.html';
+                      } else {
+                          if (questionContainers.length > 0) { showQuestion(0); } // Show quiz
+                      }
+                  }).catch(err => {
+                     console.error("DB check error on load:", err);
+                     if (questionContainers.length > 0) { showQuestion(0); } // Show quiz anyway if check fails
+                  });
+              } else {
+                 console.error("DB not ready for load check.");
+                  if (questionContainers.length > 0) { showQuestion(0); } // Show quiz anyway
+              }
+         }
+     });
+    }, 750);
+   }
+   checkAuthState();
+   // --- End Auth State Check ---
+  </script>
+
+ </body>
+ </html>

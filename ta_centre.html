@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TA Centre - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>The Attic - TA Centre</h1>
+    </header>
+
+    <main>
+        <div id="ta-content" style="display: none; padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px;">
+            <h2>TA Tools</h2>
+            <p>Welcome, Teaching Assistant!</p>
+
+            <button onclick="window.location.href='manage_access_requests.html'" style="margin-bottom: 10px; background-color: #fd7e14; color: white;">Manage Special Group Requests</button>
+            <button onclick="window.location.href='review_flags.html'" style="margin-bottom: 10px; background-color: #ff8c00; color: white;">Review Flagged Content/Users</button>
+            <hr style="margin-top:10px; margin-bottom: 20px;">
+            <button onclick="window.location.href='grade_submissions.html'" style="margin-bottom: 10px; background-color: #28a745; color: white;">Grade Student Submissions</button>
+            <p>More tools for TAs will be added here in the future.</p>
+
+        </div>
+        <div id="access-denied-ta" style="display: block; padding: 20px; margin: 20px; background-color: #ffebee; border: 1px solid #ef5350; border-radius: 8px; color: #c62828;">
+            <p>Loading authentication status...</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+            <button onclick="window.location.href='dashboard.html'">Go to Dashboard</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        // --- 0. Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4", // From your admin.html
+            authDomain: "attic-4ae31.firebaseapp.com",
+            projectId: "attic-4ae31",
+            storageBucket: "attic-4ae31.appspot.com", 
+            messagingSenderId: "259372678655",
+            appId: "1:259372678655:web:df9c03e07e022392837bca",
+            databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+        };
+
+        // --- Initialize Firebase ---
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+                if (!firebase.database) console.error("Firebase Database SDK missing for TA Centre!");
+                if (!firebase.auth) console.error("Firebase Auth SDK missing for TA Centre!");
+            } else { console.error("Firebase core SDK missing for TA Centre!"); }
+        } catch (initError) {
+            console.error("Firebase initialization error in TA Centre:", initError);
+            const accessDeniedDiv = document.getElementById('access-denied-ta');
+            if (accessDeniedDiv) {
+                accessDeniedDiv.innerHTML = '<p style="color: red;"><strong>CRITICAL ERROR:</strong> Could not initialize Firebase.</p>';
+                accessDeniedDiv.style.display = 'block';
+                const taContentDiv = document.getElementById('ta-content');
+                if (taContentDiv) taContentDiv.style.display = 'none';
+            }
+        }
+
+        // --- Global Variables ---
+        const taContentEl = document.getElementById('ta-content');
+        const accessDeniedMessageEl = document.getElementById('access-denied-ta');
+
+        // --- TA Access Check ---
+        function checkTaStatus(user) {
+            if (!taContentEl || !accessDeniedMessageEl) {
+                console.error("TA Centre page critical elements (ta-content or access-denied-ta) are missing!");
+                if (document.body) { // Fallback error display
+                    document.body.innerHTML = '<p style="color:red; font-weight:bold; padding:20px;">Critical page error. Please check HTML structure.</p>';
+                }
+                return;
+            }
+
+            taContentEl.style.display = 'none'; // Default to hidden
+            accessDeniedMessageEl.style.display = 'block'; // Default to show access message
+
+            if (user) {
+                accessDeniedMessageEl.innerHTML = '<p>User logged in. Verifying TA privileges for UID: ' + user.uid + '...</p>';
+                const profileRef = firebase.database().ref('users/' + user.uid + '/profile');
+                profileRef.once('value').then(snapshot => {
+                    const profileData = snapshot.val();
+                    // Allow if role is 'ta' OR 'admin' (admins can usually access TA tools)
+                    if (profileData && (profileData.role === 'ta' || profileData.role === 'admin')) {
+                        console.log("[TA Check] Access GRANTED. User role:", profileData.role);
+                        accessDeniedMessageEl.style.display = 'none';
+                        taContentEl.style.display = 'block';
+                        // You can call functions here to load TA-specific data if needed in the future
+                        // e.g., loadTaDashboardSummary();
+                    } else {
+                        const roleFound = profileData ? profileData.role : 'No profile data';
+                        console.warn(`[TA Check] Access DENIED. User is logged in but does not have TA/Admin privileges. Role found: '${roleFound}'.`);
+                        taContentEl.style.display = 'none';
+                        accessDeniedMessageEl.innerHTML = '<p><strong>Access Denied:</strong> You do not have TA privileges for this section.</p>';
+                    }
+                }).catch(error => {
+                    console.error("[TA Check] Firebase Database Error fetching user profile:", error);
+                    taContentEl.style.display = 'none';
+                    accessDeniedMessageEl.innerHTML = `<p><strong>Error Verifying Privileges:</strong> Could not fetch your user profile. Error: ${error.message}.</p>`;
+                });
+            } else {
+                console.log("[TA Check] No user is currently logged in.");
+                taContentEl.style.display = 'none';
+                accessDeniedMessageEl.innerHTML = '<p>TA access required. You are not logged in. Redirecting to login page...</p>';
+                setTimeout(() => {
+                    if (!firebase.auth().currentUser) { // Re-check before redirecting
+                        window.location.href = 'login.html';
+                    }
+                }, 3000); // Increased timeout slightly
+            }
+        }
+
+        // --- Initial display message while Firebase initializes ---
+        if (accessDeniedMessageEl) {
+            accessDeniedMessageEl.innerHTML = '<p>Initializing TA tools and checking authentication status...</p>';
+        }
+        if (taContentEl) {
+            taContentEl.style.display = 'none';
+        }
+
+        // --- Firebase Auth Listener Setup ---
+        if (firebase && firebase.auth) {
+            console.log("Setting up Firebase onAuthStateChanged listener for TA Centre page.");
+            firebase.auth().onAuthStateChanged(checkTaStatus);
+        } else {
+            console.error("Firebase Auth SDK not available for TA Centre page.");
+            if (accessDeniedMessageEl) {
+                accessDeniedMessageEl.innerHTML = '<p style="color:red;"><strong>CRITICAL ERROR:</strong> Firebase Auth SDK is not available. Page cannot function.</p>';
+                if (taContentEl) taContentEl.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>
