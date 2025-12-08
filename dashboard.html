@@ -175,6 +175,167 @@
                     <p style="margin-top:10px;"><a href="my_story.html">View My Story</a> | <a href="chronicle_opportunities.html">Find Opportunities</a></p>
                 </div>
             </div>
+
+            <div class="dashboard-card" id="cabinet-card">
+                <h3>The Curiosity Cabinet</h3>
+                <p>Strange objects you have recovered from the Attic...</p>
+                <div id="cabinet-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <p style="color:#777; font-style:italic; font-size:0.9em; padding:10px;">The cabinet is empty... keep your eyes open.</p>
+                </div>
+            </div>
+            ```
+
+### Step 2: Place the "Magic Script"
+This is the hidden brain that makes the items appear floating on the screen.
+
+1.  Scroll to the **very, very bottom** of **`dashboard.html`**.
+2.  Find the `</body>` tag (it is usually the second to last line).
+3.  **Paste this massive block RIGHT BEFORE the `</body>` tag:**
+
+```html
+<style>
+    /* 1. The Floating Item Style */
+    .drifting-relic {
+        position: fixed;
+        z-index: 9999;
+        cursor: pointer;
+        font-size: 35px; /* Size of the icon */
+        filter: drop-shadow(0 0 15px #8fbc8f); /* Magical green glow */
+        animation: float 6s ease-in-out infinite;
+        transition: transform 0.2s;
+        opacity: 0.9;
+    }
+    .drifting-relic:hover { 
+        transform: scale(1.4) rotate(10deg); 
+        opacity: 1;
+    }
+    @keyframes float { 
+        0%, 100% { transform: translateY(0); } 
+        50% { transform: translateY(-20px); } 
+    }
+
+    /* 2. The Cabinet Item Style */
+    .cabinet-item {
+        background: #f0f8f0;
+        border: 1px solid #d4e9d4;
+        border-radius: 5px;
+        padding: 10px;
+        text-align: center;
+        font-size: 24px;
+        cursor: help;
+    }
+    .cabinet-item:hover { background: #e0f0e0; }
+</style>
+
+<script>
+// The List of 100 Items (Icons + Names)
+const atticItems = [
+    { name: "A Rusted Iron Key", icon: "🗝️" }, { name: "A Bent Copper Paperclip", icon: "📎" }, { name: "A Ticket Stub from 1924", icon: "🎫" }, { name: "A Moth-Eaten Ribbon", icon: "🎀" },
+    { name: "A Dried Dandelion", icon: "🌼" }, { name: "Queen of Spades", icon: "🂡" }, { name: "A Cracked Marble", icon: "🔮" }, { name: "A Piece of Driftwood", icon: "🪵" },
+    { name: "A Silver Button", icon: "🔘" }, { name: "Sheet Music Fragment", icon: "🎼" }, { name: "Burnt Matchstick", icon: "🔥" }, { name: "A Thimble", icon: "🧵" },
+    { name: "Lost Child's Mitten", icon: "🧤" }, { name: "Map Fragment", icon: "🗺️" }, { name: "Broken Compass", icon: "🧭" }, { name: "Smooth River Stone", icon: "🪨" },
+    { name: "Red String", icon: "🧶" }, { name: "Faded Postcard", icon: "postcard" }, { name: "Rusty Nail", icon: "🔩" }, { name: "Sea Glass", icon: "💎" },
+    { name: "Midnight Blue Ink", icon: "✒️" }, { name: "Broken Quill", icon: "🪶" }, { name: "Leather Bookmark", icon: "🔖" }, { name: "Cracked Spectacles", icon: "👓" },
+    { name: "Charcoal Stick", icon: "✏️" }, { name: "Wax Seal Stamp", icon: "📜" }, { name: "Brass Telescope", icon: "🔭" }, { name: "Letter Opener", icon: "🗡️" },
+    { name: "Dusty Eraser", icon: "🧼" }, { name: "Ever-Flowing Pen", icon: "🖊️" }, { name: "Index Cards", icon: "📇" }, { name: "Paperweight", icon: "🗿" },
+    { name: "Box of Chalk", icon: "🖍️" }, { name: "Slate Tablet", icon: "⬛" }, { name: "Magnifying Glass", icon: "🔍" }, { name: "Protractor", icon: "📐" },
+    { name: "Bone Dice", icon: "🎲" }, { name: "Typewriter Key (Q)", icon: "⌨️" }, { name: "Empty Inkwell", icon: "🏺" }, { name: "Preserved Wing", icon: "🦋" },
+    { name: "Vial of Rainwater", icon: "💧" }, { name: "Gold Pinecone", icon: "🌲" }, { name: "Dried Lavender", icon: "🌾" }, { name: "Cicada Shell", icon: "🪲" },
+    { name: "Jar of Fireflies", icon: "✨" }, { name: "Four-Leaf Clover", icon: "🍀" }, { name: "Crow Feather", icon: "🪶" }, { name: "Owl Feather", icon: "🦉" },
+    { name: "Honeycomb Piece", icon: "🐝" }, { name: "Fossilized Shell", icon: "🐚" }, { name: "Painted Acorn", icon: "🌰" }, { name: "Vial of Sand", icon: "⏳" },
+    { name: "Birch Bark", icon: "📜" }, { name: "Snake Skin", icon: "🐍" }, { name: "Dried Mushroom", icon: "🍄" }, { name: "Quartz Shard", icon: "💎" },
+    { name: "Clump of Moss", icon: "🌿" }, { name: "Empty Nest", icon: "🪺" }, { name: "Seed Pod", icon: "🌱" }, { name: "Clockwork Beetle", icon: "🐞" },
+    { name: "Key for No Lock", icon: "🔑" }, { name: "Mirror Shard", icon: "🪞" }, { name: "Liquid Shadow", icon: "⚫" }, { name: "Whispering Shell", icon: "🐚" },
+    { name: "Silver Locket", icon: "💗" }, { name: "Bone Ring", icon: "💍" }, { name: "Tarot Card", icon: "🃏" }, { name: "Cloudy Crystal Ball", icon: "🔮" },
+    { name: "Glass Skeleton Key", icon: "🗝️" }, { name: "Coin from Nowhere", icon: "🪙" }, { name: "Masquerade Mask", icon: "🎭" }, { name: "Green Candle", icon: "🕯️" },
+    { name: "Locked Box", icon: "📦" }, { name: "Backwards Watch", icon: "⏱️" }, { name: "Voodoo Doll", icon: "🧸" }, { name: "Message in Bottle", icon: "🍾" },
+    { name: "Silent Bell", icon: "🔔" }, { name: "Runestone", icon: "🪨" }, { name: "Vial of Stardust", icon: "✨" }, { name: "Student ID (1975)", icon: "🆔" },
+    { name: "Failed Homework", icon: "📝" }, { name: "Rotting Apple", icon: "🍎" }, { name: "Secret Note", icon: "📄" }, { name: "Overdue Book", icon: "📕" },
+    { name: "Gym Whistle", icon: "🪈" }, { name: "Broken Eraser", icon: "🌫️" }, { name: "Portrait Strip", icon: "🖼️" }, { name: "Hall Pass", icon: "🎫" },
+    { name: "Tattered Banner", icon: "🚩" }, { name: "Rusted Lunchbox", icon: "🍱" }, { name: "Graduation Tassel", icon: "🎓" }, { name: "Detention Slip", icon: "🧾" },
+    { name: "Ventilation Map", icon: "🗺️" }, { name: "Lost Locker Code", icon: "🔢" }, { name: "Silver Trophy", icon: "🏆" }, { name: "Signed Yearbook", icon: "📒" },
+    { name: "Old Gum", icon: "🍬" }, { name: "Bell Clapper", icon: "🔔" }, { name: "GOLDEN ATTIC KEY", icon: "🌟" }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for Auth to spawn items or load cabinet
+    if(firebase.auth) {
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                checkAndSpawnRelic(user);
+                loadCabinet(user);
+            }
+        });
+    }
+});
+
+function checkAndSpawnRelic(user) {
+    // 1. Get unique Time ID (Changes every 12 hours)
+    const timeBlock = Math.floor(Date.now() / (12 * 60 * 60 * 1000));
+    
+    // 2. Determine WHICH item spawns right now (Same for everyone)
+    const itemIndex = timeBlock % atticItems.length;
+    const currentItem = atticItems[itemIndex];
+
+    // 3. Check if user already found it
+    const inventoryRef = firebase.database().ref(`users/${user.uid}/inventory/relic_${timeBlock}`);
+    
+    inventoryRef.once('value').then(snapshot => {
+        if (!snapshot.exists()) {
+            // Not found yet! Spawn it!
+            spawnFloatingRelic(currentItem, timeBlock, user.uid);
+        }
+    });
+}
+
+function spawnFloatingRelic(item, id, uid) {
+    const relic = document.createElement('div');
+    relic.className = 'drifting-relic';
+    relic.textContent = item.icon; // Show the emoji
+    relic.title = "Something is drifting here...";
+    
+    // Random Position (Keep away from very edges)
+    relic.style.top = (15 + Math.random() * 70) + "%";
+    relic.style.left = (10 + Math.random() * 80) + "%";
+
+    relic.onclick = function() {
+        // Save to Firebase
+        firebase.database().ref(`users/${uid}/inventory/relic_${id}`).set({
+            name: item.name,
+            icon: item.icon,
+            foundAt: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        alert(`You found: ${item.name}!\nIt has been added to your Curiosity Cabinet.`);
+        relic.style.transform = "scale(0)";
+        setTimeout(() => relic.remove(), 500);
+        loadCabinet({uid: uid}); // Refresh the cabinet immediately
+    };
+
+    document.body.appendChild(relic);
+}
+
+function loadCabinet(user) {
+    const cabinetGrid = document.getElementById('cabinet-grid');
+    if (!cabinetGrid) return;
+
+    const inventoryRef = firebase.database().ref(`users/${user.uid}/inventory`);
+    
+    inventoryRef.once('value').then(snapshot => {
+        if (snapshot.exists()) {
+            cabinetGrid.innerHTML = ""; // Clear "empty" message
+            snapshot.forEach(child => {
+                const item = child.val();
+                const div = document.createElement('div');
+                div.className = 'cabinet-item';
+                div.textContent = item.icon;
+                div.title = item.name;
+                cabinetGrid.appendChild(div);
+            });
+        }
+    });
+}
+</script>
             
             <button class="explore-rp-classes-button" onclick="window.location.href='roleplay_class_listings.html'">
                 Explore Roleplay Classes
