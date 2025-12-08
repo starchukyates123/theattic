@@ -169,4 +169,464 @@
 
             <div class="dashboard-card" id="current-courses-card">
                 <h3>Your Current Courses</h3>
-                <div id="current-courses
+                <div id="current-courses-list">
+                    <p>Loading your courses...</p>
+                </div>
+                <button id="toggle-courses-btn" style="display:none;">See all courses</button>
+            </div>
+
+            <div class="dashboard-card" id="cabinet-card">
+                <h3>The Curiosity Cabinet</h3>
+                <p>Strange objects you have recovered from the Attic...</p>
+                <div id="cabinet-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <p style="color:#777; font-style:italic; font-size:0.9em; padding:10px;">The cabinet is empty... keep your eyes open.</p>
+                </div>
+            </div>
+            <div class="dashboard-card" id="forum-activity-card">
+                <h3>Recent Forum Activity</h3>
+                <div id="recent-forum-activity">
+                    <p>Forum activity updates will appear here. (Feature coming soon)</p>
+                    </div>
+            </div>
+
+            <div class="dashboard-card" id="opportunities-card">
+                <h3>Opportunities</h3>
+                <p>Want to get more involved in The Attic community?</p>
+                <div class="opportunities-links">
+                    <a href="apply_for_ta.html">Apply to be a TA</a>
+                    <a href="apply_for_professor.html">Apply to be a Professor</a>
+                    <a href="request_special_access.html">Join Support/Special Groups</a>
+                </div>
+            </div>
+
+            <div class="dashboard-card" id="chronicle-card">
+                <h3>Your Chronicle</h3>
+                <div id="chronicle-summary">
+                    <p>A summary of your recent Chronicle entries or opportunities will appear here. (Feature coming soon)</p>
+                    <p style="margin-top:10px;"><a href="my_story.html">View My Story</a> | <a href="chronicle_opportunities.html">Find Opportunities</a></p>
+                </div>
+            </div>
+            
+            <button class="explore-rp-classes-button" onclick="window.location.href='roleplay_class_listings.html'">
+                Explore Roleplay Classes
+            </button>
+             <button class="button" onclick="window.location.href='course_lounges.html'" style="margin-top: 5px;">View Course Lounges</button>
+
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+<script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
+        authDomain: "attic-4ae31.firebaseapp.com",
+        projectId: "attic-4ae31",
+        storageBucket: "attic-4ae31.appspot.com", 
+        messagingSenderId: "259372678655",
+        appId: "1:259372678655:web:df9c03e07e022392837bca",
+        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
+    };
+
+    const signOutBtn = document.getElementById('signOutBtn');
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => {
+            if (firebase && firebase.auth) { 
+                firebase.auth().signOut().then(() => {
+                    alert("You have been signed out.");
+                    window.location.href = 'index.html'; 
+                }).catch((error) => {
+                    console.error('Sign Out Error', error);
+                    alert("Error signing out: " + error.message);
+                });
+            } else {
+                alert("Error: Firebase authentication service not available.");
+            }
+        });
+    }
+
+    // --- Initialize Firebase ---
+    try {
+        if (typeof firebase !== 'undefined') {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized on dashboard.html");
+            } else {
+                firebase.app(); 
+                console.log("Firebase already initialized on dashboard.html (using existing app).");
+            }
+        } else {
+            console.error("Firebase core SDK missing for dashboard.html!");
+            throw new Error("Firebase core SDK not loaded on dashboard!");
+        }
+    } catch (initError) {
+        console.error("Firebase init error on dashboard:", initError.message);
+        const body = document.querySelector('body'); 
+        if (body) {
+             const errorDiv = document.createElement('div');
+             errorDiv.innerHTML = "<p style='color:red; padding:20px; text-align:center;'>CRITICAL ERROR: Essential site services could not load. Please try refreshing the page or contact support if the issue persists.</p>";
+             if (body.firstChild) body.insertBefore(errorDiv, body.firstChild);
+             else body.appendChild(errorDiv);
+        } else {
+            alert("CRITICAL ERROR: Essential site services could not load. Please refresh.");
+        }
+    }
+
+    // --- Global Variables ---
+    let currentUser = null;
+    const INITIAL_COURSE_DISPLAY_LIMIT = 3; 
+    let allUserCourseDetails = []; 
+    let showingAllCourses = false; 
+
+    // --- Utility Functions ---
+    function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // --- Course Display Logic ---
+    function displayUserCourses() {
+        const coursesContainer = document.getElementById('current-courses-list');
+        const toggleBtn = document.getElementById('toggle-courses-btn');
+
+        if (!coursesContainer || !toggleBtn) {
+            console.warn("Dashboard: Course display elements not found.");
+            return;
+        }
+
+        coursesContainer.innerHTML = ''; 
+
+        if (allUserCourseDetails.length === 0) {
+            coursesContainer.innerHTML = '<p>You have no active courses for Year 1. <a href="courses.html">Explore Courses</a></p>';
+            toggleBtn.style.display = 'none';
+            return;
+        }
+
+        const coursesToDisplay = showingAllCourses ? allUserCourseDetails : allUserCourseDetails.slice(0, INITIAL_COURSE_DISPLAY_LIMIT);
+        
+        const ul = document.createElement('ul');
+        ul.className = 'course-list-widget';
+        
+        coursesToDisplay.forEach(courseDetails => {
+            const li = document.createElement('li');
+            const courseInfoSpan = document.createElement('span');
+            courseInfoSpan.innerHTML = `<a href="course_detail.html?id=${courseDetails.id}"><strong>${escapeHtml(courseDetails.title || courseDetails.id)}</strong></a> - <span>${escapeHtml(courseDetails.type || 'N/A')} (Status: ${escapeHtml(courseDetails.registrationStatus)})</span>`;
+            
+            const unregisterButton = document.createElement('button');
+            unregisterButton.textContent = 'Unregister';
+            unregisterButton.onclick = function() {
+                unregisterFromCourse(courseDetails.id); 
+            };
+
+            li.appendChild(courseInfoSpan);
+            li.appendChild(unregisterButton);
+            ul.appendChild(li);
+        });
+
+        coursesContainer.appendChild(ul);
+
+        if (allUserCourseDetails.length > INITIAL_COURSE_DISPLAY_LIMIT) {
+            toggleBtn.style.display = 'block';
+            toggleBtn.textContent = showingAllCourses ? `Show fewer courses` : `See all ${allUserCourseDetails.length} courses`;
+        } else {
+            toggleBtn.style.display = 'none';
+        }
+    }
+
+
+    // --- Course Loading and Unregister Functions ---
+    function unregisterFromCourse(courseId) { 
+        if (!currentUser) {
+            alert("You must be logged in to unregister from a course.");
+            return;
+        }
+        if (!courseId) {
+            alert("Course ID is missing. Cannot unregister.");
+            return;
+        }
+
+        const courseDetailRef = firebase.database().ref('courses/' + courseId); 
+        courseDetailRef.once('value').then(snapshot => { 
+            const courseData = snapshot.val(); 
+            const courseTitle = courseData ? (courseData.title || courseId) : courseId; 
+
+            if (window.confirm(`Are you sure you want to unregister from the course: "${escapeHtml(courseTitle)}"?`)) { 
+                const userCourseStatusRef = firebase.database().ref(`userProgress/${currentUser.uid}/year1/courses/${courseId}/status`); 
+                
+                userCourseStatusRef.set("dropped") 
+                    .then(() => {
+                        alert(`You have successfully unregistered from "${escapeHtml(courseTitle)}".`); 
+                        loadUserCourses(currentUser.uid);  
+                    })
+                    .catch(error => {
+                        console.error("Error unregistering from course:", error); 
+                        alert(`Failed to unregister from the course: ${error.message}`); 
+                    });
+            }
+        });
+    }
+
+    function loadUserCourses(userId) {
+        if (!firebase || !firebase.database) {
+            return;
+        }
+        const coursesRef = firebase.database().ref('userProgress/' + userId + '/year1/courses'); 
+        const coursesContainer = document.getElementById('current-courses-list'); 
+        
+        if (!coursesContainer) {
+            return; 
+        }
+        coursesContainer.innerHTML = '<p>Loading your courses...</p>'; 
+
+        coursesRef.once('value').then(snapshot => { 
+            if (!coursesContainer) return; 
+
+            if (!snapshot.exists()) { 
+                allUserCourseDetails = []; 
+                displayUserCourses(); 
+                return;
+            }
+            const userCoursesData = snapshot.val(); 
+            let activeCoursePromises = [];
+
+            for (const courseId in userCoursesData) { 
+                const courseEntry = userCoursesData[courseId]; 
+                if (courseEntry) { 
+                    const courseStatus = courseEntry.status; 
+                    if (courseStatus === 'registered' || courseStatus === 'in_progress') {  
+                        const courseDetailRef = firebase.database().ref('courses/' + courseId); 
+                        activeCoursePromises.push(
+                            courseDetailRef.once('value').then(snap => { 
+                                const details = snap.val(); 
+                                return { 
+                                    ...(details || {}), 
+                                    id: snap.key, 
+                                    registrationStatus: courseStatus 
+                                };
+                            }).catch(err => {
+                                return null; 
+                            })
+                        );
+                    }
+                }
+            }
+
+            if (activeCoursePromises.length === 0) {
+                allUserCourseDetails = [];
+                displayUserCourses(); 
+                return;
+            }
+
+            Promise.all(activeCoursePromises).then(courseDetailsArray => { 
+                allUserCourseDetails = courseDetailsArray.filter(details => details !== null && details.id); 
+                showingAllCourses = false; 
+                displayUserCourses(); 
+            });
+
+        });
+    }
+
+
+    function loadMagnetProgramInfo(programKey) {
+        const programInfoDiv = document.getElementById('magnet-program-info');  
+        if (!programInfoDiv) return; 
+
+        if (programKey && programKey !== "Undecided") { 
+            let programName = programKey.replace(/_/g, ' '); 
+            programName = programName.charAt(0).toUpperCase() + programName.slice(1); 
+
+            programInfoDiv.innerHTML = `
+                <p>You are part of the <strong>${escapeHtml(programName)}</strong> program!</p>
+                <p><a href="forums.html?magnet=${encodeURIComponent(programKey)}">Go to Program Forum</a></p>
+            `; 
+        } else {
+            programInfoDiv.innerHTML = `
+                <p>You haven't selected a Magnet Program yet, or your program is 'Undecided'.</p>
+                <p><a href="attic_gateway.html">Choose or Update Program</a></p>
+            `; 
+        }
+    }
+    
+    function updateOpportunitiesCardVisibility(userProfile) {
+        const opportunitiesCard = document.getElementById('opportunities-card');
+        if (!opportunitiesCard) return;
+
+        if (userProfile && (userProfile.role === 'admin' || userProfile.role === 'ta' || userProfile.role === 'professor')) {
+            opportunitiesCard.style.display = 'none'; 
+        } else {
+            opportunitiesCard.style.display = 'block'; 
+        }
+    }
+
+
+    // --- Auth State Change Logic ---
+    if (firebase && firebase.auth) {
+        firebase.auth().onAuthStateChanged(user => { 
+            const greetingEl = document.getElementById('user-greeting'); 
+            const introEl = document.getElementById('user-dashboard-intro'); 
+            const adminLinkContainer = document.getElementById('admin-link-container'); 
+            const taLinkContainer = document.getElementById('ta-link-container'); 
+            const professorLinkContainer = document.getElementById('professor-link-container');
+            
+            if (adminLinkContainer) adminLinkContainer.style.display = 'none'; 
+            if (taLinkContainer) taLinkContainer.style.display = 'none'; 
+            if (professorLinkContainer) professorLinkContainer.style.display = 'none';
+
+            if (user) {
+                currentUser = user; 
+                if (greetingEl) greetingEl.textContent = `Loading your details...`;  
+                if (introEl) introEl.textContent = 'Please wait while we fetch your information.'; 
+                let displayName = user.email;  
+
+                const profileRef = firebase.database().ref('users/' + user.uid + '/profile'); 
+                profileRef.once('value').then(snapshot => { 
+                    if (snapshot.exists()) { 
+                        const profileData = snapshot.val(); 
+                        const nameToUse = profileData.atticNickname || profileData.displayName || user.displayName; 
+                        if (nameToUse) {
+                            displayName = nameToUse; 
+                        }
+
+                        if (greetingEl) greetingEl.textContent = `Welcome back, ${escapeHtml(displayName)}!`; 
+                        if (introEl) introEl.textContent = "This is your personal hub for The Attic. What would you like to explore today?"; 
+
+                        if (profileData.role === 'admin') { 
+                            if (adminLinkContainer) adminLinkContainer.style.display = 'block'; 
+                            if (taLinkContainer) taLinkContainer.style.display = 'block';  
+                            if (professorLinkContainer) professorLinkContainer.style.display = 'block';
+                        } else if (profileData.role === 'ta') { 
+                            if (taLinkContainer) taLinkContainer.style.display = 'block'; 
+                        } else if (profileData.role === 'professor') { 
+                            if (professorLinkContainer) professorLinkContainer.style.display = 'block';
+                        }
+                        
+                        updateOpportunitiesCardVisibility(profileData); 
+
+                        loadMagnetProgramInfo(profileData.magnetProgram); 
+                        loadUserCourses(user.uid);  
+                        
+                        // NEW: START RELIC CHECK
+                        checkAndSpawnRelic(user);
+                        loadCabinet(user);
+
+                    } else { 
+                        if (greetingEl) greetingEl.textContent = `Welcome, ${escapeHtml(displayName)}!`; 
+                        if (introEl) introEl.textContent = "It looks like your profile isn't fully set up yet. Please complete the Attic Gateway process to personalize your dashboard."; 
+                        loadMagnetProgramInfo(null);  
+                        updateOpportunitiesCardVisibility(null); 
+                        
+                        const coursesContainer = document.getElementById('current-courses-list'); 
+                        if (coursesContainer) coursesContainer.innerHTML = '<p>Complete your profile setup to see courses. <a href="attic_gateway.html">Start Gateway</a></p>'; 
+                    }
+                });
+
+            } else { 
+                currentUser = null; 
+                if (greetingEl) greetingEl.textContent = 'Welcome to The Attic!'; 
+                if (introEl) introEl.innerHTML = 'Please <a href="login.html">log in</a> or <a href="register.html">register</a> to access your dashboard.'; 
+                const magnetInfoDiv = document.getElementById('magnet-program-info'); 
+                if (magnetInfoDiv) magnetInfoDiv.innerHTML = '<p>Please log in to see your Magnet Program details.</p>'; 
+                displayUserCourses(); 
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('toggle-courses-btn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                showingAllCourses = !showingAllCourses;
+                displayUserCourses();
+            });
+        }
+    });
+
+    // --- NEW MAGIC: RELIC SYSTEM LOGIC ---
+    const atticItems = [
+    { name: "A Rusted Iron Key", icon: "🗝️" }, { name: "A Bent Copper Paperclip", icon: "📎" }, { name: "A Ticket Stub from 1924", icon: "🎫" }, { name: "A Moth-Eaten Ribbon", icon: "🎀" },
+    { name: "A Dried Dandelion", icon: "🌼" }, { name: "Queen of Spades", icon: "🂡" }, { name: "A Cracked Marble", icon: "🔮" }, { name: "A Piece of Driftwood", icon: "🪵" },
+    { name: "A Silver Button", icon: "🔘" }, { name: "Sheet Music Fragment", icon: "🎼" }, { name: "Burnt Matchstick", icon: "🔥" }, { name: "A Thimble", icon: "🧵" },
+    { name: "Lost Child's Mitten", icon: "🧤" }, { name: "Map Fragment", icon: "🗺️" }, { name: "Broken Compass", icon: "🧭" }, { name: "Smooth River Stone", icon: "🪨" },
+    { name: "Red String", icon: "🧶" }, { name: "Faded Postcard", icon: "postcard" }, { name: "Rusty Nail", icon: "🔩" }, { name: "Sea Glass", icon: "💎" },
+    { name: "Midnight Blue Ink", icon: "✒️" }, { name: "Broken Quill", icon: "🪶" }, { name: "Leather Bookmark", icon: "🔖" }, { name: "Cracked Spectacles", icon: "👓" },
+    { name: "Charcoal Stick", icon: "✏️" }, { name: "Wax Seal Stamp", icon: "📜" }, { name: "Brass Telescope", icon: "🔭" }, { name: "Letter Opener", icon: "🗡️" },
+    { name: "Dusty Eraser", icon: "🧼" }, { name: "Ever-Flowing Pen", icon: "🖊️" }, { name: "Index Cards", icon: "📇" }, { name: "Paperweight", icon: "🗿" },
+    { name: "Box of Chalk", icon: "🖍️" }, { name: "Slate Tablet", icon: "⬛" }, { name: "Magnifying Glass", icon: "🔍" }, { name: "Protractor", icon: "📐" },
+    { name: "Bone Dice", icon: "🎲" }, { name: "Typewriter Key (Q)", icon: "⌨️" }, { name: "Empty Inkwell", icon: "🏺" }, { name: "Preserved Wing", icon: "🦋" },
+    { name: "Vial of Rainwater", icon: "💧" }, { name: "Gold Pinecone", icon: "🌲" }, { name: "Dried Lavender", icon: "🌾" }, { name: "Cicada Shell", icon: "🪲" },
+    { name: "Jar of Fireflies", icon: "✨" }, { name: "Four-Leaf Clover", icon: "🍀" }, { name: "Crow Feather", icon: "🪶" }, { name: "Owl Feather", icon: "🦉" },
+    { name: "Honeycomb Piece", icon: "🐝" }, { name: "Fossilized Shell", icon: "🐚" }, { name: "Painted Acorn", icon: "🌰" }, { name: "Vial of Sand", icon: "⏳" },
+    { name: "Birch Bark", icon: "📜" }, { name: "Snake Skin", icon: "🐍" }, { name: "Dried Mushroom", icon: "🍄" }, { name: "Quartz Shard", icon: "💎" },
+    { name: "Clump of Moss", icon: "🌿" }, { name: "Empty Nest", icon: "🪺" }, { name: "Seed Pod", icon: "🌱" }, { name: "Clockwork Beetle", icon: "🐞" },
+    { name: "Key for No Lock", icon: "🔑" }, { name: "Mirror Shard", icon: "🪞" }, { name: "Liquid Shadow", icon: "⚫" }, { name: "Whispering Shell", icon: "🐚" },
+    { name: "Silver Locket", icon: "💗" }, { name: "Bone Ring", icon: "💍" }, { name: "Tarot Card", icon: "🃏" }, { name: "Cloudy Crystal Ball", icon: "🔮" },
+    { name: "Glass Skeleton Key", icon: "🗝️" }, { name: "Coin from Nowhere", icon: "🪙" }, { name: "Masquerade Mask", icon: "🎭" }, { name: "Green Candle", icon: "🕯️" },
+    { name: "Locked Box", icon: "📦" }, { name: "Backwards Watch", icon: "⏱️" }, { name: "Voodoo Doll", icon: "🧸" }, { name: "Message in Bottle", icon: "🍾" },
+    { name: "Silent Bell", icon: "🔔" }, { name: "Runestone", icon: "🪨" }, { name: "Vial of Stardust", icon: "✨" }, { name: "Student ID (1975)", icon: "🆔" },
+    { name: "Failed Homework", icon: "📝" }, { name: "Rotting Apple", icon: "🍎" }, { name: "Secret Note", icon: "📄" }, { name: "Overdue Book", icon: "📕" },
+    { name: "Gym Whistle", icon: "🪈" }, { name: "Broken Eraser", icon: "🌫️" }, { name: "Portrait Strip", icon: "🖼️" }, { name: "Hall Pass", icon: "🎫" },
+    { name: "Tattered Banner", icon: "🚩" }, { name: "Rusted Lunchbox", icon: "🍱" }, { name: "Graduation Tassel", icon: "🎓" }, { name: "Detention Slip", icon: "🧾" },
+    { name: "Ventilation Map", icon: "🗺️" }, { name: "Lost Locker Code", icon: "🔢" }, { name: "Silver Trophy", icon: "🏆" }, { name: "Signed Yearbook", icon: "📒" },
+    { name: "Old Gum", icon: "🍬" }, { name: "Bell Clapper", icon: "🔔" }, { name: "GOLDEN ATTIC KEY", icon: "🌟" }
+    ];
+
+    function checkAndSpawnRelic(user) {
+        const timeBlock = Math.floor(Date.now() / (12 * 60 * 60 * 1000));
+        const itemIndex = timeBlock % atticItems.length;
+        const currentItem = atticItems[itemIndex];
+        const inventoryRef = firebase.database().ref(`users/${user.uid}/inventory/relic_${timeBlock}`);
+        
+        inventoryRef.once('value').then(snapshot => {
+            if (!snapshot.exists()) {
+                spawnFloatingRelic(currentItem, timeBlock, user.uid);
+            }
+        });
+    }
+
+    function spawnFloatingRelic(item, id, uid) {
+        const relic = document.createElement('div');
+        relic.className = 'drifting-relic';
+        relic.textContent = item.icon; 
+        relic.title = "Something is drifting here...";
+        relic.style.top = (15 + Math.random() * 70) + "%";
+        relic.style.left = (10 + Math.random() * 80) + "%";
+        relic.onclick = function() {
+            firebase.database().ref(`users/${uid}/inventory/relic_${id}`).set({
+                name: item.name,
+                icon: item.icon,
+                foundAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            alert(`You found: ${item.name}!\nIt has been added to your Curiosity Cabinet.`);
+            relic.style.transform = "scale(0)";
+            setTimeout(() => relic.remove(), 500);
+            loadCabinet({uid: uid}); 
+        };
+        document.body.appendChild(relic);
+    }
+
+    function loadCabinet(user) {
+        const cabinetGrid = document.getElementById('cabinet-grid');
+        if (!cabinetGrid) return;
+        const inventoryRef = firebase.database().ref(`users/${user.uid}/inventory`);
+        inventoryRef.once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                cabinetGrid.innerHTML = ""; 
+                snapshot.forEach(child => {
+                    const item = child.val();
+                    const div = document.createElement('div');
+                    div.className = 'cabinet-item';
+                    div.textContent = item.icon;
+                    div.title = item.name;
+                    cabinetGrid.appendChild(div);
+                });
+            }
+        });
+    }
+</script>
+</body>
+</html>
