@@ -98,7 +98,7 @@
             background-color: #6B8E23;
         }
 
-        /* --- MAGIC RELICS STYLES (NEW) --- */
+        /* --- MAGIC RELICS STYLES --- */
         .drifting-relic {
             position: fixed;
             z-index: 9999;
@@ -182,6 +182,7 @@
                     <p style="color:#777; font-style:italic; font-size:0.9em; padding:10px;">The cabinet is empty... keep your eyes open.</p>
                 </div>
             </div>
+
             <div class="dashboard-card" id="forum-activity-card">
                 <h3>Recent Forum Activity</h3>
                 <div id="recent-forum-activity">
@@ -546,7 +547,7 @@
         }
     });
 
-    // --- NEW MAGIC: RELIC SYSTEM LOGIC ---
+    // --- RELIC SYSTEM LOGIC ---
     const atticItems = [
     { name: "A Rusted Iron Key", icon: "🗝️" }, { name: "A Bent Copper Paperclip", icon: "📎" }, { name: "A Ticket Stub from 1924", icon: "🎫" }, { name: "A Moth-Eaten Ribbon", icon: "🎀" },
     { name: "A Dried Dandelion", icon: "🌼" }, { name: "Queen of Spades", icon: "🂡" }, { name: "A Cracked Marble", icon: "🔮" }, { name: "A Piece of Driftwood", icon: "🪵" },
@@ -595,17 +596,24 @@
         relic.title = "Something is drifting here...";
         relic.style.top = (15 + Math.random() * 70) + "%";
         relic.style.left = (10 + Math.random() * 80) + "%";
+        
         relic.onclick = function() {
+            // FIX: Wait for the database write to finish BEFORE reloading the cabinet
             firebase.database().ref(`users/${uid}/inventory/relic_${id}`).set({
                 name: item.name,
                 icon: item.icon,
                 foundAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                alert(`You found: ${item.name}!\nIt has been added to your Curiosity Cabinet.`);
+                relic.style.transform = "scale(0)";
+                setTimeout(() => relic.remove(), 500);
+                loadCabinet({uid: uid}); 
+            }).catch((error) => {
+                console.error("Error saving relic:", error);
+                alert("The relic vanished before you could grab it! (Save failed)");
             });
-            alert(`You found: ${item.name}!\nIt has been added to your Curiosity Cabinet.`);
-            relic.style.transform = "scale(0)";
-            setTimeout(() => relic.remove(), 500);
-            loadCabinet({uid: uid}); 
         };
+        
         document.body.appendChild(relic);
     }
 
