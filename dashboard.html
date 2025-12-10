@@ -99,24 +99,36 @@
             background-color: #6B8E23;
         }
 
-        /* --- MAGIC RELICS STYLES --- */
+        /* --- MAGIC RELICS STYLES (UPDATED) --- */
         .drifting-relic {
             position: fixed;
-            z-index: 9999;
+            z-index: 10000; /* Super high z-index to be on top of everything */
             cursor: pointer;
-            font-size: 35px; /* Size of the icon */
-            filter: drop-shadow(0 0 15px #8fbc8f); /* Magical green glow */
-            animation: float 6s ease-in-out infinite;
-            transition: transform 0.2s;
-            opacity: 0.9;
+            font-size: 65px; /* MUCH BIGGER SIZE */
+            
+            /* High visibility styling */
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px solid #556b2f;
+            border-radius: 50%;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            
+            /* Magical Glow */
+            filter: drop-shadow(0 0 20px gold); 
+            
+            animation: float 5s ease-in-out infinite;
+            transition: transform 0.2s, filter 0.2s;
+            opacity: 1; /* Fully visible */
+            user-select: none;
         }
         .drifting-relic:hover { 
-            transform: scale(1.4) rotate(10deg); 
-            opacity: 1;
+            transform: scale(1.2) rotate(15deg); 
+            filter: drop-shadow(0 0 30px #FFD700); /* Intense gold glow on hover */
+            background-color: #fff;
         }
         @keyframes float { 
             0%, 100% { transform: translateY(0); } 
-            50% { transform: translateY(-20px); } 
+            50% { transform: translateY(-25px); } /* Bouncier float */
         }
 
         /* Cabinet Item Style */
@@ -179,6 +191,7 @@
             <div class="dashboard-card" id="cabinet-card">
                 <h3>The Curiosity Cabinet</h3>
                 <p>Strange objects you have recovered from the Attic...</p>
+                
                 <div id="cabinet-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 15px; max-height: 200px; overflow-y: auto;">
                     <p style="color:#777; font-style:italic; font-size:0.9em; padding:10px;">The cabinet is empty... keep your eyes open.</p>
                 </div>
@@ -187,7 +200,7 @@
             <div class="dashboard-card" id="forum-activity-card">
                 <h3>Recent Forum Activity</h3>
                 <div id="recent-forum-activity">
-                    <p>Forum activity updates will appear here. (Feature coming soon)</p>
+                    <p>Forum activity updates will appear here.</p>
                     </div>
             </div>
 
@@ -204,8 +217,7 @@
             <div class="dashboard-card" id="chronicle-card">
                 <h3>Your Chronicle</h3>
                 <div id="chronicle-summary">
-                    <p>A summary of your recent Chronicle entries or opportunities will appear here. (Feature coming soon)</p>
-                    <p style="margin-top:10px;"><a href="my_story.html">View My Story</a> | <a href="chronicle_opportunities.html">Find Opportunities</a></p>
+                    <p>A summary of your recent Chronicle entries or opportunities will appear here.</p>
                 </div>
             </div>
             
@@ -471,6 +483,10 @@
                         }
                         
                         updateOpportunitiesCardVisibility(profileData); 
+                        
+                        // NEW FUNCTIONS CALLED HERE
+                        loadChronicleSummary(profileData);
+                        loadRecentForumActivity(profileData);
 
                         loadMagnetProgramInfo(profileData.magnetProgram); 
                         loadUserCourses(user.uid);  
@@ -510,8 +526,115 @@
             });
         }
     });
+    
+    // --- NEW DASHBOARD WIDGET FUNCTIONS ---
 
-    // --- RELIC SYSTEM LOGIC ---
+    function loadChronicleSummary(userProfile) {
+        const chronicleContainer = document.getElementById('chronicle-summary');
+        if (!chronicleContainer) return;
+
+        // Check if user has any entries
+        if (userProfile.chronicleEntries) {
+            const entries = Object.values(userProfile.chronicleEntries);
+            
+            // Sort by timestamp (newest first)
+            entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            
+            const latestEntry = entries[0];
+            
+            if (latestEntry) {
+                const dateStr = latestEntry.timestamp ? new Date(latestEntry.timestamp).toLocaleDateString() : 'Unknown Date';
+                // Create a short snippet of their response (first 100 chars)
+                let snippet = latestEntry.studentResponse ? latestEntry.studentResponse.substring(0, 100) : '';
+                if (latestEntry.studentResponse && latestEntry.studentResponse.length > 100) snippet += '...';
+
+                chronicleContainer.innerHTML = `
+                    <div style="background-color: #f9f9f9; padding: 10px; border-left: 3px solid #556b2f; margin-bottom: 10px;">
+                        <p><strong>Last Entry:</strong> ${escapeHtml(latestEntry.promptTitleSnapshot || 'Untitled')}</p>
+                        <p style="font-size: 0.9em; font-style: italic;">"${escapeHtml(snippet)}"</p>
+                        <p style="font-size: 0.8em; color: #666; text-align: right; margin-top:5px;">${dateStr}</p>
+                    </div>
+                    <p><a href="my_story.html">Continue Your Story</a> | <a href="chronicle_opportunities.html">Find New Prompts</a></p>
+                `;
+                return;
+            }
+        }
+
+        // Fallback if no entries found
+        chronicleContainer.innerHTML = `
+            <p>You haven't recorded any chronicle entries yet.</p>
+            <p style="margin-top:10px;"><a href="chronicle_opportunities.html">Start Your First Entry</a></p>
+        `;
+    }
+
+    function loadRecentForumActivity(userProfile) {
+        const activityContainer = document.getElementById('recent-forum-activity');
+        if (!activityContainer) return;
+
+        activityContainer.innerHTML = '<p>Loading updates...</p>';
+
+        firebase.database().ref('forumData/forums').once('value').then(snapshot => {
+            if (!snapshot.exists()) {
+                activityContainer.innerHTML = '<p>No forum activity yet.</p>';
+                return;
+            }
+
+            const allForums = snapshot.val();
+            const visibleForums = [];
+
+            // 1. Filter forums the user has access to
+            Object.keys(allForums).forEach(forumId => {
+                const forum = allForums[forumId];
+                let hasAccess = true; // Default to public
+
+                if (forum.accessGroup) {
+                    const magnetMatch = userProfile.magnetProgram && 
+                                      userProfile.magnetProgram.toLowerCase() === forum.accessGroup.toLowerCase();
+                    const specialAccess = userProfile.specialAccessGroups && 
+                                        userProfile.specialAccessGroups[forum.accessGroup] === true;
+                    
+                    if (!magnetMatch && !specialAccess) {
+                        hasAccess = false;
+                    }
+                }
+
+                // We only care about forums that actually have posts
+                if (hasAccess && forum.lastPostInfo && forum.lastPostInfo.timestamp) {
+                    visibleForums.push({
+                        id: forumId,
+                        ...forum
+                    });
+                }
+            });
+
+            // 2. Sort by last post timestamp (newest first)
+            visibleForums.sort((a, b) => b.lastPostInfo.timestamp - a.lastPostInfo.timestamp);
+
+            // 3. Take top 3 and display
+            if (visibleForums.length === 0) {
+                activityContainer.innerHTML = '<p>No recent activity in your accessible forums.</p>';
+            } else {
+                let html = '<ul style="list-style: none; padding-left: 0;">';
+                visibleForums.slice(0, 3).forEach(f => {
+                    const dateStr = new Date(f.lastPostInfo.timestamp).toLocaleDateString();
+                    const author = escapeHtml(f.lastPostInfo.authorName);
+                    html += `
+                        <li style="border-bottom: 1px solid #eee; padding: 8px 0;">
+                            <div style="font-weight: bold;"><a href="forum_view.html?id=${f.id}" style="text-decoration:none; color:#556b2f;">${escapeHtml(f.title)}</a></div>
+                            <div style="font-size: 0.85em; color: #555;">
+                                Last post by <strong>${author}</strong> on ${dateStr}
+                            </div>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                html += '<div style="text-align:center; margin-top:5px;"><a href="forums.html" style="font-size:0.9em;">View All Forums</a></div>';
+                activityContainer.innerHTML = html;
+            }
+        });
+    }
+
+    // --- RELIC SYSTEM LOGIC (UPDATED) ---
     const atticItems = [
     { name: "A Rusted Iron Key", icon: "🗝️" }, { name: "A Bent Copper Paperclip", icon: "📎" }, { name: "A Ticket Stub from 1924", icon: "🎫" }, { name: "A Moth-Eaten Ribbon", icon: "🎀" },
     { name: "A Dried Dandelion", icon: "🌼" }, { name: "Queen of Spades", icon: "🂡" }, { name: "A Cracked Marble", icon: "🔮" }, { name: "A Piece of Driftwood", icon: "🪵" },
@@ -558,11 +681,11 @@
         relic.className = 'drifting-relic';
         relic.textContent = item.icon; 
         relic.title = "Something is drifting here...";
-        relic.style.top = (15 + Math.random() * 70) + "%";
-        relic.style.left = (10 + Math.random() * 80) + "%";
+        // Keep spawn points slightly more central so they don't clip off screen edges
+        relic.style.top = (20 + Math.random() * 60) + "%";
+        relic.style.left = (15 + Math.random() * 70) + "%";
         
         relic.onclick = function() {
-            // FIX: Wait for the database write to finish BEFORE reloading the cabinet
             firebase.database().ref(`users/${uid}/inventory/relic_${id}`).set({
                 name: item.name,
                 icon: item.icon,

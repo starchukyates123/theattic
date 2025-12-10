@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forum - The Attic</title> <link rel="stylesheet" href="styles.css">
+    <title>Forum - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        /* Your existing styles from forum_view.html are preserved here */
         .thread-list-container { padding: 20px; margin: 20px; background-color: #fff; border-radius: 8px; }
         .thread-item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .thread-item:last-child { border-bottom: none; }
@@ -101,7 +101,7 @@
     let isAdmin = false;          
 
     // --- Utility Functions ---
-    function escapeHtml(unsafe) { // Keep this for when you build HTML strings with .innerHTML
+    function escapeHtml(unsafe) { 
         if (typeof unsafe !== 'string') return '';
         return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
@@ -153,7 +153,11 @@
             .then(snapshot => {
                 if (snapshot.exists()) {
                     currentUserProfile = snapshot.val();
-                    isAdmin = (currentUserProfile && currentUserProfile.role === 'admin');
+                    
+                    // ROBUST ADMIN CHECK: Checks for 'admin', 'Admin', 'ADMIN'
+                    const role = (currentUserProfile.role || '').toLowerCase();
+                    isAdmin = (role === 'admin');
+                    
                     console.log("User profile fetched. Role:", currentUserProfile.role, "isAdmin:", isAdmin);
                 } else {
                     currentUserProfile = null;
@@ -215,7 +219,7 @@
 
             if (newThreadButtonElem) {
                 let canCreateThread = false;
-                const userRole = currentUserProfile ? currentUserProfile.role : null;
+                const userRole = (currentUserProfile && currentUserProfile.role) ? currentUserProfile.role.toLowerCase() : '';
 
                 if (userRole === 'admin') {
                     canCreateThread = true; 
@@ -225,7 +229,7 @@
                         canCreateThread = true;
                     }
                 } else if (currentForumData && currentForumData.isCourseForum === true) { 
-                    if (currentUser) { canCreateThread = true; } // Example: Any logged-in user in Course Lounges
+                    if (currentUser) { canCreateThread = true; } 
                 } else { // General forums
                     if (currentUser) {
                         canCreateThread = true;
@@ -289,25 +293,14 @@
                     const threadLink = document.createElement('a');
                     threadLink.href = `thread_view.html?id=${threadId}&forumId=${currentForumId}`;
                     
-                    // --- PREFIX & AMPERSAND FIX FOR TITLE ---
-                    let rawTitle = thread.title || 'Untitled Thread'; // Use raw title
-                    if (currentForumData && currentForumData.isWorkshopForum === true) {
-                        // Option 1: Prefix only if a specific 'isLessonTask' flag is on the thread
-                        if (thread.isLessonTask === true) { // You'll need to set this flag when creating lesson threads
+                    let rawTitle = thread.title || 'Untitled Thread'; 
+                    if (currentForumData && currentForumData.isWorkshopForum === true && thread.isLessonTask === true) {
                             rawTitle = "[Workshop Lesson] " + rawTitle;
-                        }
-                        // Option 2: Fallback to prefixing if author is professor (if isLessonTask flag isn't used yet)
-                        // else if (!thread.hasOwnProperty('isLessonTask') && thread.authorUid === currentForumData.professorUid) {
-                        //    rawTitle = "[WS Lesson by Prof] " + rawTitle;
-                        // }
                     }
-                    threadLink.textContent = rawTitle; // Set textContent with the raw (potentially prefixed) title
-                    // --- END OF PREFIX & AMPERSAND FIX ---
+                    threadLink.textContent = rawTitle; 
                     threadTitleH4.appendChild(threadLink);
 
                     const threadMeta = document.createElement('p');
-                    // For author name in meta, it's okay to escape if it comes from user input & displayed via innerHTML elsewhere.
-                    // But here, if just for textContent, raw is fine. We'll keep escapeHtml for safety if this string is ever used in innerHTML.
                     const author = escapeHtml(thread.authorName || 'Unknown User'); 
                     const date = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString() : 'Unknown Date';
                     threadMeta.textContent = `Started by ${author} on ${date}`;
@@ -323,10 +316,9 @@
 
                     if (thread.lastPostInfo) {
                          const lastPostSpan = document.createElement('span');
-                         // lastAuthor and lastTime are used in innerHTML, so escaping author is good.
                          const lastAuthor = escapeHtml(thread.lastPostInfo.authorName || 'Unknown');
                          const lastTime = thread.lastPostInfo.timestamp ? new Date(thread.lastPostInfo.timestamp).toLocaleString() : 'Unknown Time';
-                         lastPostSpan.innerHTML = `Last post by ${lastAuthor}<br>${lastTime}`; // Using innerHTML here
+                         lastPostSpan.innerHTML = `Last post by ${lastAuthor}<br>${lastTime}`; 
                          threadStatsDiv.appendChild(lastPostSpan);
                     } else if (thread.postCount > 0) {
                          const lastPostSpan = document.createElement('span');
@@ -341,16 +333,37 @@
                     const adminActionsDiv = document.createElement('div');
                     adminActionsDiv.className = 'admin-actions';
 
-                    if (isAdmin) {
+                    // --- SAFE DELETE LOGIC START ---
+                    
+                    // 1. Am I the author?
+                    const isAuthor = currentUser && thread.authorUid === currentUser.uid;
+                    
+                    // 2. Are there replies? (postCount > 1 means more than just the first post)
+                    const hasReplies = (thread.postCount || 0) > 1;
+
+                    // 3. DECISION: Show button if Admin OR (Author AND No Replies)
+                    if (isAdmin || (isAuthor && !hasReplies)) {
                         const deleteButton = document.createElement('button');
                         deleteButton.textContent = 'Delete Thread';
                         deleteButton.classList.add('button-small', 'button-danger');
+                        
+                        deleteButton.title = isAdmin ? "Admin Delete" : "You can delete this because it has no replies.";
+
                         deleteButton.onclick = function() {
                             const titleForConfirm = (thread.title || `Thread ID ${threadId}`);
-                            deleteThreadByAdmin(currentForumId, threadId, titleForConfirm);
+                            deleteThread(currentForumId, threadId, titleForConfirm, thread.authorUid);
                         };
                         adminActionsDiv.appendChild(deleteButton);
+                    } else if (isAuthor && hasReplies) {
+                        // Optional: Show a message for authors who can't delete
+                        const lockedMsg = document.createElement('span');
+                        lockedMsg.textContent = " (Locked)";
+                        lockedMsg.style.fontSize = "0.8em";
+                        lockedMsg.style.color = "#999";
+                        lockedMsg.title = "Cannot delete thread because others have replied.";
+                        adminActionsDiv.appendChild(lockedMsg);
                     }
+                    // --- SAFE DELETE LOGIC END ---
 
                     threadItemDiv.appendChild(threadInfoDiv);
                     threadItemDiv.appendChild(threadStatsDiv);
@@ -367,73 +380,61 @@
         });
     }
 
-   // In forum_view.html
+    // --- REVISED DELETE FUNCTION ---
+    function deleteThread(forumId, threadId, threadTitleForConfirm, authorUid) {
+        // 1. Check Permissions again (security check)
+        const isAuthor = currentUser && currentUser.uid === authorUid;
+        
+        if (!isAdmin && !isAuthor) { 
+            alert("You do not have permission to delete this thread.");
+            return;
+        }
 
-function deleteThreadByAdmin(forumId, threadId, threadTitleForConfirm) {
-    if (!isAdmin) { // Ensure isAdmin global variable is correctly set based on user role
-        alert("You do not have permission to delete threads.");
-        return;
-    }
-    if (!confirm(`Are you sure you want to permanently delete the thread "${escapeHtml(threadTitleForConfirm)}" (ID: ${threadId}) and all its posts?\n\nThis action CANNOT be undone.`)) {
-        return;
-    }
-    if (!firebase?.database || !forumId || !threadId) {
-        alert("Database connection error or missing IDs for deletion.");
-        console.error("deleteThreadByAdmin: Missing IDs or DB. ForumID:", forumId, "ThreadID:", threadId);
-        return;
-    }
-    
-    const db = firebase.database();
-    let postsInThreadCount = 0;
+        if (!confirm(`Are you sure you want to permanently delete the thread "${escapeHtml(threadTitleForConfirm)}" (ID: ${threadId}) and all its posts?\n\nThis action CANNOT be undone.`)) {
+            return;
+        }
+        
+        if (!firebase?.database || !forumId || !threadId) {
+            alert("Database connection error or missing IDs for deletion.");
+            console.error("deleteThread: Missing IDs or DB. ForumID:", forumId, "ThreadID:", threadId);
+            return;
+        }
+        
+        const db = firebase.database();
+        let postsInThreadCount = 0;
 
-    // Path to the thread's metadata
-    const threadMetaRef = db.ref(`forumData/threads/${forumId}/${threadId}`);
-    // Path to the posts of this thread
-    const threadPostsRef = db.ref(`forumData/posts/${threadId}`);
-    // Path to the parent forum's metadata
-    const forumMetaRef = db.ref(`forumData/forums/${forumId}`);
+        const threadMetaRef = db.ref(`forumData/threads/${forumId}/${threadId}`);
+        const forumMetaRef = db.ref(`forumData/forums/${forumId}`);
 
-    // 1. Get the number of posts in the thread to update the forum's postCount
-    threadMetaRef.child('postCount').once('value')
-        .then(countSnapshot => {
-            postsInThreadCount = countSnapshot.val() || 0;
+        threadMetaRef.child('postCount').once('value')
+            .then(countSnapshot => {
+                postsInThreadCount = countSnapshot.val() || 0;
 
-            // 2. Prepare atomic updates
-            const updates = {};
-            updates[`forumData/threads/${forumId}/${threadId}`] = null; // Delete thread metadata
-            updates[`forumData/posts/${threadId}`] = null;          // Delete all posts in the thread
+                const updates = {};
+                updates[`forumData/threads/${forumId}/${threadId}`] = null; // Delete thread metadata
+                updates[`forumData/posts/${threadId}`] = null;          // Delete all posts
 
-            // 3. Perform the multi-path update
-            return db.ref().update(updates);
-        })
-        .then(() => {
-            console.log(`Thread ${threadId} and its posts deleted from database.`);
-            // 4. Update forum's threadCount and postCount atomically
-            return forumMetaRef.transaction(currentForumData => {
-                if (currentForumData) {
-                    currentForumData.threadCount = Math.max(0, (currentForumData.threadCount || 0) - 1);
-                    currentForumData.postCount = Math.max(0, (currentForumData.postCount || 0) - postsInThreadCount);
-                    // Updating lastPostInfo accurately here is complex.
-                    // For simplicity, it will update when a new post/thread is made.
-                    // Or, you could query for the new latest thread/post and update it.
-                }
-                return currentForumData;
+                return db.ref().update(updates);
+            })
+            .then(() => {
+                console.log(`Thread ${threadId} deleted.`);
+                return forumMetaRef.transaction(currentForumData => {
+                    if (currentForumData) {
+                        currentForumData.threadCount = Math.max(0, (currentForumData.threadCount || 0) - 1);
+                        currentForumData.postCount = Math.max(0, (currentForumData.postCount || 0) - postsInThreadCount);
+                    }
+                    return currentForumData;
+                });
+            })
+            .then(() => {
+                alert(`Thread "${escapeHtml(threadTitleForConfirm)}" has been deleted.`);
+            })
+            .catch(error => {
+                console.error("Error deleting thread:", error);
+                alert(`Failed to delete thread: ${error.message}`);
             });
-        })
-        .then(transactionResult => {
-            if (!transactionResult.committed) {
-                console.warn("Transaction to update forum counts for deletion was not committed for forum:", forumId);
-            }
-            alert(`Thread "${escapeHtml(threadTitleForConfirm)}" and its posts have been deleted.`);
-            // The real-time listener for threads should refresh the list automatically.
-        })
-        .catch(error => {
-            console.error("Error deleting thread:", error);
-            alert(`Failed to delete thread: ${error.message}`);
-        });
-}
+    }
 
-    // --- Initial Execution ---
     document.addEventListener('DOMContentLoaded', checkAuthAndLoad);
 </script>
 
