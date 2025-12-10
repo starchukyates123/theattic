@@ -128,6 +128,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    
+    <script src="firebaseconfig.js"></script>
 </head>
 
 <body>
@@ -167,35 +169,6 @@
     </footer>
 
    <script>
-    // --- Firebase Configuration ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
-        authDomain: "attic-4ae31.firebaseapp.com",
-        projectId: "attic-4ae31",
-        storageBucket: "attic-4ae31.firebasestorage.app",
-        messagingSenderId: "259372678655",
-        appId: "1:259372678655:web:df9c03e07e022392837bca",
-        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
-    };
-
-    // --- Initialize Firebase ---
-    try {
-        if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        } else if (typeof firebase !== 'undefined' && firebase.apps.length) {
-            firebase.app();
-        }
-        if (!firebase.auth || !firebase.database || !firebase.storage) {
-            throw new Error("One or more Firebase SDKs are missing!");
-        }
-        console.log("[CourseDetail] Firebase Initialized/Checked.");
-    } catch (initError) {
-        console.error("[CourseDetail] Firebase initialization error:", initError);
-        document.addEventListener('DOMContentLoaded', () => {
-            document.body.innerHTML = "<p style='color:red; padding:20px;'>Critical Error: Site services couldn't start.</p>";
-        });
-    }
-
     // --- DOM Element References ---
     let courseTitleElement, courseDescriptionElement, weeklyContentPanelsElement, studentWeekTabsNavElement;
     let goToCourseForumBtn; // Reference for the forum button

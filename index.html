@@ -10,34 +10,8 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
-  authDomain: "attic-4ae31.firebaseapp.com",
-  projectId: "attic-4ae31",
-  storageBucket: "attic-4ae31.firebasestorage.app",
-  messagingSenderId: "259372678655",
-  appId: "1:259372678655:web:df9c03e07e022392837bca",
-  measurementId: "G-2WWH3YVXT5"
-};
-    // Initialize Firebase
-     try {
-         if (typeof firebase !== 'undefined') {
-             if (!firebase.apps.length) {
-                 firebase.initializeApp(firebaseConfig);
-                 console.log("Firebase initialized on index.html!");
-             } else {
-                 firebase.app(); // Use existing app
-                 console.log("Firebase already initialized on index.html.");
-             }
-         } else {
-             console.error("Firebase object is undefined! Check SDK script tags.");
-         }
-     } catch (initError) {
-         console.error("Error during Firebase initialization:", initError);
-     }
-   </script>
+ 
+  <script src="firebaseconfig.js"></script>
  </head>
 
 <body>

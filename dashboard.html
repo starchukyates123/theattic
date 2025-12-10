@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
+    <script src="firebaseconfig.js"></script>
     <style>
         /* --- DASHBOARD STYLES --- */
         .dashboard-grid {
@@ -222,16 +223,6 @@
     </footer>
 
 <script>
-    // --- Firebase Configuration ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyDyj1nr93dtoAgvsLbty6Xs2GCW1T54AO4",
-        authDomain: "attic-4ae31.firebaseapp.com",
-        projectId: "attic-4ae31",
-        storageBucket: "attic-4ae31.appspot.com", 
-        messagingSenderId: "259372678655",
-        appId: "1:259372678655:web:df9c03e07e022392837bca",
-        databaseURL: "https://attic-4ae31-default-rtdb.firebaseio.com/"
-    };
 
     const signOutBtn = document.getElementById('signOutBtn');
 
@@ -249,33 +240,6 @@
                 alert("Error: Firebase authentication service not available.");
             }
         });
-    }
-
-    // --- Initialize Firebase ---
-    try {
-        if (typeof firebase !== 'undefined') {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-                console.log("Firebase initialized on dashboard.html");
-            } else {
-                firebase.app(); 
-                console.log("Firebase already initialized on dashboard.html (using existing app).");
-            }
-        } else {
-            console.error("Firebase core SDK missing for dashboard.html!");
-            throw new Error("Firebase core SDK not loaded on dashboard!");
-        }
-    } catch (initError) {
-        console.error("Firebase init error on dashboard:", initError.message);
-        const body = document.querySelector('body'); 
-        if (body) {
-             const errorDiv = document.createElement('div');
-             errorDiv.innerHTML = "<p style='color:red; padding:20px; text-align:center;'>CRITICAL ERROR: Essential site services could not load. Please try refreshing the page or contact support if the issue persists.</p>";
-             if (body.firstChild) body.insertBefore(errorDiv, body.firstChild);
-             else body.appendChild(errorDiv);
-        } else {
-            alert("CRITICAL ERROR: Essential site services could not load. Please refresh.");
-        }
     }
 
     // --- Global Variables ---
