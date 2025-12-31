@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Your Story - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebaseconfig.js"></script>
+
+    <style>
+        /* --- THE WRITING DESK THEME --- */
+        body {
+            background-color: #5d4037; /* Dark Wood Color */
+            background-image: repeating-linear-gradient(45deg, #533931 0, #533931 2px, #5d4037 2px, #5d4037 8px); /* Wood grain effect */
+            color: #333;
+            font-family: 'Merriweather', serif;
+        }
+
+        header {
+            background: transparent;
+            box-shadow: none;
+            color: #e0c097; /* Parchment color text */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        header h1 { margin-bottom: 5px; }
+        
+        .desk-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        /* --- THE PARCHMENT (Writing Area) --- */
+        .parchment-sheet {
+            flex: 2;
+            min-width: 300px;
+            background-color: #fdfbf7;
+            padding: 50px 60px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            transform: rotate(-1deg); /* Slight natural tilt */
+            border-radius: 2px;
+        }
+
+        /* Paper texture line */
+        .parchment-sheet::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 40px; bottom: 0;
+            width: 2px;
+            background: rgba(255, 0, 0, 0.1); /* Margin line */
+        }
+
+        /* --- THE INK & QUILL DECORATION --- */
+        .ink-quill-station {
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            font-size: 80px;
+            filter: drop-shadow(5px 10px 5px rgba(0,0,0,0.4));
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+     /* --- STYLING THE INPUTS (Handwritten Style) --- */
+        .handwritten-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px dashed #ccc;
+            background: transparent;
+            font-family: 'Merriweather', serif;
+            font-size: 1.1em;
+            padding: 10px 5px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.3s;
+            
+            /* THE FIX: Lifts the input above the paper background */
+            position: relative; 
+            z-index: 50; 
+            cursor: text;
+            color: #000; /* Force text to be black */
+        }
+        .handwritten-input:focus {
+            border-bottom: 1px solid #556b2f;
+        }
+        
+        textarea.handwritten-input {
+            border: none;
+            background-image: repeating-linear-gradient(transparent, transparent 31px, #e5e5e5 32px);
+            line-height: 32px;
+            padding: 0 5px;
+            min-height: 400px;
+            resize: vertical;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-top: 15px;
+        }
+
+        /* --- SIDEBAR: SAVE FILE SECTION --- */
+        .drafts-sidebar {
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: rotate(1deg); /* Slight opposite tilt */
+            height: fit-content;
+        }
+
+        .drafts-sidebar h3 {
+            margin-top: 0;
+            color: #556b2f;
+            border-bottom: 2px solid #556b2f;
+            padding-bottom: 10px;
+        }
+
+        .draft-item {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .draft-item:hover { background: #f0f8f0; }
+        .draft-meta { font-size: 0.8em; color: #777; }
+
+        /* --- BUTTONS --- */
+        .quill-btn {
+            background-color: #556b2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Merriweather', serif;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        .quill-btn:hover { transform: translateY(-2px); background-color: #445525; }
+        .quill-btn.secondary { background-color: #8b3a3a; } /* Save Draft Color */
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>The Writer's Desk</h1>
+        <p style="text-align:center; font-style:italic; opacity:0.8;">Dip your quill and let the ink flow...</p>
+    </header>
+
+    <main>
+        <div class="desk-container">
+            
+            <div class="parchment-sheet">
+                <div class="ink-quill-station">🪶</div> <h2 style="text-align:center; font-family:'Great Vibes', cursive, serif; margin-top:0;">New Manuscript</h2>
+                
+                <form id="storyForm">
+                    <input type="hidden" id="draftId" value=""> <label for="title">Story Title</label>
+                    <input type="text" id="title" class="handwritten-input" placeholder="The Tale of..." required>
+
+                    <div style="display:flex; gap:20px;">
+                        <div style="flex:1;">
+                            <label for="type">Format</label>
+                            <select id="type" class="handwritten-input" style="border-bottom:1px solid #ccc;">
+                                <option value="Short Story">Short Story</option>
+                                <option value="Chapter Book">Chapter Book</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label for="seriesName">Series / Book Name (Optional)</label>
+                            <input type="text" id="seriesName" class="handwritten-input" placeholder="e.g. The Attic Chronicles">
+                        </div>
+                    </div>
+
+                    <label for="synopsis">Synopsis / Hook</label>
+                    <textarea id="synopsis" class="handwritten-input" style="min-height: 80px;" placeholder="A brief summary..." required></textarea>
+
+                    <label for="content">The Story</label>
+                    <textarea id="content" class="handwritten-input" placeholder="Once upon a time..." required></textarea>
+
+                    <div class="action-bar">
+                        <button type="button" class="quill-btn secondary" onclick="saveDraft()">💾 Save to Manuscripts</button>
+                        <button type="submit" class="quill-btn">🖋️ Publish to Library</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="drafts-sidebar">
+                <h3>📜 My Manuscripts</h3>
+                <p style="font-size:0.9em; color:#666; margin-bottom:15px;">Work in progress...</p>
+                <div id="drafts-list">
+                    <p>Loading your saved drafts...</p>
+                </div>
+                <hr>
+                <div style="text-align:center;">
+                    <a href="library.html" style="color:#556b2f; text-decoration:none;">&larr; Return to Library</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- AUTH & LOAD LOGIC ---
+        let currentUser = null;
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                loadDrafts(); // Load the side pile
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // --- SAVE DRAFT FUNCTION ---
+        function saveDraft() {
+            if (!currentUser) return;
+
+            const title = document.getElementById('title').value.trim();
+            if (!title) { alert("Please at least write a title to save a draft."); return; }
+
+            const draftData = {
+                title: title,
+                type: document.getElementById('type').value,
+                seriesName: document.getElementById('seriesName').value.trim(),
+                synopsis: document.getElementById('synopsis').value,
+                content: document.getElementById('content').value,
+                lastUpdated: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            // Check if we are updating an existing draft or creating a new one
+            const existingId = document.getElementById('draftId').value;
+            const draftsRef = firebase.database().ref(`users/${currentUser.uid}/library_drafts`);
+
+            if (existingId) {
+                // Update
+                draftsRef.child(existingId).update(draftData).then(() => {
+                    alert("Manuscript updated!");
+                    loadDrafts();
+                });
+            } else {
+                // Create New
+                const newRef = draftsRef.push();
+                newRef.set(draftData).then(() => {
+                    document.getElementById('draftId').value = newRef.key; // Set ID so future saves update this one
+                    alert("Draft saved to your Manuscripts!");
+                    loadDrafts();
+                });
+            }
+        }
+
+        // --- LOAD DRAFTS LIST ---
+        function loadDrafts() {
+            if (!currentUser) return;
+            const listContainer = document.getElementById('drafts-list');
+            
+            firebase.database().ref(`users/${currentUser.uid}/library_drafts`).once('value').then(snapshot => {
+                listContainer.innerHTML = '';
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const draft = child.val();
+                        const div = document.createElement('div');
+                        div.className = 'draft-item';
+                        div.innerHTML = `
+                            <strong>${escapeHtml(draft.title || 'Untitled')}</strong>
+                            <div class="draft-meta">${new Date(draft.lastUpdated).toLocaleDateString()}</div>
+                        `;
+                        div.onclick = () => loadDraftIntoForm(child.key, draft);
+                        listContainer.appendChild(div);
+                    });
+                } else {
+                    listContainer.innerHTML = '<p style="font-style:italic; font-size:0.9em;">No saved drafts yet.</p>';
+                }
+            });
+        }
+
+        // --- LOAD A SPECIFIC DRAFT INTO THE FORM ---
+        function loadDraftIntoForm(key, draft) {
+            if(confirm("Load this draft? Any unsaved changes on your current page will be lost.")) {
+                document.getElementById('draftId').value = key;
+                document.getElementById('title').value = draft.title || '';
+                document.getElementById('type').value = draft.type || 'Short Story';
+                document.getElementById('seriesName').value = draft.seriesName || '';
+                document.getElementById('synopsis').value = draft.synopsis || '';
+                document.getElementById('content').value = draft.content || '';
+            }
+        }
+
+        // --- PUBLISH (SUBMIT) LOGIC ---
+        document.getElementById('storyForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const title = document.getElementById('title').value.trim();
+            const type = document.getElementById('type').value;
+            const seriesName = document.getElementById('seriesName').value.trim();
+            const synopsis = document.getElementById('synopsis').value.trim();
+            const content = document.getElementById('content').value;
+
+            // Get Author Name
+            firebase.database().ref('users/' + currentUser.uid + '/profile').once('value').then(snapshot => {
+                const profile = snapshot.val() || {};
+                const authorName = profile.atticNickname || profile.displayName || "Anonymous";
+
+                const newStoryRef = firebase.database().ref('library/stories').push();
+                
+                newStoryRef.set({
+                    title: title,
+                    type: type,
+                    seriesName: seriesName, // Saved for future grouping
+                    synopsis: synopsis,
+                    content: content,
+                    authorName: authorName,
+                    authorUid: currentUser.uid,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    // Optional: Delete the draft if it was a draft
+                    const draftId = document.getElementById('draftId').value;
+                    if (draftId) {
+                        firebase.database().ref(`users/${currentUser.uid}/library_drafts/${draftId}`).remove();
+                    }
+                    
+                    alert("Your story has been officially published to the Library!");
+                    window.location.href = 'library.html';
+                }).catch(err => {
+                    console.error(err);
+                    alert("Error publishing: " + err.message);
+                });
+            });
+        });
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

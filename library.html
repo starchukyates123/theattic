@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Attic Library</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebaseconfig.js"></script>
+
+    <style>
+        /* --- BOOKCASE STYLES --- */
+        body {
+            background-color: #f4f1ea;
+        }
+
+        .welcome-container {
+            max-width: 1100px;
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+            margin: 20px auto;
+        }
+
+        .library-header {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-top: 5px solid #556b2f;
+        }
+
+        .library-controls {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .library-controls input, .library-controls select {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            outline: none;
+        }
+
+        /* --- THE HEAVY OAK SHELVES --- */
+        #library-shelves {
+            /* 1. The Box: Thick dark border like a cabinet */
+            border: 20px solid #5d4037; 
+            background-color: #f3e5dc; /* Lighter inner wood color */
+            border-radius: 10px;
+            
+            /* 2. The Shelves: A repeating pattern */
+            /* Repeats every 340px. The "plank" is the last 20px (from 320 to 340) */
+            background-image: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 320px,     /* Empty space for books */
+                #5d4037 320px,         /* Start of Shelf Plank */
+                #4e342e 340px          /* End of Shelf Plank */
+            );
+            
+            min-height: 700px; /* Make it tall even if empty */
+            padding: 0 40px; /* Inner padding */
+            
+            /* 3. Layout: Standard Flexbox */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start; /* Start stacking from top */
+        }
+
+        /* --- THE BOOKS --- */
+        .book-card {
+            width: 170px;
+            height: 250px; /* Fixed height */
+            
+            /* ALIGNMENT MAGIC: 
+               Shelf repeats every 340px. 
+               Shelf plank starts at 320px.
+               Book is 250px tall.
+               We need 70px of top margin to push the book down to the line (250+70=320)
+            */
+            margin-top: 70px; 
+            margin-left: 25px;
+            margin-right: 25px;
+            margin-bottom: 20px; /* Space below the shelf line */
+            
+            background-color: #556b2f;
+            border-radius: 4px 12px 12px 4px; /* Curved spine on right */
+            box-shadow: 
+                inset 8px 0 10px rgba(0,0,0,0.2), /* Spine shadow */
+                5px 8px 10px rgba(0,0,0,0.4);     /* Shelf shadow */
+            
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s ease;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            color: #fff;
+            z-index: 2; /* Sit above background */
+        }
+
+        /* Decorative Spine Line */
+        .book-card::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .book-card:hover {
+            transform: scale(1.05) translateY(-5px); /* Lift book */
+            box-shadow: 
+                inset 8px 0 10px rgba(0,0,0,0.2),
+                10px 15px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .book-title {
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+            font-size: 1em;
+            line-height: 1.3;
+            max-height: 5.2em;
+            overflow: hidden;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+        }
+
+        .book-author {
+            font-size: 0.75em;
+            font-style: italic;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        /* Dynamic Cover Colors */
+        .cover-1 { background-color: #8b3a3a; } /* Dark Red */
+        .cover-2 { background-color: #2f4f4f; } /* Dark Slate */
+        .cover-3 { background-color: #556b2f; } /* Olive */
+        .cover-4 { background-color: #8B4513; } /* Saddle Brown */
+        .cover-5 { background-color: #483D8B; } /* Dark Slate Blue */
+        .cover-6 { background-color: #B8860B; } /* Dark Goldenrod */
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>The Attic Library</h1>
+        <nav>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="library.html">Library</a>
+            <a href="library_submit.html" class="button-nav">Submit a Story</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="welcome-container">
+            <div class="library-header">
+                <h3>Community Stories</h3>
+                <p>Pull up a chair and browse the collection.</p>
+                <div class="library-controls">
+                    <input type="text" id="searchInput" placeholder="Search titles..." onkeyup="filterLibrary()">
+                    <select id="typeFilter" onchange="filterLibrary()">
+                        <option value="all">All Books</option>
+                        <option value="Short Story">Short Stories</option>
+                        <option value="Chapter Book">Chapter Books</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="library-shelves">
+                <p style="width: 100%; text-align: center; margin-top: 140px; color: #5d4037; font-style: italic; opacity: 0.7;">
+                    The shelves are waiting for their first book...
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 The Attic - Alternative Academy</p>
+    </footer>
+
+    <script>
+        const shelvesContainer = document.getElementById('library-shelves');
+        let allStories = [];
+        const coverClasses = ['cover-1', 'cover-2', 'cover-3', 'cover-4', 'cover-5', 'cover-6'];
+
+        // Load stories
+        firebase.database().ref('library/stories').on('value', (snapshot) => {
+            shelvesContainer.innerHTML = '';
+            allStories = [];
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    const story = child.val();
+                    story.id = child.key; 
+                    allStories.push(story);
+                });
+                // Sort by newest
+                allStories.sort((a, b) => b.timestamp - a.timestamp);
+                displayStories(allStories);
+            } else {
+                shelvesContainer.innerHTML = `
+                    <p style="width: 100%; text-align: center; margin-top: 140px; color: #5d4037; font-style: italic;">
+                        The shelves are empty. Why not <a href="library_submit.html">add a book</a>?
+                    </p>`;
+            }
+        });
+
+        function displayStories(stories) {
+            shelvesContainer.innerHTML = '';
+            if (stories.length === 0) {
+                shelvesContainer.innerHTML = '<p style="margin-top:140px; color:#5d4037;">No books found matching your search.</p>';
+                return;
+            }
+
+            stories.forEach((story, index) => {
+                const book = document.createElement('div');
+                const colorClass = coverClasses[index % coverClasses.length];
+                
+                book.className = `book-card ${colorClass}`;
+                book.onclick = () => window.location.href = `library_view.html?id=${story.id}`;
+                book.title = "Click to read " + story.title;
+
+                // Simple Visual: Title and Author on spine/cover
+                book.innerHTML = `
+                    <div class="book-title">${escapeHtml(story.title)}</div>
+                    <div class="book-author">${escapeHtml(story.authorName)}</div>
+                `;
+                shelvesContainer.appendChild(book);
+            });
+        }
+
+        function filterLibrary() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            const filtered = allStories.filter(story => {
+                const matchesSearch = (story.title || '').toLowerCase().includes(searchText) || 
+                                      (story.authorName || '').toLowerCase().includes(searchText);
+                const matchesType = typeFilter === 'all' || story.type === typeFilter;
+                return matchesSearch && matchesType;
+            });
+            displayStories(filtered);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

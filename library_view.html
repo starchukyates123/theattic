@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading Room - The Attic</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebaseconfig.js"></script>
+
+    <style>
+        .reader-container { max-width: 800px; margin: 30px auto; background: #fff; padding: 40px; border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .reader-header { text-align: center; border-bottom: 2px solid #556b2f; padding-bottom: 20px; margin-bottom: 30px; }
+        .reader-header h1 { color: #556b2f; margin-bottom: 10px; font-size: 2.5em; }
+        .reader-meta { color: #777; font-style: italic; }
+        .story-body { font-size: 1.1em; line-height: 1.8; color: #333; white-space: pre-wrap; font-family: 'Merriweather', serif; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>The Attic Reading Room</h1>
+        <nav>
+            <a href="library.html">Back to Shelves</a>
+        </nav>
+    </header>
+
+    <main>
+        <div id="loading" style="text-align: center; padding: 50px;">Opening book...</div>
+        
+        <div id="reader" class="reader-container" style="display: none;">
+            <div class="reader-header">
+                <h1 id="storyTitle"></h1>
+                <p class="reader-meta">Written by <span id="storyAuthor"></span></p>
+                <span id="storyType" class="badge"></span>
+            </div>
+            <div id="storyContent" class="story-body"></div>
+        </div>
+    </main>
+
+    <script>
+        // Get Story ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const storyId = urlParams.get('id');
+
+        if (!storyId) {
+            document.getElementById('loading').textContent = "Error: No book selected.";
+        } else {
+            firebase.database().ref('library/stories/' + storyId).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const story = snapshot.val();
+                    document.title = story.title + " | The Attic";
+                    
+                    document.getElementById('storyTitle').textContent = story.title;
+                    document.getElementById('storyAuthor').textContent = story.authorName;
+                    document.getElementById('storyContent').textContent = story.content;
+                    
+                    const typeBadge = document.getElementById('storyType');
+                    typeBadge.textContent = story.type;
+                    typeBadge.className = story.type === 'Chapter Book' ? 'badge badge-book' : 'badge badge-story';
+
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('reader').style.display = 'block';
+                } else {
+                    document.getElementById('loading').textContent = "Error: Story not found.";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
