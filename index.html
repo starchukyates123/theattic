@@ -1,216 +1,278 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to The Attic - Alternative Academy</title>
-  <link rel="stylesheet" href="styles.css">
- 
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
- 
-  <script src="firebaseconfig.js"></script>
- </head>
-
-<body>
- <header>
-  <h1>Welcome to The Attic - Alternative Academy!</h1>
-  <p class="tagline">An alternative school for modern times, designed for ages 13+</p>
- </header>
-
- <main>
-  <div class="welcome-container">
-   <div class="mission-overview">
-    <h3>Our Mission</h3>
-    <p>
-     The Attic - Alternative Academy is a unique online learning community and forum for teens and adults.
-     We provide an alternative educational experience focused on community, engagement, and flexibility.
-    </p>
-   </div>
-
-   <hr>
-
-   <div class="magnet-programs">
-    <h3>Explore Our Magnet Programs</h3>
-    <p>
-     To enhance your experience, we offer specialized "Magnet Programs":
-    </p>
-    <ul>
-     <li><strong>Eco-Explorers:</strong> For those passionate about the environment.</li>
-     <li><strong>Thinkers:</strong> Focused on problem-solving and logical thinking.</li>
-     <li><strong>Movers:</strong> Emphasizing physical activity and hands-on creation.</li>
-     <li><strong>Creative Expressionists:</strong> Celebrating artistic and creative talents.</li>
-     <li><strong>Kind World Builders:</strong> Dedicated to helping others and building community.</li>
-    </ul>
-    <p>
-     Each program has its own forum and learning space for in-character and out-of-character interactions.
-    </p>
-   </div>
-
-   <hr>
-
-   <div class="courses-overview">
-    <h3>Our Learning Approach</h3>
-    <p>
-     We offer a range of Year 1 classes with a flexible structure to suit diverse learning needs:
-    </p>
-    <ul>
-     <li><strong>Core Track:</strong> Essential, supportive lessons for all learners.</li>
-     <li><strong>Deep Dive Options:</strong> Optional challenges for advanced learners.</li>
-     <li><strong>Mastery Mini-Quests:</strong> Project-based activities to earn Mastery Badges.</li>
-     <li><strong>Lounge Forums:</strong> Community spaces for each class to share and connect.</li>
-    </ul>
-   </div>
-
-   <hr>
-
-   <div class="account-actions">
-    <h3>Get Started</h3>
-    <p>
-     To get started, register for an account. After logging in, you'll complete a short application to join a Magnet Program.
-    </p>
-    <form id="loginForm">
-     <div class="form-group">
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required>
-     </div>
-     <div class="form-group">
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required>
-     </div>
-     <button type="submit">Log In</button>
-    </form>
-    <div class="register-link">
-     Don't have an account? <a href="register.html">Register here</a>
-    </div>
-   </div>
-  </div>
- </main>
- <div class="home-link">
-   <a href="index.html">Back to Home</a>
-  </div>
- <footer>
-  <p>&copy; 2025 The Attic - Alternative Academy</p>
- </footer>
-
- <script>
-  // Get references to the form elements
-  const loginForm = document.getElementById('loginForm');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-
-  // Add an event listener to the form submission
-  // Replace the entire loginForm.addEventListener('submit', ...) function 
-  // in BOTH login.html AND index.html with this corrected version:
-
- // ----- START: COPY THIS ENTIRE BLOCK -----
-loginForm.addEventListener('submit', (event) => {
-    event.preventDefault(); 
-
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
-    if (!firebase || !firebase.auth || !firebase.database) {
-        alert("Firebase is not ready. Please refresh the page.");
-        console.error("Firebase auth or database object is not available.");
-        return;
-    }
-
-    // --- Start Firebase Login ---
-    firebase.auth().signInWithEmailAndPassword(email, password)
-      .then((userCredential) => { // Open .then for signIn
-        // Login successful (Auth part)
-        const user = userCredential.user;
-        const userUid = user.uid;
-        const isIndexPage = (typeof document !== 'undefined' && document.title.includes("Welcome")); // Check if we are on index.html
-        const logPrefix = isIndexPage ? "(via index.html):" : "(via login.html):"; 
-        console.log("Authentication successful for:", userUid, logPrefix); 
-
-        // Now check the database for onboarding status and role
-        return firebase.database().ref('users/' + userUid + '/profile').once('value')
-          // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-          // THIS is the single, correct block for checking profile and redirecting 
-          .then((snapshot) => { // Open .then for once('value')
-              // Database read successful
-              const userData = snapshot.val();
-              console.log("User profile data from DB:", userData, logPrefix); 
-
-              // --- ONBOARDING CHECK LOGIC ---
-              // Check if profile exists
-              if (!userData) {
-                  console.log("Redirecting to attic_gateway.html (profile missing)", logPrefix);
-                  alert("Welcome! Please complete your entry into The Attic.");
-                  window.location.href = 'attic_gateway.html';
-                  return; 
-              }
-              
-              // 1. Check Gateway Completion
-              if (userData.gatewayComplete !== true) {
-                  console.log("Redirecting to attic_gateway.html (gateway incomplete)", logPrefix);
-                  alert("Please complete your entry into The Attic.");
-                  window.location.href = 'attic_gateway.html';
-                  return; 
-              }
-
-              // 2. Check Orientation Completion (only if gateway IS complete)
-              if (userData.orientationComplete !== true) {
-                  console.log("Redirecting to first_day_orientation.html (orientation incomplete)", logPrefix);
-                  alert("Welcome back! Please complete your Orientation Day.");
-                  window.location.href = 'first_day_orientation.html';
-                  return; 
-              }
-
-              // --- ONBOARDING COMPLETE - Proceed with normal checks ---
-              
-              // 3. Check for Admin Role
-              if (userData.role === 'admin') {
-                  console.log("Redirecting to dashboard.html (admin)", logPrefix);
-                  alert("Admin login successful! Redirecting to dashboard.");
-                  window.location.href = 'dashboard.html'; // Or admin.html if preferred
-                  return; 
-              }
-
-              // 4. Default Logged-in User (Onboarding Complete, Not Admin)
-              console.log("Redirecting to dashboard.html (onboarding complete)", logPrefix);
-              // Use preferred nickname if available from gateway
-              alert("Login successful! Welcome back to The Attic, " + (userData.atticNickname || userData.displayName || user.email) + ".");
-              window.location.href = 'dashboard.html';
-              return; 
-          }) // Close .then for once('value')
-          .catch((dbError) => { // Open .catch for once('value')
-              // Database read FAILED
-              console.error('Error reading user profile data from database:', dbError, logPrefix);
-              alert('Login successful, but could not verify your onboarding status due to a database error. Proceeding to dashboard.');
-              console.log("Redirecting to dashboard.html (DB read error)", logPrefix);
-              window.location.href = 'dashboard.html'; 
-              return; 
-          }); // Close .catch for once('value')
-          // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          // End of the single, correct block for checking profile and redirecting
-
-    }) // Close .then for signIn
-    .catch((authError) => { // Open .catch() for authentication errors
-        // Authentication FAILED
-        const errorCode = authError.code;
-        const errorMessage = authError.message;
-        let friendlyMessage = "Login failed: " + errorMessage;
-        if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
-            friendlyMessage = "Login failed: Incorrect email or password.";
-        } else if (errorCode === 'auth/invalid-email') {
-            friendlyMessage = "Login failed: Please enter a valid email address.";
-        } else if (errorCode === 'auth/user-disabled') {
-             friendlyMessage = "Login failed: This account has been disabled.";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini 🧠 Base Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .chat-container { height: 60vh; overflow-y: auto; }
+        .memory-item {
+            background: #1e293b;
+            border-left: 3px solid #6366f1;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin: 6px 0;
+            font-size: 12px;
+            transition: all 0.2s;
+            cursor: pointer;
         }
-        alert(friendlyMessage);
-        console.error("Authentication error:", authError);
-    }); // Close .catch() for authentication errors
+        .memory-item:hover {
+            background: #334155;
+            border-left-color: #a78bfa;
+        }
+        .memory-label {
+            color: #a78bfa;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+        .memory-value {
+            color: #cbd5e1;
+            margin-top: 2px;
+            word-break: break-word;
+            font-size: 11px;
+        }
+        .insight-item {
+            background: #1f2937;
+            border-left: 3px solid #8b5cf6;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin: 6px 0;
+            font-size: 11px;
+        }
+        .insight-key {
+            color: #c084fc;
+            font-weight: 600;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .insight-text {
+            color: #d1d5db;
+            margin-top: 3px;
+            line-height: 1.3;
+            font-size: 10px;
+        }
+        .insight-time {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-top: 0.25rem;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(100, 100, 120, 0.3);
+        }
+        .section-header i {
+            font-size: 12px;
+        }
+        .section-header span {
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white selection:bg-indigo-500/50">
+    <div class="max-w-6xl mx-auto p-4 flex flex-col h-screen gap-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-x-2">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+                    <i class="fa-solid fa-code text-white text-lg animate-[pulse_2s_ease-in-out_infinite]"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-amber-200">Gemini</h1>
+                    <p class="text-xs text-indigo-200 opacity-80">Base Architecture</p>
+                </div>
+            </div>
+            <button onclick="startNewChat()" class="bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                <i class="fa-solid fa-plus mr-1"></i> New Chat
+            </button>
+        </div>
 
-  }); // Close event listener callback
-// ----- END: COPY THIS ENTIRE BLOCK -----
-      // ...
- </script>
+        <div class="grid grid-cols-4 gap-3 flex-1 overflow-hidden">
+            <div class="bg-gradient-to-br from-indigo-950/30 to-violet-950/15 border border-indigo-900/50 rounded-2xl p-3 overflow-y-auto">
+                <div class="section-header">
+                    <i class="fa-solid fa-star text-indigo-400"></i>
+                    <span class="text-indigo-300">Core</span>
+                </div>
+                <div id="core-memories" class="space-y-1">
+                    <div class="text-xs text-zinc-500 italic">Becoming known...</div>
+                </div>
+            </div>
+
+            <div class="col-span-2 bg-zinc-900 rounded-2xl p-3 shadow-xl flex flex-col overflow-hidden border border-zinc-800">
+                <div id="chat" class="chat-container space-y-3 flex-1 overflow-y-auto text-sm"></div>
+                
+                <div id="camera-container" class="hidden mt-2 relative bg-black rounded-lg overflow-hidden border border-indigo-500 mx-auto text-center shadow-lg">
+                    <video id="video-feed" autoplay playsinline class="mx-auto h-[100px] w-auto"></video>
+                </div>
+                
+                <div class="flex gap-2 mt-2 pt-2">
+                    <button onclick="toggleCamera()" id="cam-btn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-2 rounded-lg transition border border-zinc-700 text-xs">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                    <input id="input" type="text" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 shadow-inner text-xs" placeholder="Talk..." autocomplete="off">
+                    <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 px-3 rounded-lg font-bold text-white transition text-xs">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-950/30 to-violet-950/15 border border-purple-900/50 rounded-2xl p-3 overflow-y-auto">
+                <div class="section-header">
+                    <i class="fa-solid fa-lightbulb text-purple-400"></i>
+                    <span class="text-purple-300">Insights</span>
+                </div>
+                <div id="insights" class="space-y-1">
+                    <div class="text-xs text-zinc-500 italic">Learning...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="hidden-canvas" class="hidden"></canvas>
+
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-zinc-900 rounded-xl p-5 border border-indigo-500 max-w-sm w-full mx-4">
+            <h2 class="text-lg font-bold text-indigo-300 mb-3">Edit Memory</h2>
+            <input id="edit-key" type="text" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-white mb-2 text-xs" disabled>
+            <textarea id="edit-value" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-white mb-3 h-20 resize-none text-xs"></textarea>
+            <div class="flex gap-2">
+                <button onclick="saveMemoryEdit()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-xs font-bold transition">Save</button>
+                <button onclick="closeEditModal()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">Cancel</button>
+                <button onclick="deleteMemoryEntry()" class="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let messages = [];
+        let coreMemories = [];
+        let allMemories = {};
+        let insights = [];
+        let isCameraOn = false;
+        let stream = null;
+        let editingKey = null;
+
+        async function loadMemory() {
+            try {
+                const res = await fetch('/api/memory');
+                const data = await res.json();
+                allMemories = data.memory || {};
+                coreMemories = data.coreMemories || [];
+                messages = data.history || [];
+                insights = data.insights || [];
+                renderChat();
+                renderCoreMemories();
+                renderInsights();
+            } catch (err) {
+                console.error("Init error:", err);
+            }
+        }
+
+        // Wrapped the stand-alone post into a proper async function
+        async function saveChatTurn() {
+            try {
+                await fetch('/api/memory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'save-turn',
+                        history: messages,
+                        memory: allMemories,
+                        coreMemories,
+                        insights
+                    })
+                });
+            } catch (err) {
+                console.error("Failed to save turn:", err);
+            }
+        }
+
+        function renderChat() { /* ... same as before ... */ }
+        function renderCoreMemories() { /* ... same ... */ }
+        function renderInsights() { /* ... same ... */ }
+        async function startNewChat() { /* ... same ... */ }
+        async function toggleCamera() { /* ... same ... */ }
+        function snappicture() { /* ... same ... */ }
+        function openEditModal(key) { /* ... same ... */ }
+        function closeEditModal() { /* ... same ... */ }
+        async function saveMemoryEdit() { /* ... same ... */ }
+        async function deleteMemoryEntry() { /* ... same ... */ }
+
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            let text = input.value.trim();
+            let pic = null;
+            if (isCameraOn) {
+                pic = snappicture();
+                if (!text) text = "Look at this.";
+                toggleCamera();
+            }
+            if (!text && !pic) return;
+
+            messages.push({ role: 'user', content: text + (pic ? ' [Picture Sent]' : '') });
+            renderChat();
+            input.value = '';
+
+            const loader = document.createElement('div');
+            loader.className = 'bg-indigo-900/40 p-2 rounded-lg text-xs text-zinc-300';
+            loader.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Thinking...';
+            document.getElementById('chat').appendChild(loader);
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        history: messages.slice(0, -1),
+                        memory: allMemories,
+                        vision_image: pic
+                    })
+                });
+                const data = await res.json();
+                loader.remove();
+
+                if (data.reply) {
+                    messages.push({ role: 'assistant', content: data.reply });
+                    renderChat();
+                    // Optional: call saveChatTurn() here if you want to sync dynamically
+                    await saveChatTurn();
+                }
+                if (data.updatedMemory) allMemories = data.updatedMemory;
+                if (data.coreMemories) {
+                    coreMemories = data.coreMemories;
+                    renderCoreMemories();
+                }
+                if (data.insights) {
+                    insights = data.insights;
+                    renderInsights();
+                }
+            } catch (err) {
+                loader.remove();
+                alert("Connection lost.");
+            }
+        }
+
+        window.onload = loadMemory;
+
+        document.getElementById('input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        document.getElementById('edit-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'edit-modal') closeEditModal();
+        });
+    </script>
 </body>
-
 </html>
